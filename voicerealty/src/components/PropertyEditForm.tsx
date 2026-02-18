@@ -26,6 +26,7 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
             .filter(([key]) => !fixedKeys.includes(key))
             .map(([label, value]) => ({ label, value: value as string }))
     })
+    const [basicFeatures, setBasicFeatures] = useState<{ label: string, value: string }[]>([])
 
     // Helper to safely get feature values
     const getFeature = (key: string) => (property.features as any)?.[key] || ''
@@ -122,29 +123,41 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
                                         </div>
                                         <div className="flex gap-3 overflow-x-auto py-2 px-1 scrollbar-hide">
                                             {images.map((img: string, i: number) => (
-                                                <button
-                                                    key={i}
-                                                    type="button"
-                                                    onClick={() => handleThumbnailClick(img)}
-                                                    className={`
-                                                        relative size-24 shrink-0 rounded-2xl overflow-hidden border transition-all duration-300 group/img
-                                                        ${mainImageUrl === img
-                                                            ? 'border-primary ring-2 ring-primary/20 scale-[0.98]'
-                                                            : 'border-white/10 hover:border-white/30'}
-                                                    `}
-                                                >
-                                                    <img src={img} className="size-full object-cover" alt={`Gallery ${i}`} />
-                                                    {mainImageUrl === img && (
-                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                            <div className="size-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                                                                <span className="material-symbols-outlined text-black text-lg font-bold">check</span>
+                                                <div key={i} className="relative group/img-wrapper">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleThumbnailClick(img)}
+                                                        className={`
+                                                            relative size-24 shrink-0 rounded-2xl overflow-hidden border transition-all duration-300
+                                                            ${mainImageUrl === img
+                                                                ? 'border-primary ring-2 ring-primary/20 scale-[0.98]'
+                                                                : 'border-white/10 hover:border-white/30'}
+                                                        `}
+                                                    >
+                                                        <img src={img} className="size-full object-cover" alt={`Gallery ${i}`} />
+                                                        {mainImageUrl === img && (
+                                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                                <div className="size-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                                                                    <span className="material-symbols-outlined text-black text-lg font-bold">check</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <span className="text-[8px] font-extrabold text-white uppercase tracking-tighter">Selecteer</span>
-                                                    </div>
-                                                </button>
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const newImages = images.filter((_, index) => index !== i);
+                                                            setImages(newImages);
+                                                            if (mainImageUrl === img) {
+                                                                setMainImageUrl(newImages[0] || '');
+                                                            }
+                                                        }}
+                                                        className="absolute -top-2 -right-2 size-6 bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg opacity-0 group-hover/img-wrapper:opacity-100 transition-opacity z-10 hover:bg-red-600 hover:scale-110 active:scale-95"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[14px] font-bold">close</span>
+                                                    </button>
+                                                </div>
                                             ))}
 
                                             <div className="size-24 shrink-0">
@@ -180,9 +193,142 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
                                     />
                                 </div>
                             </div>
+
+                            {/* Custom Features Section within Basic Info */}
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                {basicFeatures.map((feat, index) => (
+                                    <div key={index} className="group/input animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <div className="flex items-center justify-between mb-3 px-1">
+                                            <input
+                                                type="text"
+                                                placeholder="Label (bijv. Tuin)"
+                                                value={feat.label}
+                                                onChange={(e) => {
+                                                    const newFeats = [...basicFeatures];
+                                                    newFeats[index].label = e.target.value;
+                                                    setBasicFeatures(newFeats);
+                                                }}
+                                                className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setBasicFeatures(prev => prev.filter((_, i) => i !== index))}
+                                                className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                            >
+                                                Verwijderen
+                                            </button>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={feat.value}
+                                            onChange={(e) => {
+                                                const newFeats = [...basicFeatures];
+                                                newFeats[index].value = e.target.value;
+                                                setBasicFeatures(newFeats);
+                                            }}
+                                            placeholder="Waarde"
+                                            className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                        />
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setBasicFeatures(prev => [...prev, { label: 'Nieuw kenmerk', value: '' }])}
+                                    className="w-full py-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group/add"
+                                >
+                                    <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover/add:bg-primary group-hover/add:text-black transition-all">
+                                        <span className="material-symbols-outlined text-lg">add</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/add:text-white transition-colors">Kenmerk toevoegen</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Kenmerken Card */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl">
+                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
+                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary">manage_search</span>
+                        </div>
+                        <h2 className="text-xl font-bold">Gedetailleerde Kenmerken</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {[
+                            { name: 'feature_constructionYear', label: 'Bouwjaar', key: 'constructionYear', placeholder: 'Bijv. 1880' },
+                            { name: 'feature_type', label: 'Woningtype', key: 'type', placeholder: 'Bijv. Kantoorvilla' },
+                            { name: 'feature_energy', label: 'Energie & Isolatie', key: 'energy', placeholder: 'Label A...' },
+                            { name: 'feature_maintenance', label: 'Onderhoud', key: 'maintenance', placeholder: 'Bijv. Gemoderniseerd' },
+                            { name: 'feature_layout', label: 'Indeling', key: 'layout', placeholder: 'Bijv. 4 bouwlagen...', full: true },
+                            { name: 'feature_surroundings', label: 'Ligging', key: 'surroundings', placeholder: 'Bijv. Woonwijk...', full: true }
+                        ].map((field) => (
+                            <div key={field.name} className={`group/input ${field.full ? 'md:col-span-2' : ''}`}>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">{field.label}</label>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    defaultValue={getFeature(field.key)}
+                                    placeholder={field.placeholder}
+                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                />
+                            </div>
+                        ))}
+
+                        {/* Custom Features List (Detailed) */}
+                        {customFeatures.map((feat, index) => (
+                            <div key={index} className="md:col-span-2 group/input animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <input
+                                        type="text"
+                                        placeholder="Label (bijv. Erfpacht)"
+                                        value={feat.label}
+                                        onChange={(e) => {
+                                            const newFeats = [...customFeatures];
+                                            newFeats[index].label = e.target.value;
+                                            setCustomFeatures(newFeats);
+                                        }}
+                                        className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomFeatures(prev => prev.filter((_, i) => i !== index))}
+                                        className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                    >
+                                        Verwijderen
+                                    </button>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={feat.value}
+                                    onChange={(e) => {
+                                        const newFeats = [...customFeatures];
+                                        newFeats[index].value = e.target.value;
+                                        setCustomFeatures(newFeats);
+                                    }}
+                                    placeholder="..."
+                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                />
+                            </div>
+                        ))}
+
+                        <div className="md:col-span-2">
+                            <button
+                                type="button"
+                                onClick={() => setCustomFeatures(prev => [...prev, { label: 'Nieuw kenmerk', value: '' }])}
+                                className="w-full py-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group/add"
+                            >
+                                <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover/add:bg-primary group-hover/add:text-black transition-all">
+                                    <span className="material-symbols-outlined text-lg">add</span>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/add:text-white transition-colors">Kenmerk toevoegen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="custom_features" value={JSON.stringify([...customFeatures, ...basicFeatures])} />
 
                 {/* Media Links Card */}
                 <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl">
@@ -285,89 +431,6 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
                     </div>
                 </div>
                 <input type="hidden" name="custom_links" value={JSON.stringify(customLinks)} />
-
-                {/* Kenmerken Card */}
-                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl">
-                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
-                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                            <span className="material-symbols-outlined text-primary">manage_search</span>
-                        </div>
-                        <h2 className="text-xl font-bold">Gedetailleerde Kenmerken</h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {[
-                            { name: 'feature_constructionYear', label: 'Bouwjaar', key: 'constructionYear', placeholder: 'Bijv. 1880' },
-                            { name: 'feature_type', label: 'Woningtype', key: 'type', placeholder: 'Bijv. Kantoorvilla' },
-                            { name: 'feature_energy', label: 'Energie & Isolatie', key: 'energy', placeholder: 'Label A...' },
-                            { name: 'feature_maintenance', label: 'Onderhoud', key: 'maintenance', placeholder: 'Bijv. Gemoderniseerd' },
-                            { name: 'feature_layout', label: 'Indeling', key: 'layout', placeholder: 'Bijv. 4 bouwlagen...', full: true },
-                            { name: 'feature_surroundings', label: 'Ligging', key: 'surroundings', placeholder: 'Bijv. Woonwijk...', full: true }
-                        ].map((field) => (
-                            <div key={field.name} className={`group/input ${field.full ? 'md:col-span-2' : ''}`}>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">{field.label}</label>
-                                <input
-                                    type="text"
-                                    name={field.name}
-                                    defaultValue={getFeature(field.key)}
-                                    placeholder={field.placeholder}
-                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
-                                />
-                            </div>
-                        ))}
-
-                        {/* Custom Features List */}
-                        {customFeatures.map((feat, index) => (
-                            <div key={index} className="md:col-span-2 group/input animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div className="flex items-center justify-between mb-3 px-1">
-                                    <input
-                                        type="text"
-                                        placeholder="Label (bijv. Erfpacht)"
-                                        value={feat.label}
-                                        onChange={(e) => {
-                                            const newFeats = [...customFeatures];
-                                            newFeats[index].label = e.target.value;
-                                            setCustomFeatures(newFeats);
-                                        }}
-                                        className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setCustomFeatures(prev => prev.filter((_, i) => i !== index))}
-                                        className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
-                                    >
-                                        Verwijderen
-                                    </button>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={feat.value}
-                                    onChange={(e) => {
-                                        const newFeats = [...customFeatures];
-                                        newFeats[index].value = e.target.value;
-                                        setCustomFeatures(newFeats);
-                                    }}
-                                    placeholder="..."
-                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
-                                />
-                            </div>
-                        ))}
-
-                        <div className="md:col-span-2">
-                            <button
-                                type="button"
-                                onClick={() => setCustomFeatures(prev => [...prev, { label: 'Nieuw kenmerk', value: '' }])}
-                                className="w-full py-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group/add"
-                            >
-                                <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover/add:bg-primary group-hover/add:text-black transition-all">
-                                    <span className="material-symbols-outlined text-lg">add</span>
-                                </div>
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/add:text-white transition-colors">Kenmerk toevoegen</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <input type="hidden" name="custom_features" value={JSON.stringify(customFeatures)} />
 
                 {/* Omschrijving Card */}
                 <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl relative group">
