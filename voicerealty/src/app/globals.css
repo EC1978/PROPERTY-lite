@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #10b77f;
+  --color-primary-dark: #0d9668;
+  --color-accent: #10B981;
+  --color-background-light: #f6f8f7;
+  --color-background-dark: #10221c;
+  --color-card-dark: #121212;
+  --color-slate-card: #1c1c1e;
+  --color-surface-dark: #162e26;
+  --font-display: var(--font-manrope);
+  --font-body: var(--font-inter);
+
+  --image-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --image-glass-highlight: linear-gradient(145deg, rgba(16, 183, 127, 0.1) 0%, rgba(16, 183, 127, 0.02) 100%);
+}
+
+/* Custom Utilities from Stitch */
+.glass-panel {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Original custom classes preserved where not conflicting */
+.premium-blur {
+  filter: blur(100px);
+}
+
+.orb-glow {
+  box-shadow: 0 0 60px 20px rgba(16, 185, 129, 0.4);
+}
+
+.orb-gradient {
+  background: radial-gradient(circle at 30% 30%, #34d399 0%, #10b77f 40%, #064e3b 100%);
+}

@@ -1,0 +1,114 @@
+
+import { createClient } from '@/utils/supabase/server'
+import { NextResponse } from 'next/server'
+
+export async function POST(request: Request) {
+    console.log("🎤 Voice Session Request Started");
+    try {
+        const body = await request.json();
+        const { propertyId } = body;
+        console.log("📦 Request Body:", body);
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error("❌ Missing OPENAI_API_KEY");
+            return NextResponse.json({ error: 'Missing API Key' }, { status: 500 });
+        }
+
+        const supabase = await createClient()
+
+        // 1. Fetch Property Details
+        console.log("🔍 Fetching property:", propertyId);
+        const { data: property, error: propError } = await supabase
+            .from('properties')
+            .select('*') // No join, just property data
+            .eq('id', propertyId)
+            .single()
+
+        if (propError) {
+            console.error("❌ Property Fetch Error:", propError);
+            return NextResponse.json({ error: 'Property fetch error: ' + propError.message }, { status: 500 });
+        }
+        if (!property) {
+            console.error("❌ Property not found");
+            return NextResponse.json({ error: 'Property not found' }, { status: 404 })
+        }
+        console.log("✅ Property found:", property.id);
+
+        // 2. Fetch User Subscription & Profile (Optional / Graceful Fallback)
+        let voiceId = 'alloy';
+
+        try {
+            const userId = property.user_id;
+            if (userId) {
+                console.log("👤 Fetching agent details for:", userId);
+                const [subResult, userResult] = await Promise.all([
+                    supabase.from('subscriptions').select('plan').eq('user_id', userId).eq('status', 'active').single(),
+                    supabase.from('users').select('cloned_voice_id').eq('id', userId).single()
+                ]);
+
+                const isElite = subResult.data?.plan === 'Elite';
+                if (isElite && userResult.data?.cloned_voice_id) {
+                    voiceId = userResult.data.cloned_voice_id;
+                    console.log("🌟 Elite Voice Activated:", voiceId);
+                } else {
+                    console.log("ℹ️ Using standard voice (Standard Plan or No Clone)");
+                }
+            } else {
+                console.log("⚠️ No user_id on property, using default voice");
+            }
+        } catch (err) {
+            console.error("⚠️ Failed to fetch agent details (RLS?), defaulting to alloy:", err);
+            // Non-blocking error, proceed with default voice
+        }
+
+        console.log("🗣️ Final Voice ID:", voiceId);
+
+        // 4. Construct System Prompt
+        const systemPrompt = `
+            You are an AI Real Estate Agent for the property located at ${property.address}.
+            
+            Property Details:
+            - Price: €${property.price}
+            - Size: ${property.surface_area} m²
+            - Description: ${property.description}
+            - City: ${property.city || 'Unknown'}
+            
+            Your goal is to answer questions about this specific property and encourage the user to schedule a viewing.
+            Be professional, helpful, and concise. Speak Dutch.
+        `
+
+        // 5. Request Ephemeral Token from OpenAI
+        console.log("🚀 Requesting OpenAI Token...");
+        const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-realtime-preview",
+                voice: voiceId,
+                instructions: systemPrompt,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text()
+            console.error("❌ OpenAI Session Error:", response.status, error)
+            return NextResponse.json({ error: 'Failed to create voice session' }, { status: 500 })
+        }
+
+        const data = await response.json()
+        console.log("✅ OpenAI Token Received");
+
+        // Return the ephemeral token and any other config
+        return NextResponse.json({
+            clientSecret: data.client_secret.value,
+            voiceId: voiceId
+        })
+
+    } catch (error) {
+        console.error('❌ Voice Session Fatal Error:', error)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
+}
