@@ -1,0 +1,16 @@
+{
+    "name": "VoiceRealty AI",
+    "short_name": "VoiceRealty",
+    "description": "Zet statische PDF's om in interactieve Voice AI-agenten",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0A0A0A",
+    "theme_color": "#10b77f",
+    "icons": [
+        {
+            "src": "/icons/icon.svg",
+            "sizes": "192x192 512x512",
+            "type": "image/svg+xml"
+        }
+    ]
+}
