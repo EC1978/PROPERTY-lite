@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { deleteProperty } from '../../actions'
+import PropertyEditForm from '@/components/PropertyEditForm'
 import ImageUpload from '@/components/ImageUpload'
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,8 +40,17 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         const floorplan_url = formData.get('floorplan_url') as string
         const tour_360_url = formData.get('tour_360_url') as string
 
+        const imagesRaw = formData.get('all_images') as string
+        const images = imagesRaw ? JSON.parse(imagesRaw) : []
+
+        const customLinksRaw = formData.get('custom_links') as string
+        const custom_links = customLinksRaw ? JSON.parse(customLinksRaw) : []
+
+        const customFeaturesRaw = formData.get('custom_features') as string
+        const customFeatures = customFeaturesRaw ? JSON.parse(customFeaturesRaw) : []
+
         // Extract features
-        const features = {
+        const features: any = {
             constructionYear: formData.get('feature_constructionYear'),
             type: formData.get('feature_type'),
             layout: formData.get('feature_layout'),
@@ -48,6 +58,13 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             maintenance: formData.get('feature_maintenance'),
             surroundings: formData.get('feature_surroundings'),
         }
+
+        // Merge custom features
+        customFeatures.forEach((feat: { label: string, value: string }) => {
+            if (feat.label) {
+                features[feat.label] = feat.value
+            }
+        })
 
         await supabase.from('properties').update({
             address,
@@ -58,7 +75,9 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             video_url,
             floorplan_url,
             tour_360_url,
-            features
+            features,
+            images,
+            custom_links
         }).eq('id', id)
 
         redirect(`/properties/${id}/ready`)
@@ -67,132 +86,34 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
     // Helper to safely get feature values
     const getFeature = (key: string) => (property.features as any)?.[key] || ''
 
+    async function deletePropertyAction() {
+        'use server'
+        await deleteProperty(id)
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-            <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div className="p-8 border-b border-gray-100">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Controleer Gegevens</h1>
-                    <p className="text-gray-500">De WEB AGENT heeft de volgende gegevens gevonden.</p>
+        <div className="min-h-screen bg-[#050606] text-white flex flex-col font-sans antialiased overflow-x-hidden">
+            {/* Background Orbs */}
+            <div className="fixed top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-[#10b77f]/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+            <div className="fixed bottom-[-5%] left-[-5%] w-[30vw] h-[30vw] bg-[#10b77f]/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+
+            <div className="relative z-10 max-w-4xl w-full mx-auto px-6 py-12">
+                {/* Header Section */}
+                <div className="mb-10">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="h-1 w-8 rounded-full bg-primary/40 shadow-[0_0_10px_rgba(16,183,127,0.3)]"></div>
+                        <span className="text-[10px] font-bold tracking-[0.3em] text-gray-500 uppercase">Review</span>
+                    </div>
+                    <h1 className="text-4xl font-bold tracking-tight mb-2">Controleer Gegevens</h1>
+                    <p className="text-gray-500 font-medium">De WEB AGENT heeft de volgende gegevens gevonden.</p>
                 </div>
 
-                <form action={updateProperty} className="p-8 space-y-8">
-                    {/* Basisgegevens */}
-                    <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2">Basisinfo</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Adres</label>
-                            <input type="text" name="address" defaultValue={property.address} className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Hoofdafbeelding</label>
-                                <ImageUpload defaultValue={property.image_url} />
-                                {property.images && property.images.length > 0 && (
-                                    <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-                                        {property.images.map((img: string, i: number) => (
-                                            <img key={i} src={img} className="h-16 w-16 object-cover rounded-lg border border-gray-200" title={`Scraped image ${i + 1}`} />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Vraagprijs (€)</label>
-                                <input type="number" name="price" defaultValue={property.price} className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Woonoppervlakte (m²)</label>
-                                <input type="number" name="surface_area" defaultValue={property.surface_area} className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Media Links */}
-                    <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">perm_media</span>
-                            Media Links
-                        </h2>
-                        <div className="grid grid-cols-1 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
-                                <input type="url" name="video_url" defaultValue={property.video_url} placeholder="https://youtube.com/..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Plattegrond URL</label>
-                                <input type="url" name="floorplan_url" defaultValue={property.floorplan_url} placeholder="https://..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">360° Tour URL</label>
-                                <input type="url" name="tour_360_url" defaultValue={property.tour_360_url} placeholder="https://..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Nieuwe Gedetailleerde Kenmerken */}
-                    <div className="space-y-6">
-                        <h2 className="text-lg font-bold text-gray-900 border-b pb-2 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">manage_search</span>
-                            Gedetailleerde Kenmerken (AI Scraped)
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Bouwjaar</label>
-                                <input type="text" name="feature_constructionYear" defaultValue={getFeature('constructionYear')} placeholder="Bijv. 1995" className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Woningtype</label>
-                                <input type="text" name="feature_type" defaultValue={getFeature('type')} placeholder="Bijv. Vrijstaand" className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Energie & Isolatie</label>
-                                <input type="text" name="feature_energy" defaultValue={getFeature('energy')} placeholder="Label A, Dubbel glas..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Onderhoud</label>
-                                <input type="text" name="feature_maintenance" defaultValue={getFeature('maintenance')} placeholder="Bijv. Uitstekend" className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Indeling</label>
-                                <input type="text" name="feature_layout" defaultValue={getFeature('layout')} placeholder="Bijv. 5 kamers, open keuken..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Ligging / Omgeving</label>
-                                <input type="text" name="feature_surroundings" defaultValue={getFeature('surroundings')} placeholder="Bijv. In centrum, nabij park..." className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-900 focus:bg-white outline-none transition-colors" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Omschrijving</label>
-                        <textarea name="description" rows={6} defaultValue={property.description} className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white outline-none"></textarea>
-                    </div>
-
-                    <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
-                        <Link href="/dashboard" className="px-6 py-3 rounded-xl text-gray-500 hover:bg-gray-50 font-medium transition-colors">
-                            Annuleren
-                        </Link>
-                        <button type="submit" className="px-8 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
-                            Opslaan & Genereren
-                        </button>
-                    </div>
-                </form>
-
-                <div className="bg-gray-50 p-6 border-t border-gray-100 text-center">
-                    <form action={async () => {
-                        'use server'
-                        await deleteProperty(id)
-                    }}>
-                        <button type="submit" className="text-red-500 hover:text-red-700 text-sm font-medium inline-flex items-center gap-2 px-4 py-2 hover:bg-red-50 rounded-lg transition-colors">
-                            <span className="material-symbols-outlined text-lg">delete</span>
-                            Woning Verwijderen
-                        </button>
-                    </form>
-                </div>
-            </div >
-        </div >
+                <PropertyEditForm
+                    property={property}
+                    updateAction={updateProperty}
+                    deleteAction={deletePropertyAction}
+                />
+            </div>
+        </div>
     )
 }

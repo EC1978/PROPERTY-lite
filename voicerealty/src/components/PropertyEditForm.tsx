@@ -1,0 +1,461 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import ImageUpload from '@/components/ImageUpload'
+
+interface PropertyEditFormProps {
+    property: any
+    updateAction: (formData: FormData) => Promise<void>
+    deleteAction: () => Promise<void>
+}
+
+export default function PropertyEditForm({ property, updateAction, deleteAction }: PropertyEditFormProps) {
+    const [mainImageUrl, setMainImageUrl] = useState(property.image_url || '')
+    const [images, setImages] = useState<string[]>(property.images || [])
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [previewTitle, setPreviewTitle] = useState('')
+
+    const [customLinks, setCustomLinks] = useState<{ label: string, url: string }[]>(property.custom_links || [])
+    const [customFeatures, setCustomFeatures] = useState<{ label: string, value: string }[]>(() => {
+        const fixedKeys = ['constructionYear', 'type', 'layout', 'energy', 'maintenance', 'surroundings']
+        const feats = property.features || {}
+        return Object.entries(feats)
+            .filter(([key]) => !fixedKeys.includes(key))
+            .map(([label, value]) => ({ label, value: value as string }))
+    })
+
+    // Helper to safely get feature values
+    const getFeature = (key: string) => (property.features as any)?.[key] || ''
+
+    const handleThumbnailClick = (url: string) => {
+        setMainImageUrl(url)
+    }
+
+    const handleAddImage = (url: string) => {
+        setImages(prev => [...prev, url])
+        if (!mainImageUrl) setMainImageUrl(url)
+    }
+
+    const getEmbedUrl = (url: string) => {
+        if (!url) return url;
+        const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/);
+        if (ytMatch && ytMatch[1]) {
+            return `https://www.youtube.com/embed/${ytMatch[1].split('&')[0]}`;
+        }
+        const vimeoMatch = url.match(/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(.+)/);
+        if (vimeoMatch && vimeoMatch[1]) {
+            return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        }
+        return url;
+    }
+
+    const openPreview = (url: string, title: string) => {
+        if (!url) return
+        setPreviewUrl(getEmbedUrl(url))
+        setPreviewTitle(title)
+    }
+
+    useEffect(() => {
+        if (previewUrl) {
+            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+                e.preventDefault()
+                e.returnValue = ''
+                return ''
+            }
+            window.addEventListener('beforeunload', handleBeforeUnload)
+            return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [previewUrl])
+
+    return (
+        <>
+            <form action={updateAction} className="space-y-8">
+                {/* Basisgegevens Card */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <span className="material-symbols-outlined text-[100px]" style={{ fontVariationSettings: "'wght' 100" }}>home</span>
+                    </div>
+
+                    <div className="relative z-10 space-y-10">
+                        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                            <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                <span className="material-symbols-outlined text-primary">info</span>
+                            </div>
+                            <h2 className="text-xl font-bold">Basisinfo</h2>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div className="group/input">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1 group-focus-within/input:text-primary transition-colors">Adres</label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    defaultValue={property.address}
+                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest px-1 flex justify-between items-center">
+                                    <span>Hoofdafbeelding</span>
+                                    {mainImageUrl && (
+                                        <span className="text-[10px] text-primary/60 font-medium uppercase">Klik op een thumbnail om deze te selecteren</span>
+                                    )}
+                                </label>
+
+                                <div className="rounded-3xl overflow-hidden border border-white/5 bg-white/[0.01]">
+                                    <ImageUpload
+                                        key={mainImageUrl}
+                                        defaultValue={mainImageUrl}
+                                        onUpload={(url) => setMainImageUrl(url)}
+                                    />
+                                </div>
+
+                                {images && images.length > 0 && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <span className="material-symbols-outlined text-gray-600 text-sm">photo_library</span>
+                                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Gevonden foto's ({images.length})</span>
+                                        </div>
+                                        <div className="flex gap-3 overflow-x-auto py-2 px-1 scrollbar-hide">
+                                            {images.map((img: string, i: number) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => handleThumbnailClick(img)}
+                                                    className={`
+                                                        relative size-24 shrink-0 rounded-2xl overflow-hidden border transition-all duration-300 group/img
+                                                        ${mainImageUrl === img
+                                                            ? 'border-primary ring-2 ring-primary/20 scale-[0.98]'
+                                                            : 'border-white/10 hover:border-white/30'}
+                                                    `}
+                                                >
+                                                    <img src={img} className="size-full object-cover" alt={`Gallery ${i}`} />
+                                                    {mainImageUrl === img && (
+                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                            <div className="size-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                                                                <span className="material-symbols-outlined text-black text-lg font-bold">check</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <span className="text-[8px] font-extrabold text-white uppercase tracking-tighter">Selecteer</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+
+                                            <div className="size-24 shrink-0">
+                                                <ImageUpload
+                                                    onUpload={handleAddImage}
+                                                    compact
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <input type="hidden" name="all_images" value={JSON.stringify(images)} />
+                                <input type="hidden" name="image_url" value={mainImageUrl} />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="group/input">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Vraagprijs (€)</label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        defaultValue={property.price}
+                                        className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                    />
+                                </div>
+                                <div className="group/input">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Woonoppervlakte (m²)</label>
+                                    <input
+                                        type="number"
+                                        name="surface_area"
+                                        defaultValue={property.surface_area}
+                                        className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Media Links Card */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl">
+                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
+                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary">perm_media</span>
+                        </div>
+                        <h2 className="text-xl font-bold">Media Links</h2>
+                    </div>
+
+                    <div className="space-y-8">
+                        {[
+                            { name: 'video_url', label: 'Video URL', icon: 'smart_display', placeholder: 'https://youtube.com/...' },
+                            { name: 'floorplan_url', label: 'Plattegrond URL', icon: 'architecture', placeholder: 'https://...' },
+                            { name: 'tour_360_url', label: '360° Tour URL', icon: 'view_in_ar', placeholder: 'https://...' }
+                        ].map((field) => (
+                            <div key={field.name} className="group/input">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">{field.label}</label>
+                                <div className="relative group/url">
+                                    <span className="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within/input:text-primary transition-colors">{field.icon}</span>
+                                    <input
+                                        type="url"
+                                        id={field.name}
+                                        name={field.name}
+                                        defaultValue={(property as any)[field.name]}
+                                        placeholder={field.placeholder}
+                                        className="w-full pl-16 pr-32 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const el = document.getElementById(field.name) as HTMLInputElement;
+                                            if (el?.value) openPreview(el.value, field.label);
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                                    >
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Custom Links List */}
+                        {customLinks.map((link, index) => (
+                            <div key={index} className="group/input animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <input
+                                        type="text"
+                                        placeholder="Label (bijv. Matterport)"
+                                        value={link.label}
+                                        onChange={(e) => {
+                                            const newLinks = [...customLinks];
+                                            newLinks[index].label = e.target.value;
+                                            setCustomLinks(newLinks);
+                                        }}
+                                        className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomLinks(prev => prev.filter((_, i) => i !== index))}
+                                        className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                    >
+                                        Verwijderen
+                                    </button>
+                                </div>
+                                <div className="relative group/url">
+                                    <span className="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-gray-600">link</span>
+                                    <input
+                                        type="url"
+                                        value={link.url}
+                                        onChange={(e) => {
+                                            const newLinks = [...customLinks];
+                                            newLinks[index].url = e.target.value;
+                                            setCustomLinks(newLinks);
+                                        }}
+                                        placeholder="https://..."
+                                        className="w-full pl-16 pr-32 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => openPreview(link.url, link.label)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                                    >
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        <button
+                            type="button"
+                            onClick={() => setCustomLinks(prev => [...prev, { label: 'Extra Media', url: '' }])}
+                            className="w-full py-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group/add"
+                        >
+                            <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover/add:bg-primary group-hover/add:text-black transition-all">
+                                <span className="material-symbols-outlined text-lg">add</span>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/add:text-white transition-colors">Media link toevoegen</span>
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" name="custom_links" value={JSON.stringify(customLinks)} />
+
+                {/* Kenmerken Card */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl">
+                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
+                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary">manage_search</span>
+                        </div>
+                        <h2 className="text-xl font-bold">Gedetailleerde Kenmerken</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {[
+                            { name: 'feature_constructionYear', label: 'Bouwjaar', key: 'constructionYear', placeholder: 'Bijv. 1880' },
+                            { name: 'feature_type', label: 'Woningtype', key: 'type', placeholder: 'Bijv. Kantoorvilla' },
+                            { name: 'feature_energy', label: 'Energie & Isolatie', key: 'energy', placeholder: 'Label A...' },
+                            { name: 'feature_maintenance', label: 'Onderhoud', key: 'maintenance', placeholder: 'Bijv. Gemoderniseerd' },
+                            { name: 'feature_layout', label: 'Indeling', key: 'layout', placeholder: 'Bijv. 4 bouwlagen...', full: true },
+                            { name: 'feature_surroundings', label: 'Ligging', key: 'surroundings', placeholder: 'Bijv. Woonwijk...', full: true }
+                        ].map((field) => (
+                            <div key={field.name} className={`group/input ${field.full ? 'md:col-span-2' : ''}`}>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">{field.label}</label>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    defaultValue={getFeature(field.key)}
+                                    placeholder={field.placeholder}
+                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                />
+                            </div>
+                        ))}
+
+                        {/* Custom Features List */}
+                        {customFeatures.map((feat, index) => (
+                            <div key={index} className="md:col-span-2 group/input animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <input
+                                        type="text"
+                                        placeholder="Label (bijv. Erfpacht)"
+                                        value={feat.label}
+                                        onChange={(e) => {
+                                            const newFeats = [...customFeatures];
+                                            newFeats[index].label = e.target.value;
+                                            setCustomFeatures(newFeats);
+                                        }}
+                                        className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomFeatures(prev => prev.filter((_, i) => i !== index))}
+                                        className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                    >
+                                        Verwijderen
+                                    </button>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={feat.value}
+                                    onChange={(e) => {
+                                        const newFeats = [...customFeatures];
+                                        newFeats[index].value = e.target.value;
+                                        setCustomFeatures(newFeats);
+                                    }}
+                                    placeholder="..."
+                                    className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+                                />
+                            </div>
+                        ))}
+
+                        <div className="md:col-span-2">
+                            <button
+                                type="button"
+                                onClick={() => setCustomFeatures(prev => [...prev, { label: 'Nieuw kenmerk', value: '' }])}
+                                className="w-full py-4 rounded-2xl border-2 border-dashed border-white/5 hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group/add"
+                            >
+                                <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover/add:bg-primary group-hover/add:text-black transition-all">
+                                    <span className="material-symbols-outlined text-lg">add</span>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/add:text-white transition-colors">Kenmerk toevoegen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="custom_features" value={JSON.stringify(customFeatures)} />
+
+                {/* Omschrijving Card */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl relative group">
+                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
+                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary">notes</span>
+                        </div>
+                        <h2 className="text-xl font-bold">Omschrijving</h2>
+                    </div>
+                    <div className="group/input">
+                        <textarea
+                            name="description"
+                            rows={8}
+                            defaultValue={property.description}
+                            className="w-full px-8 py-6 rounded-3xl bg-[#0a0c0b]/60 border border-white/5 text-white outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all resize-none leading-relaxed"
+                        ></textarea>
+                    </div>
+                </div>
+
+                {/* Action Bar */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-12">
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            if (confirm('Weet je zeker dat je deze woning wilt verwijderen?')) {
+                                setIsDeleting(true)
+                                await deleteAction()
+                            }
+                        }}
+                        disabled={isDeleting}
+                        className="flex items-center gap-2 text-red-500 hover:text-red-400 font-bold uppercase text-[10px] tracking-[0.2em] px-6 py-3 rounded-xl hover:bg-red-500/5 transition-all disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                        {isDeleting ? 'Verwijderen...' : 'Woning Verwijderen'}
+                    </button>
+
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <Link href="/dashboard" className="flex-1 md:flex-none px-10 py-5 rounded-2xl border border-white/10 text-white font-bold text-sm hover:bg-white/5 transition-all text-center">
+                            Annuleren
+                        </Link>
+                        <button type="submit" className="flex-1 md:flex-none bg-primary hover:bg-emerald-400 active:scale-95 text-black font-extrabold py-5 px-12 rounded-2xl transition-all shadow-[0_15px_30px_rgba(16,183,127,0.2)]">
+                            Opslaan & Genereren
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {/* Preview Modal */}
+            {previewUrl && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+                    <div className="absolute inset-0 bg-[#050606]/90 backdrop-blur-xl" onClick={() => setPreviewUrl(null)}></div>
+                    <div className="relative w-full max-w-6xl aspect-video bg-black rounded-[2.5rem] border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(16,183,127,0.1)] flex flex-col">
+                        <div className="px-8 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                            <div className="flex items-center gap-3">
+                                <div className="h-1 w-6 rounded-full bg-primary/40"></div>
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">{previewTitle} Preview</h3>
+                            </div>
+                            <button
+                                onClick={() => setPreviewUrl(null)}
+                                className="size-10 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="flex-1 bg-[#050606] relative">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center opacity-20 pointer-events-none">
+                                <span className="material-symbols-outlined text-[80px] mb-4">public_off</span>
+                                <p className="text-xl font-bold mb-2">Externe Website</p>
+                                <p className="text-sm max-w-md">Sommige websites (zoals Funda) staan niet toe dat ze binnen een andere app worden getoond.</p>
+                            </div>
+
+                            <iframe
+                                src={previewUrl}
+                                className="relative z-10 w-full h-full border-none bg-transparent"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                sandbox="allow-scripts allow-forms"
+                                title="Media Preview"
+                            ></iframe>
+                        </div>
+                        <div className="px-8 py-4 border-t border-white/10 bg-white/[0.01] flex justify-between items-center">
+                            <p className="text-[10px] text-gray-500 font-medium truncate max-w-md">{previewUrl}</p>
+                            <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1">
+                                Open in nieuw tabblad <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    )
+}
