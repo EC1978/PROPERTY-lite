@@ -98,12 +98,35 @@ function LoginForm() {
                         <span className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">Snelle toegang</span>
                         <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
                     </div>
-                    <button className="w-full group flex flex-col items-center gap-4 outline-none">
-                        <div className="w-20 h-20 rounded-[2rem] border border-white/5 bg-white/[0.03] flex items-center justify-center group-hover:bg-white/[0.06] group-hover:border-primary/30 group-hover:scale-105 transition-all duration-500">
-                            <span className="material-symbols-outlined text-white/40 group-hover:text-primary transition-colors" style={{ fontSize: '40px', fontVariationSettings: "'wght' 200" }}>face_unlock</span>
-                        </div>
-                        <span className="text-[11px] font-bold text-gray-500 group-hover:text-gray-300 uppercase tracking-widest transition-colors">Face ID Gebruiken</span>
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
+                                const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
+                                if (emailInput && passwordInput) {
+                                    emailInput.value = 'demo@voicerealty.ai';
+                                    passwordInput.value = 'demo2026';
+                                    const form = emailInput.closest('form');
+                                    if (form) form.requestSubmit();
+                                }
+                            }}
+                            className="group flex flex-col items-center gap-3 p-4 rounded-3xl border border-white/5 bg-white/[0.03] hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300"
+                        >
+                            <div className="size-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined text-emerald-500" style={{ fontSize: '24px' }}>bolt</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-400 group-hover:text-emerald-500 uppercase tracking-widest">Demo Inlog</span>
+                        </button>
+
+                        <button type="button" className="group flex flex-col items-center gap-3 p-4 rounded-3xl border border-white/5 bg-white/[0.03] opacity-50 cursor-not-allowed">
+                            <div className="size-12 rounded-2xl bg-white/5 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-white/20" style={{ fontSize: '24px' }}>face_unlock</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Face ID</span>
+                        </button>
+                    </div>
                 </div>
                 <div className="mt-10 text-center">
                     <p className="text-gray-500 text-sm font-medium">

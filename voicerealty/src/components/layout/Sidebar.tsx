@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { signOut } from '@/app/auth/actions'
 
 interface SidebarProps {
     userEmail?: string
@@ -40,8 +41,8 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                 </div>
             </div>
 
-            <div className="mt-auto p-6 border-t border-gray-200 dark:border-white/5">
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-left">
+            <div className="mt-auto p-6 border-t border-gray-200 dark:border-white/5 space-y-4">
+                <div className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-left group relative">
                     <div className="size-10 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20">
                         {userEmail?.charAt(0).toUpperCase()}
                     </div>
@@ -49,8 +50,16 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                         <div className="text-sm font-bold truncate">{userEmail?.split('@')[0]}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">Premium Tier</div>
                     </div>
-                    <span className="material-symbols-outlined text-gray-400">expand_more</span>
-                </button>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={() => signOut()}
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                        title="Uitloggen"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">logout</span>
+                    </button>
+                </div>
             </div>
         </aside>
     )

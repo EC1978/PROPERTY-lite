@@ -21,7 +21,7 @@ const tiers = [
         name: 'Elite',
         price: '€299',
         features: ['Onbeperkt Objecten', 'Voice Cloning', 'CRM Integratie'],
-        cta: 'Neem contact op',
+        cta: 'Start Elite',
         href: '/pricing?plan=elite',
         recommended: false,
         highlight: false,

@@ -201,7 +201,7 @@ export default function PricingPage() {
                         onClick={() => handleCheckout('Elite')}
                         className="mt-2 w-full h-11 rounded-lg border border-purple-400/50 text-purple-300 font-bold text-sm hover:bg-purple-900/20 transition-colors flex items-center justify-center"
                     >
-                        Neem contact op
+                        Kies Elite
                     </button>
                 </div>
             </div>
