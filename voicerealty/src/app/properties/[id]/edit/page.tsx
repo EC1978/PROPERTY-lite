@@ -1,10 +1,9 @@
-
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { deleteProperty } from '../../actions'
 import PropertyEditForm from '@/components/PropertyEditForm'
-import ImageUpload from '@/components/ImageUpload'
+import { revalidatePath } from 'next/cache'
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -80,6 +79,8 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             custom_links
         }).eq('id', id)
 
+        revalidatePath(`/properties/${id}`)
+        revalidatePath(`/woning/${id}`)
         redirect(`/properties/${id}/ready`)
     }
 

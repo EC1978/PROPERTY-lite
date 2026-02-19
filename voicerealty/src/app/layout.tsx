@@ -34,20 +34,24 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from "@/providers/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body
-        className={`${inter.variable} ${manrope.variable} antialiased bg-[#0A0A0A] text-white`}
+        className={`${inter.variable} ${manrope.variable} antialiased bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white transition-colors duration-300`}
       >
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

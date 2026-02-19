@@ -9,11 +9,6 @@ export async function POST(request: Request) {
         const { propertyId } = body;
         console.log("📦 Request Body:", body);
 
-        if (!process.env.OPENAI_API_KEY) {
-            console.error("❌ Missing OPENAI_API_KEY");
-            return NextResponse.json({ error: 'Missing API Key' }, { status: 500 });
-        }
-
         const supabase = await createClient()
 
         // 1. Fetch Property Details
@@ -77,34 +72,39 @@ export async function POST(request: Request) {
             Be professional, helpful, and concise. Speak Dutch.
         `
 
-        // 5. Request Ephemeral Token from OpenAI
-        console.log("🚀 Requesting OpenAI Token...");
-        const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-realtime-preview",
-                voice: voiceId,
-                instructions: systemPrompt,
-            }),
-        });
+        // 5. Request Ephemeral Token from OpenAI (Optional for Legacy support)
+        let clientSecret = null;
+        try {
+            console.log("🚀 Requesting OpenAI Token (Optional)...");
+            const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-realtime-preview",
+                    voice: voiceId,
+                    instructions: systemPrompt,
+                }),
+            });
 
-        if (!response.ok) {
-            const error = await response.text()
-            console.error("❌ OpenAI Session Error:", response.status, error)
-            return NextResponse.json({ error: 'Failed to create voice session' }, { status: 500 })
+            if (response.ok) {
+                const data = await response.json()
+                clientSecret = data.client_secret.value
+                console.log("✅ OpenAI Token Received");
+            } else {
+                console.warn("⚠️ OpenAI Session could not be created (Quota?), continuing for Gemini...");
+            }
+        } catch (err) {
+            console.warn("⚠️ OpenAI Token Fetch failed, continuing for Gemini...");
         }
 
-        const data = await response.json()
-        console.log("✅ OpenAI Token Received");
-
-        // Return the ephemeral token and any other config
+        // Return the available data
         return NextResponse.json({
-            clientSecret: data.client_secret.value,
-            voiceId: voiceId
+            clientSecret: clientSecret,
+            voiceId: voiceId,
+            systemPrompt: systemPrompt
         })
 
     } catch (error) {

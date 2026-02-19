@@ -40,6 +40,16 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
         if (!mainImageUrl) setMainImageUrl(url)
     }
 
+    const isBlockedDomain = (url: string) => {
+        if (!url) return false;
+        const normalized = url.toLowerCase();
+        const blocked = [
+            'funda.nl', 'fundainbusiness.nl', 'jaap.nl', 'huislijn.nl', 'pararius.nl',
+            'facebook.com', 'google.com', 'linkedin.com', 'instagram.com'
+        ];
+        return blocked.some(domain => normalized.includes(domain));
+    }
+
     const getEmbedUrl = (url: string) => {
         if (!url) return url;
         const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/);
@@ -55,7 +65,11 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
 
     const openPreview = (url: string, title: string) => {
         if (!url) return
-        setPreviewUrl(getEmbedUrl(url))
+        let targetUrl = getEmbedUrl(url)
+        if (isBlockedDomain(url)) {
+            targetUrl = `/api/proxy?url=${encodeURIComponent(url)}`
+        }
+        setPreviewUrl(targetUrl)
         setPreviewTitle(title)
     }
 
@@ -504,9 +518,8 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
 
                             <iframe
                                 src={previewUrl}
-                                className="relative z-10 w-full h-full border-none bg-transparent"
+                                className="relative z-10 w-full h-full border-none bg-white"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                sandbox="allow-scripts allow-forms"
                                 title="Media Preview"
                             ></iframe>
                         </div>

@@ -2,7 +2,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import PropertyDetailsClient from '@/components/PropertyDetailsClient'
+import PublicPropertyLiveView from '@/components/PublicPropertyLiveView'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -32,5 +32,5 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         )
     }
 
-    return <PropertyDetailsClient property={property} />
+    return <PublicPropertyLiveView property={property} isAdmin={true} />
 }
