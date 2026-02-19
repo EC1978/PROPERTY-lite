@@ -70,7 +70,7 @@ export default async function PropertyReadyPage({ params }: { params: Promise<{ 
                     </div>
 
                     {/* Property Details Preview */}
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-2xl group cursor-pointer hover:border-emerald-500/30 transition-all">
+                    <Link href={`/properties/${id}/edit`} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-2xl group cursor-pointer hover:border-emerald-500/30 transition-all">
                         <div className="size-16 rounded-xl bg-gray-200 dark:bg-white/10 flex-shrink-0 bg-cover bg-center overflow-hidden relative">
                             {property.image_url ? (
                                 <img src={property.image_url} alt={property.address} className="w-full h-full object-cover" />
@@ -87,7 +87,7 @@ export default async function PropertyReadyPage({ params }: { params: Promise<{ 
                         <div className="size-8 rounded-full bg-white dark:bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-emerald-500 transition-colors">
                             <span className="material-symbols-outlined text-lg">chevron_right</span>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-4">

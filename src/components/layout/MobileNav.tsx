@@ -7,27 +7,27 @@ export default function MobileNav() {
     const pathname = usePathname()
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0A0A0A]/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 px-6 z-50 flex items-center justify-between h-[80px]">
-            <Link href="/dashboard" className={`flex flex-col items-center gap-1 group ${pathname === '/dashboard' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-                <span className={`material-symbols-outlined text-[24px] ${pathname === '/dashboard' ? 'text-emerald-500' : 'text-white'} group-hover:scale-110 transition-transform`}>dashboard</span>
-                <span className="text-[10px] text-white font-medium">Home</span>
-            </Link>
-            <Link href="/leads" className={`flex flex-col items-center gap-1 group ${pathname === '/leads' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-                <span className={`material-symbols-outlined text-[24px] ${pathname === '/leads' ? 'text-emerald-500' : 'text-white'} group-hover:scale-110 transition-transform`}>groups</span>
-                <span className="text-[10px] text-white font-medium">Leads</span>
-            </Link>
-            <Link href="/properties/new" className="flex flex-col items-center -mt-8">
-                <div className="size-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/40 transform hover:scale-105 transition-transform">
-                    <span className="material-symbols-outlined text-[28px] text-white">add</span>
+        <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-slate-900/90 dark:bg-[#050505]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 flex items-center justify-around px-2">
+            <Link href="/dashboard" className="flex flex-col items-center justify-center w-full h-full gap-1 group">
+                <div className="relative p-1">
+                    <span className={`material-symbols-outlined text-[24px] ${pathname === '/dashboard' ? 'text-[#0df2a2]' : 'text-gray-400'} group-hover:scale-110 transition-transform`}>dashboard</span>
+                    {pathname === '/dashboard' && (
+                        <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#0df2a2] rounded-full" />
+                    )}
                 </div>
+                <span className={`text-[10px] font-medium ${pathname === '/dashboard' ? 'text-white' : 'text-gray-400'}`}>Home</span>
             </Link>
-            <Link href="/analytics" className={`flex flex-col items-center gap-1 group ${pathname === '/analytics' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-                <span className={`material-symbols-outlined text-[24px] ${pathname === '/analytics' ? 'text-emerald-500' : 'text-white'} group-hover:scale-110 transition-transform`}>monitoring</span>
-                <span className="text-[10px] text-white font-medium">Analytics</span>
+            <Link href="/leads" className="flex flex-col items-center justify-center w-full h-full gap-1 group">
+                <div className="relative p-1">
+                    <span className={`material-symbols-outlined text-[24px] ${pathname === '/leads' ? 'text-[#0df2a2]' : 'text-gray-400'} group-hover:text-white transition-colors`}>groups</span>
+                </div>
+                <span className={`text-[10px] font-medium ${pathname === '/leads' ? 'text-white' : 'text-gray-400'} group-hover:text-white transition-colors`}>Leads</span>
             </Link>
-            <Link href="/settings" className={`flex flex-col items-center gap-1 group ${pathname?.startsWith('/settings') ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-                <span className={`material-symbols-outlined text-[24px] ${pathname?.startsWith('/settings') ? 'text-emerald-500' : 'text-white'} group-hover:scale-110 transition-transform`}>settings</span>
-                <span className="text-[10px] text-white font-medium">Instellingen</span>
+            <Link href="/settings" className="flex flex-col items-center justify-center w-full h-full gap-1 group">
+                <div className="relative p-1">
+                    <span className={`material-symbols-outlined text-[24px] ${pathname?.startsWith('/settings') ? 'text-[#0df2a2]' : 'text-gray-400'} group-hover:text-white transition-colors`}>settings</span>
+                </div>
+                <span className={`text-[10px] font-medium ${pathname?.startsWith('/settings') ? 'text-white' : 'text-gray-400'} group-hover:text-white transition-colors`}>Instellingen</span>
             </Link>
         </nav>
     )

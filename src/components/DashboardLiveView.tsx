@@ -26,14 +26,12 @@ interface DashboardLiveViewProps {
 export default function DashboardLiveView({ userEmail, userId, initialProperties, initialActiveCount }: DashboardLiveViewProps) {
     const [properties, setProperties] = useState<Property[]>(initialProperties)
     const [activeCount, setActiveCount] = useState(initialActiveCount)
-    // Stats from Stitch Design B1
-    const [interactions] = useState('1.2k')
-
-    // Activity mockup (aligned with Stitch "Interactions" or similar activity log if needed, but B1 focuses on stats/upload)
+    const [interactions] = useState(52)
 
     const supabase = createClient()
     const router = useRouter()
 
+    // --- Realtime subscription (unchanged) ---
     useEffect(() => {
         const channel = supabase
             .channel('realtime-dashboard')
@@ -48,7 +46,7 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                 (payload) => {
                     if (payload.eventType === 'INSERT') {
                         const newProperty = payload.new as Property
-                        setProperties(prev => [newProperty, ...prev].slice(0, 5)) // Increased limit slightly
+                        setProperties(prev => [newProperty, ...prev].slice(0, 5))
                         setActiveCount(prev => prev + 1)
                     } else if (payload.eventType === 'DELETE') {
                         router.refresh()
@@ -63,6 +61,7 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
         }
     }, [supabase, userId, router])
 
+    // --- File/URL Processing Logic (unchanged) ---
     const [isDragging, setIsDragging] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [processingStatus, setProcessingStatus] = useState<string>('')
@@ -168,23 +167,37 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
         }
     }
 
-    return (
-        <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050606] text-slate-800 dark:text-slate-100 font-sans">
+    // --- Greeting based on time ---
+    const hour = new Date().getHours()
+    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond'
+    const userName = userEmail?.split('@')[0] || 'Makelaar'
 
+    return (
+        <div className="flex min-h-screen bg-[#f5f8f7] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-[Inter,sans-serif] relative overflow-x-hidden">
             <Sidebar userEmail={userEmail} />
 
-            {/* --- MOBILE HEADER --- */}
-            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg tracking-tight">Makelaar Dashboard</span>
+            {/* ===== STITCH HEADER (mobile) ===== */}
+            <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 bg-[#f5f8f7]/80 dark:bg-[#050505]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                    <div className="relative group cursor-pointer">
+                        <div className="size-10 rounded-full bg-gradient-to-tr from-[#0df2a2] to-cyan-500 flex items-center justify-center text-white font-bold text-sm border-2 border-[#0df2a2]">
+                            {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="absolute bottom-0 right-0 size-3 bg-[#0df2a2] rounded-full border-2 border-[#050505]" />
+                    </div>
+                    <div>
+                        <h1 className="text-[10px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VoiceRealty AI</h1>
+                        <h2 className="text-lg font-bold leading-none tracking-tight">Makelaar Dashboard</h2>
+                    </div>
                 </div>
-                <div className="size-8 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
-                    {userEmail?.charAt(0).toUpperCase()}
-                </div>
+                <button className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-white">
+                    <span className="material-symbols-outlined text-[24px]">notifications</span>
+                    <span className="absolute top-2 right-2 size-2 bg-[#0df2a2] rounded-full" />
+                </button>
             </div>
 
-            {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 md:ml-72 p-6 pt-24 md:p-10 md:pt-10 pb-32 md:pb-10 max-w-7xl mx-auto space-y-8">
+            {/* ===== MAIN CONTENT ===== */}
+            <main className="flex-1 md:ml-72 p-6 pt-24 md:p-10 md:pt-10 pb-32 md:pb-10 max-w-5xl mx-auto">
 
                 {/* Processing Overlay */}
                 {isProcessing && (
@@ -192,168 +205,187 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                         <div className="relative h-20 w-20 mb-6">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                                 <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-gray-200 dark:text-gray-800" strokeWidth="8" />
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-emerald-500 animate-[spin_3s_linear_infinite]" strokeWidth="8" strokeDasharray="283" strokeDashoffset="155" />
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" className="text-[#0df2a2] animate-[spin_3s_linear_infinite]" strokeWidth="8" strokeDasharray="283" strokeDashoffset="155" />
                             </svg>
-                            <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-emerald-500">AI</div>
+                            <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#0df2a2]">AI</div>
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{processingStatus}</h2>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Moment geduld...</p>
                     </div>
                 )}
 
-                {/* Hero Section */}
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 mb-1">
-                        Welkom terug, {userEmail?.split('@')[0]}
+                {/* ===== GREETING ===== */}
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                        {greeting}, <span className="text-[#0df2a2]">{userName}.</span>
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Je AI-gedreven woningportefeuille presteert <span className="text-emerald-500 font-semibold">+12%</span> boven doelstelling.
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Je AI-agenten beheren momenteel {activeCount} actieve gesprekken.
                     </p>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Left Column: Upload & Stats */}
-                    <div className="lg:col-span-2 space-y-6">
+                {/* ===== GRID LAYOUT ===== */}
+                <div className="grid grid-cols-2 gap-4">
 
-                        {/* AI Property Processor (Interactive Upload Zone) */}
-                        <div className="bg-white dark:bg-[#111] rounded-3xl p-6 md:p-8 border border-gray-200 dark:border-white/5 shadow-sm relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity opacity-50 group-hover:opacity-100"></div>
-
-                            <div className="flex items-center gap-3 mb-6 relative z-10">
-                                <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-emerald-500 text-xl">smart_toy</span>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold">AI Woning Processor</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Upload brochures of importeer URL</p>
-                                </div>
+                    {/* ===== UPLOAD ZONE (full width) ===== */}
+                    <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`col-span-2 relative group overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragging
+                            ? 'border-[#0df2a2] bg-[#0df2a2]/10 scale-[1.01]'
+                            : 'border-[#0df2a2]/30 dark:border-[#0df2a2]/20 bg-white dark:bg-[#1c1c1e]/50 hover:border-[#0df2a2]'
+                            }`}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#0df2a2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        <div className="relative z-10 flex flex-col items-center justify-center py-10 px-4 text-center cursor-pointer">
+                            <div className="size-14 rounded-full bg-[#0df2a2]/10 flex items-center justify-center mb-4 text-[#0df2a2] group-hover:scale-110 transition-transform duration-300">
+                                <span className="material-symbols-outlined text-[32px]">cloud_upload</span>
                             </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Upload Woning PDF</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[240px] mb-4">
+                                Sleep je brochure hierheen of tik om om te zetten naar een Voice AI-agent.
+                            </p>
 
-                            <div className="grid md:grid-cols-2 gap-4 relative z-10">
-                                {/* PDF Drop Zone */}
-                                <div
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                    className={`
-                                        relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center text-center transition-all cursor-pointer group/drop
-                                        ${isDragging
-                                            ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02]'
-                                            : 'border-gray-200 dark:border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5'}
-                                    `}
-                                >
-                                    <div className="size-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3 group-hover/drop:scale-110 transition-transform">
-                                        <span className="material-symbols-outlined text-emerald-500 text-xl">cloud_upload</span>
-                                    </div>
-                                    <h4 className="font-bold text-sm mb-1">Upload PDF</h4>
-                                    <p className="text-[10px] text-gray-400 mb-4">Sleep document hierheen</p>
-                                    <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">
-                                        Kies Bestand
-                                        <input type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
-                                    </label>
+                            {/* URL Input Row */}
+                            <div className="flex items-center gap-2 mb-4 w-full max-w-md relative z-20" onClick={(e) => e.stopPropagation()}>
+                                <div className="relative flex-1">
+                                    <span className="material-symbols-outlined text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">link</span>
+                                    <input
+                                        type="url"
+                                        placeholder="Of plak een Funda link..."
+                                        value={urlInput}
+                                        onChange={(e) => setUrlInput(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' && urlInput) handleUrlScrape() }}
+                                        className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2]/30 transition-colors cursor-text"
+                                    />
                                 </div>
-
-                                {/* URL Import Zone */}
-                                <div className="border border-gray-200 dark:border-white/5 rounded-2xl p-6 flex flex-col justify-between bg-gray-50 dark:bg-white/[0.02]">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="material-symbols-outlined text-gray-400 text-lg">link</span>
-                                            <h4 className="font-bold text-sm">URL Import</h4>
-                                        </div>
-                                        <div className="relative group/input mb-3">
-                                            <input
-                                                type="url"
-                                                placeholder="Funda link..."
-                                                value={urlInput}
-                                                onChange={(e) => setUrlInput(e.target.value)}
-                                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
+                                {urlInput && (
                                     <button
                                         onClick={handleUrlScrape}
-                                        disabled={!urlInput}
-                                        className={`w-full py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
-                                            ${urlInput ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90' : 'bg-gray-200 dark:bg-white/5 text-gray-400 cursor-not-allowed'}
-                                        `}
+                                        className="bg-gray-900 dark:bg-white text-white dark:text-black font-bold py-2.5 px-5 rounded-xl text-xs uppercase tracking-wider hover:opacity-90 transition-all"
                                     >
                                         Importeer
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Batch QR Tile - Using Stitch B1 styling */}
-                        <Link href="/analytics" className="bg-gradient-to-r from-gray-900 to-gray-800 dark:from-[#1A1A1A] dark:to-[#111] rounded-3xl p-6 text-white flex items-center justify-between shadow-lg shadow-black/5 hover:scale-[1.02] transition-transform cursor-pointer">
-                            <div>
-                                <h4 className="font-bold text-lg mb-1">Genereer Marketing QR Codes</h4>
-                                <p className="text-white/60 text-sm">Download QR codes voor je actieve woningaanbod voor op flyers en borden.</p>
-                            </div>
-                            <div className="size-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
-                                <span className="material-symbols-outlined">qr_code_2</span>
-                            </div>
-                        </Link>
-
-                    </div>
-
-                    {/* Right Column: Stats & Quick View */}
-                    <div className="space-y-6">
-                        {/* Stats Cards - Stitch B1 Style (Clean numbers) */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white dark:bg-[#111] p-6 rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm">
-                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Actief Aanbod</p>
-                                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{activeCount}</div>
-                                <div className="flex items-center text-xs text-emerald-500 font-medium">
-                                    <span className="material-symbols-outlined text-[16px] mr-1">trending_up</span>
-                                    <span>+3 deze week</span>
-                                </div>
-                            </div>
-                            <div className="bg-white dark:bg-[#111] p-6 rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm">
-                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Interacties</p>
-                                <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{interactions}</div>
-                                <div className="flex items-center text-xs text-emerald-500 font-medium">
-                                    <span className="material-symbols-outlined text-[16px] mr-1">trending_up</span>
-                                    <span>+12% vs vorige mnd</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Recent Properties List - Managed Properties */}
-                        <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-bold text-lg">Beheerde Woningen</h3>
-                                <Link href="/properties" className="text-emerald-500 hover:text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                                    Bekijk Alles
-                                </Link>
-                            </div>
-
-                            <div className="space-y-4">
-                                {properties.length > 0 ? properties.map((prop, i) => (
-                                    <Link key={prop.id} href={`/properties/${prop.id}/ready`} className="flex gap-4 items-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors">
-                                        <div className="size-12 rounded-lg bg-gray-100 dark:bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
-                                            {prop.image_url ? (
-                                                <img src={prop.image_url} alt={prop.address} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="material-symbols-outlined text-gray-400">image</span>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h5 className="font-bold text-sm text-gray-900 dark:text-white truncate group-hover:text-emerald-500 transition-colors">{prop.address}</h5>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                €{prop.price?.toLocaleString()} • {prop.city || 'Amsterdam'}
-                                            </p>
-                                        </div>
-                                    </Link>
-                                )) : (
-                                    <div className="text-center py-4 text-gray-500 text-sm">Nog geen woningen gevonden.</div>
                                 )}
                             </div>
+
+                            <label className="flex items-center gap-2 bg-[#0df2a2] hover:bg-emerald-400 text-[#050505] font-bold py-2.5 px-6 rounded-full transition-colors shadow-[0_0_20px_rgba(13,242,162,0.3)] cursor-pointer">
+                                <span className="material-symbols-outlined text-[20px]">add</span>
+                                <span>Agent aanmaken</span>
+                                <input type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
+                            </label>
                         </div>
                     </div>
+
+                    {/* ===== STAT CARD: Actieve Woningen ===== */}
+                    <div className="col-span-1 rounded-2xl bg-white dark:bg-[#1c1c1e] p-5 border border-gray-100 dark:border-white/5 shadow-sm flex flex-col justify-between h-[160px]">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                                <span className="material-symbols-outlined text-[24px]">real_estate_agent</span>
+                            </div>
+                            <span className="text-xs font-medium text-[#0df2a2] bg-[#0df2a2]/10 px-2 py-1 rounded-full">+12%</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Actieve woningen</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{activeCount}</p>
+                        </div>
+                    </div>
+
+                    {/* ===== STAT CARD: Interacties ===== */}
+                    <div className="col-span-1 rounded-2xl bg-white dark:bg-[#1c1c1e] p-5 border border-gray-100 dark:border-white/5 shadow-sm flex flex-col justify-between h-[160px]">
+                        <div className="flex justify-between items-start">
+                            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+                                <span className="material-symbols-outlined text-[24px]">graphic_eq</span>
+                            </div>
+                            <span className="text-xs font-medium text-[#0df2a2] bg-[#0df2a2]/10 px-2 py-1 rounded-full">+5%</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Interacties</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{interactions}</p>
+                        </div>
+                    </div>
+
+                    {/* ===== SECTION HEADER: Woningoverzicht ===== */}
+                    <div className="col-span-2 pt-4 flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Woningoverzicht</h3>
+                        <Link href="/properties" className="text-sm font-medium text-[#0df2a2] hover:text-emerald-300">Bekijk alles</Link>
+                    </div>
+
+                    {/* ===== PROPERTY CARDS ===== */}
+                    {properties.length > 0 ? properties.map((prop, i) => (
+                        <Link
+                            key={prop.id}
+                            href={`/properties/${prop.id}/edit`}
+                            className="col-span-2 rounded-2xl bg-white dark:bg-[#1c1c1e] border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex flex-col sm:flex-row h-full">
+                                {/* Image */}
+                                <div className="h-48 sm:h-auto sm:w-1/3 relative bg-gray-100 dark:bg-white/5">
+                                    {prop.image_url ? (
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center"
+                                            style={{ backgroundImage: `url("${prop.image_url}")` }}
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 text-[48px]">image</span>
+                                        </div>
+                                    )}
+                                    {/* Status Badge */}
+                                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 border border-white/10">
+                                        <span className="material-symbols-outlined text-[#0df2a2] text-[10px] animate-pulse">fiber_manual_record</span>
+                                        <span className="text-xs font-bold text-white uppercase tracking-wider">Actief</span>
+                                    </div>
+                                </div>
+
+                                {/* Info */}
+                                <div className="p-5 flex flex-col justify-between flex-1">
+                                    <div>
+                                        <h4 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{prop.address}</h4>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                            {prop.city || 'Amsterdam'}
+                                        </p>
+                                        <div className="flex items-center gap-4 mt-4 mb-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Prijs</span>
+                                                <span className="text-base font-bold text-gray-900 dark:text-white">€{prop.price?.toLocaleString()}</span>
+                                            </div>
+                                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Status</span>
+                                                <span className="text-base font-bold text-[#0df2a2]">Actief</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/properties/${prop.id}/ready`) }}
+                                        className="w-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 group/qr border border-transparent hover:border-[#0df2a2]/50"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px] text-[#0df2a2] group-hover/qr:scale-110 transition-transform">qr_code_2</span>
+                                        <span>QR-code downloaden</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </Link>
+                    )) : (
+                        <div className="col-span-2 rounded-2xl bg-white dark:bg-[#1c1c1e] border border-gray-100 dark:border-white/5 p-8 text-center">
+                            <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 text-[48px] mb-2">home_work</span>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Nog geen woningen gevonden. Upload je eerste PDF hierboven!</p>
+                        </div>
+                    )}
                 </div>
             </main>
 
+            {/* ===== FLOATING BOTTOM NAV ===== */}
             <MobileNav />
+
+            {/* ===== AMBIENT BACKGROUND EFFECTS ===== */}
+            <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#0df2a2]/5 blur-[100px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/5 blur-[100px]" />
+            </div>
         </div>
     )
 }
