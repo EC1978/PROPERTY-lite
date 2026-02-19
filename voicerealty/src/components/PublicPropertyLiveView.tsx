@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useGeminiAgent as useVoiceAgent } from '@/hooks/useGeminiAgent'
+import { useVoiceAgent } from '@/hooks/useVoiceAgent'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface PublicPropertyLiveViewProps {

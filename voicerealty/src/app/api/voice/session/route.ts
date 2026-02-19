@@ -72,10 +72,10 @@ export async function POST(request: Request) {
             Be professional, helpful, and concise. Speak Dutch.
         `
 
-        // 5. Request Ephemeral Token from OpenAI (Optional for Legacy support)
+        // 5. Request Ephemeral Token from OpenAI (Optional if using Gemini)
         let clientSecret = null;
         try {
-            console.log("🚀 Requesting OpenAI Token (Optional)...");
+            console.log("🚀 Requesting OpenAI Token...");
             const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
                 method: "POST",
                 headers: {
@@ -83,21 +83,22 @@ export async function POST(request: Request) {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    model: "gpt-4o-realtime-preview",
+                    model: "gpt-4o-realtime-preview-2024-12-17",
                     voice: voiceId,
                     instructions: systemPrompt,
                 }),
             });
 
             if (response.ok) {
-                const data = await response.json()
-                clientSecret = data.client_secret.value
+                const data = await response.json();
+                clientSecret = data.client_secret.value;
                 console.log("✅ OpenAI Token Received");
             } else {
-                console.warn("⚠️ OpenAI Session could not be created (Quota?), continuing for Gemini...");
+                const errText = await response.text();
+                console.warn("⚠️ OpenAI Session failed (using Gemini fallback if available):", errText);
             }
-        } catch (err) {
-            console.warn("⚠️ OpenAI Token Fetch failed, continuing for Gemini...");
+        } catch (openaiErr) {
+            console.warn("⚠️ OpenAI Token Fetch failed:", openaiErr);
         }
 
         // Return the available data

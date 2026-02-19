@@ -13,165 +13,276 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
     const wsRef = useRef<WebSocket | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const mediaStreamRef = useRef<MediaStream | null>(null);
     const processorRef = useRef<ScriptProcessorNode | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const nextPlayTime = useRef<number>(0);
+    const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+    const audioQueueRef = useRef<Float32Array[]>([]);
+    const isPlayingRef = useRef(false);
+    const nextStartTimeRef = useRef(0);
 
-    const fetchContext = async () => {
+    const fetchSessionDetails = async () => {
         const response = await fetch("/api/voice/session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ propertyId }),
         });
-        if (!response.ok) throw new Error("Database verbinding mislukt");
-        const data = await response.json();
-        return data.systemPrompt || `Je bent een AI Makelaar. Beantwoord vragen in het Nederlands.`;
+
+        if (!response.ok) {
+            console.warn("Backend session error, using partial data");
+        }
+
+        // Always try to parse JSON, even if error (for system prompt)
+        return await response.json().catch(() => ({ systemPrompt: "You are a helpful assistant." }));
     };
 
     const stopSession = useCallback(() => {
-        if (wsRef.current) wsRef.current.close();
-        if (processorRef.current) processorRef.current.disconnect();
-        if (audioContextRef.current) audioContextRef.current.close();
-        if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+        console.log("🛑 Stopping Gemini Session");
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+        }
 
-        wsRef.current = null;
-        audioContextRef.current = null;
-        processorRef.current = null;
-        streamRef.current = null;
+        // Stop Microphone
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+        if (processorRef.current) {
+            processorRef.current.disconnect();
+            processorRef.current = null;
+        }
+        if (sourceRef.current) {
+            sourceRef.current.disconnect();
+            sourceRef.current = null;
+        }
+        if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
 
         setIsConnected(false);
         setIsListening(false);
         setIsSpeaking(false);
+        audioQueueRef.current = [];
+        isPlayingRef.current = false;
+        nextStartTimeRef.current = 0;
     }, []);
 
+    const playNextChunk = () => {
+        if (audioQueueRef.current.length === 0 || !audioContextRef.current) {
+            isPlayingRef.current = false;
+            setIsSpeaking(false);
+            return;
+        }
+
+        isPlayingRef.current = true;
+        setIsSpeaking(true);
+
+        const float32Data = audioQueueRef.current.shift()!;
+        const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000); // Gemini sends 24kHz
+        buffer.copyToChannel(float32Data, 0);
+
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContextRef.current.destination);
+
+        const currentTime = audioContextRef.current.currentTime;
+        // Schedule slightly in future to prevent gaps, or immediately if fell behind
+        const startTime = Math.max(currentTime, nextStartTimeRef.current);
+
+        source.start(startTime);
+        nextStartTimeRef.current = startTime + buffer.duration;
+
+        source.onended = () => {
+            playNextChunk();
+        };
+    };
+
+    const handleAudioData = (base64Audio: string) => {
+        if (!audioContextRef.current) return;
+
+        // Base64 to ArrayBuffer
+        const binaryString = window.atob(base64Audio);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // PCM16 to Float32
+        const int16Data = new Int16Array(bytes.buffer);
+        const float32Data = new Float32Array(int16Data.length);
+        for (let i = 0; i < int16Data.length; i++) {
+            float32Data[i] = int16Data[i] / 32768.0;
+        }
+
+        audioQueueRef.current.push(float32Data);
+        if (!isPlayingRef.current) {
+            playNextChunk();
+        }
+    };
+
     const startSession = useCallback(async () => {
+        console.log("🚀 Starting Gemini Session...");
         try {
             setError(null);
 
-            // STAP 1: AUDIO DIRECT STARTEN (VOOR DE FETCH)
-            // Dit is cruciaal om browser-blokkades te voorkomen
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            const audioCtx = new AudioContext({ sampleRate: 16000 });
+            // 1. Get System Prompt from Backend
+            console.log("📥 Fetching System Prompt...");
+            const sessionData = await fetchSessionDetails();
+            const systemPrompt = sessionData.systemPrompt || "You are a helpful AI assistant.";
+            console.log("✅ System Prompt Received");
+
+            // 2. Setup Audio Context
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            const audioCtx = new AudioContextClass({ sampleRate: 16000 });
             audioContextRef.current = audioCtx;
+            console.log("🔊 AudioContext Created:", audioCtx.state);
 
-            // Probeer microfoon te pakken VOOR de async fetch
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
+            // 3. Connect to Gemini
+            const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+            if (!API_KEY) throw new Error("Google API Key missing in environment");
 
-            // STAP 2: NU PAS DATA OPHALEN
-            const systemPrompt = await fetchContext();
-
-            // Setup audio nodes
-            const source = audioCtx.createMediaStreamSource(stream);
-            const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-            processorRef.current = processor;
-            source.connect(processor);
-            processor.connect(audioCtx.destination);
-
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-            // STAP 3: GEMINI VERBINDING
-            const API_KEY = "AIzaSyCDfcaimT86z7ERhLwXwbDEptOFGjRSB0c";
+            // CHANGED: Use v1beta AND gemini-2.5-flash-native-audio-latest
             const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
+            console.log("🔗 Connecting to Gemini WebSocket (v1beta)...");
             const ws = new WebSocket(url);
             wsRef.current = ws;
 
-            ws.onopen = () => {
+            ws.onopen = async () => {
+                console.log("✅ Gemini WebSocket Connected");
                 setIsConnected(true);
-                ws.send(JSON.stringify({
-                    setup: {
-                        model: "models/gemini-2.0-flash",
-                        generation_config: {
-                            response_modalities: ["AUDIO"],
-                            speech_config: {
-                                voice_config: { prebuilt_voice_config: { voice_name: "Aoide" } }
-                            }
-                        },
-                        system_instruction: { parts: [{ text: systemPrompt }] }
-                    }
-                }));
+                setIsListening(true);
 
-                // Directe begroeting
-                ws.send(JSON.stringify({
-                    client_content: {
+                if (audioCtx.state === 'suspended') {
+                    console.log("🔊 Resuming Audio Context");
+                    await audioCtx.resume();
+                }
+
+                // Send Setup Message
+                const setupMsg = {
+                    setup: {
+                        model: "models/gemini-2.5-flash-native-audio-latest",
+                        generationConfig: {
+                            responseModalities: ["AUDIO"]
+                        }
+                    }
+                };
+                console.log("📤 Sending Setup:", setupMsg);
+                ws.send(JSON.stringify(setupMsg));
+
+                // Send Initial Prompt
+                const initMsg = {
+                    clientContent: {
                         turns: [{
                             role: "user",
-                            parts: [{ text: "Stel jezelf kort voor als de digitale makelaar van deze woning." }]
+                            parts: [{ text: systemPrompt + " Introduce yourself briefly." }]
                         }],
-                        turn_complete: true
+                        turnComplete: true
                     }
-                }));
+                };
+                console.log("📤 Sending Initial Prompt");
+                ws.send(JSON.stringify(initMsg));
+
+                // Setup Microphone
+                try {
+                    console.log("🎤 Requesting Microphone Access...");
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: true
+                        }
+                    });
+                    mediaStreamRef.current = stream;
+                    console.log("🎤 Microphone Active");
+
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    sourceRef.current = source;
+
+                    const processor = audioCtx.createScriptProcessor(512, 1, 1);
+                    processorRef.current = processor;
+
+                    processor.onaudioprocess = (e) => {
+                        const inputData = e.inputBuffer.getChannelData(0);
+
+                        const pcm16 = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            let s = Math.max(-1, Math.min(1, inputData[i]));
+                            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        let binary = '';
+                        const bytes = new Uint8Array(pcm16.buffer);
+                        for (let i = 0; i < bytes.byteLength; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        const b64 = window.btoa(binary);
+
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                realtimeInput: {
+                                    mediaChunks: [{
+                                        mimeType: "audio/pcm",
+                                        data: b64
+                                    }]
+                                }
+                            }));
+                        }
+                    };
+
+                    source.connect(processor);
+                    processor.connect(audioCtx.destination);
+
+                } catch (micErr) {
+                    console.error("Mic Error:", micErr);
+                    setError("Microfoon toegang geweigerd: " + micErr);
+                }
             };
 
             ws.onmessage = async (event) => {
-                const data = JSON.parse(event.data);
-                const audioPart = data.serverContent?.modelTurn?.parts?.[0]?.inlineData;
-                if (audioPart) {
-                    const audioData = Uint8Array.from(atob(audioPart.data), c => c.charCodeAt(0));
-                    const float32Data = new Float32Array(audioData.length / 2);
-                    const view = new DataView(audioData.buffer);
-                    for (let i = 0; i < float32Data.length; i++) {
-                        float32Data[i] = view.getInt16(i * 2, true) / 32768;
-                    }
-                    playOutputAudio(float32Data);
-                    setIsSpeaking(true);
+                let data;
+                if (event.data instanceof Blob) {
+                    data = JSON.parse(await event.data.text());
+                } else {
+                    data = JSON.parse(event.data);
                 }
-                if (data.serverContent?.turnComplete) setIsSpeaking(false);
+
+                if (data.serverContent) {
+                    if (data.serverContent.modelTurn) {
+                        const parts = data.serverContent.modelTurn.parts;
+                        for (const part of parts) {
+                            if (part.inlineData && part.inlineData.mimeType.startsWith('audio')) {
+                                console.log("🌊 Audio Chunk Received");
+                                handleAudioData(part.inlineData.data);
+                            }
+                        }
+                    }
+                    if (data.serverContent.turnComplete) {
+                        console.log("✅ Turn Complete");
+                    }
+                }
             };
 
             ws.onerror = (e) => {
-                console.error(e);
-                setError("AI Verbinding verbroken. Probeer het opnieuw.");
-                stopSession();
+                console.error("❌ Gemini Socket Error Details:", e);
+                setError("Verbinding verbroken (Check Console)");
             };
 
-            ws.onclose = () => {
-                setIsConnected(false);
-                stopSession();
-            };
-
-            processor.onaudioprocess = (e) => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    const inputData = e.inputBuffer.getChannelData(0);
-                    const pcm16 = new Int16Array(inputData.length);
-                    for (let i = 0; i < inputData.length; i++) {
-                        pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
-                    }
-                    const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
-                    ws.send(JSON.stringify({
-                        realtime_input: {
-                            media_chunks: [{
-                                mime_type: "audio/pcm",
-                                data: base64
-                            }]
-                        }
-                    }));
+            ws.onclose = (e) => {
+                console.log("Gemini Socket Closed:", e.code, e.reason);
+                if (e.code !== 1000) {
+                    setError(`Verbinding gesloten (${e.code}): ${e.reason || 'Check API Key/Model'}`);
                 }
+                stopSession();
             };
 
         } catch (err: any) {
-            console.error(err);
-            const msg = err.name === 'NotAllowedError'
-                ? "Microfoon toegang geweigerd. Klik op het slotje in de adresbalk om dit aan te passen."
-                : "Er is iets misgegaan: " + err.message;
-            alert(msg);
-            setError(msg);
+            console.error("Start Session Error:", err);
+            setError(err.message || "Kon geen verbinding maken");
             stopSession();
         }
     }, [propertyId, stopSession]);
-
-    const playOutputAudio = (data: Float32Array) => {
-        if (!audioContextRef.current) return;
-        const ctx = audioContextRef.current;
-        const buffer = ctx.createBuffer(1, data.length, 24000);
-        buffer.getChannelData(0).set(data);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        const startTime = Math.max(ctx.currentTime, nextPlayTime.current);
-        source.start(startTime);
-        nextPlayTime.current = startTime + buffer.duration;
-    };
 
     return {
         startSession,
