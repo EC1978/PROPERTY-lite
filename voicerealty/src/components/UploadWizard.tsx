@@ -155,7 +155,7 @@ export default function UploadWizard() {
             <main className="flex-1 px-6 pb-24 max-w-6xl mx-auto w-full flex flex-col justify-center">
                 {/* Header Section */}
                 <div className="mb-12 text-center md:text-left">
-                    <h2 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-gray-900 dark:text-white">B1.1 Woning Toevoegen</h2>
+                    <h2 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-gray-900 dark:text-white">Woning Toevoegen</h2>
                     <p className="text-emerald-600 dark:text-primary text-sm md:text-base font-medium opacity-80">PDF brochure upload of intelligent URL importer</p>
                 </div>
 
