@@ -80,7 +80,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
         const float32Data = audioQueueRef.current.shift()!;
         const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000); // Gemini sends 24kHz
-        buffer.copyToChannel(float32Data, 0);
+        buffer.copyToChannel(new Float32Array(float32Data.buffer as ArrayBuffer), 0);
 
         const source = audioContextRef.current.createBufferSource();
         source.buffer = buffer;
