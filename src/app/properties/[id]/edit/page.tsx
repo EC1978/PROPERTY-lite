@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { deleteProperty } from '../../actions'
 import PropertyEditForm from '@/components/PropertyEditForm'
 import { revalidatePath } from 'next/cache'
+import { getVoiceLibrary } from '@/lib/voice-library'
 
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -26,6 +27,16 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         redirect('/dashboard')
     }
 
+    // Fetch Colleagues / Active Voices
+    const { data: voices } = await supabase
+        .from('users')
+        .select('id, email, cloned_voice_id, full_name') // Added full_name if available
+        .not('cloned_voice_id', 'is', null)
+        .neq('id', user.id) // Exclude self from "colleagues" list to list separately
+
+    // Fetch My Library
+    const myVoices = await getVoiceLibrary(supabase, user.id)
+
     async function updateProperty(formData: FormData) {
         'use server'
         const supabase = await createClient()
@@ -38,6 +49,7 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         const video_url = formData.get('video_url') as string
         const floorplan_url = formData.get('floorplan_url') as string
         const tour_360_url = formData.get('tour_360_url') as string
+        const voice_id = formData.get('voice_id') as string
 
         const imagesRaw = formData.get('all_images') as string
         const images = imagesRaw ? JSON.parse(imagesRaw) : []
@@ -76,7 +88,8 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             tour_360_url,
             features,
             images,
-            custom_links
+            custom_links,
+            voice_id // Save the selected voice ID
         }).eq('id', id)
 
         revalidatePath(`/properties/${id}`)
@@ -84,37 +97,20 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
         redirect(`/properties/${id}/ready`)
     }
 
-    // Helper to safely get feature values
-    const getFeature = (key: string) => (property.features as any)?.[key] || ''
-
     async function deletePropertyAction() {
         'use server'
         await deleteProperty(id)
     }
 
     return (
-        <div className="min-h-screen bg-[#050606] text-white flex flex-col font-sans antialiased overflow-x-hidden">
-            {/* Background Orbs */}
-            <div className="fixed top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-[#10b77f]/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
-            <div className="fixed bottom-[-5%] left-[-5%] w-[30vw] h-[30vw] bg-[#10b77f]/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
-
-            <div className="relative z-10 max-w-4xl w-full mx-auto px-6 py-12">
-                {/* Header Section */}
-                <div className="mb-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="h-1 w-8 rounded-full bg-primary/40 shadow-[0_0_10px_rgba(16,183,127,0.3)]"></div>
-                        <span className="text-[10px] font-bold tracking-[0.3em] text-gray-500 uppercase">Review</span>
-                    </div>
-                    <h1 className="text-4xl font-bold tracking-tight mb-2">Controleer Gegevens</h1>
-                    <p className="text-gray-500 font-medium">De WEB AGENT heeft de volgende gegevens gevonden.</p>
-                </div>
-
-                <PropertyEditForm
-                    property={property}
-                    updateAction={updateProperty}
-                    deleteAction={deletePropertyAction}
-                />
-            </div>
-        </div>
+        // ... wrapper
+        <PropertyEditForm
+            property={property}
+            voices={voices || []}
+            myVoices={myVoices || []} // Pass library
+            updateAction={updateProperty}
+            deleteAction={deletePropertyAction}
+        />
+        // ...
     )
 }

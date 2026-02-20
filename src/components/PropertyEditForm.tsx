@@ -6,11 +6,13 @@ import ImageUpload from '@/components/ImageUpload'
 
 interface PropertyEditFormProps {
     property: any
+    voices: any[]
+    myVoices?: any[]
     updateAction: (formData: FormData) => Promise<void>
     deleteAction: () => Promise<void>
 }
 
-export default function PropertyEditForm({ property, updateAction, deleteAction }: PropertyEditFormProps) {
+export default function PropertyEditForm({ property, voices, myVoices = [], updateAction, deleteAction }: PropertyEditFormProps) {
     const [mainImageUrl, setMainImageUrl] = useState(property.image_url || '')
     const [images, setImages] = useState<string[]>(property.images || [])
     const [isDeleting, setIsDeleting] = useState(false)
@@ -110,6 +112,7 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
                                     name="address"
                                     defaultValue={property.address}
                                     className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white placeholder:text-gray-700 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300"
+                                    suppressHydrationWarning
                                 />
                             </div>
 
@@ -258,6 +261,56 @@ export default function PropertyEditForm({ property, updateAction, deleteAction 
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* AI Agent / Voice Selection */}
+                <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/5 bg-white/[0.02] backdrop-blur-xl group">
+                    <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
+                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                            <span className="material-symbols-outlined text-primary">graphic_eq</span>
+                        </div>
+                        <h2 className="text-xl font-bold">Kies AI Agent</h2>
+                    </div>
+
+                    <div className="group/input">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Selecteer Stem voor Presentatie</label>
+                        <div className="relative">
+                            <select
+                                name="voice_id"
+                                defaultValue={property.voice_id || ''}
+                                className="w-full px-6 py-4 rounded-2xl bg-[#0a0c0b]/60 border border-white/5 text-white appearance-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer"
+                                suppressHydrationWarning
+                            >
+                                <option value="" className="bg-[#050606] text-gray-400">Geen specifieke stem (Standaard)</option>
+
+                                {myVoices && myVoices.length > 0 && (
+                                    <optgroup label="Mijn Bibliotheek" className="bg-[#050606] text-gray-400 font-bold">
+                                        {myVoices.map((voice) => (
+                                            <option key={voice.id} value={voice.url} className="bg-[#050606] text-white font-normal">
+                                                {voice.name}
+                                                {voice.url === property.voice_id ? ' (Huidig)' : ''}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
+
+                                {voices && voices.length > 0 && (
+                                    <optgroup label="Collega's" className="bg-[#050606] text-gray-400 font-bold">
+                                        {voices.map((voice) => (
+                                            <option key={voice.id} value={voice.cloned_voice_id} className="bg-[#050606] text-white font-normal">
+                                                {voice.full_name || voice.email}
+                                                {voice.cloned_voice_id === property.voice_id ? ' (Huidig)' : ''}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                )}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-3 px-1">
+                            Kies welke AI-stem deze woning presenteert aan bezoekers. Je kunt kiezen uit je eigen stem of die van collega's.
+                        </p>
                     </div>
                 </div>
 

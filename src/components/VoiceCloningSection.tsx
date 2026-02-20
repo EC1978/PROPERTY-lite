@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import { getVoiceLibrary, saveVoiceToLibrary, deleteVoiceFromLibrary, VoiceEntry } from '@/lib/voice-library'
+import ImageUpload from './ImageUpload'
 
 interface VoiceCloningSectionProps {
     canClone: boolean;
@@ -14,13 +16,20 @@ type VibeType = 'professional' | 'enthusiastic' | 'calm'
 export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceCloningSectionProps) {
     const supabase = createClient()
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<'vibe' | 'clone'>('clone')
+
+    // Tabs: 'vibe' | 'library' | 'record'
+    const [activeTab, setActiveTab] = useState<'vibe' | 'library' | 'record'>('library')
 
     // Vibe State
     const [selectedVibe, setSelectedVibe] = useState<VibeType>('professional')
     const [isPlayingVibe, setIsPlayingVibe] = useState<VibeType | null>(null)
 
-    // Cloning State
+    // Library State
+    const [library, setLibrary] = useState<VoiceEntry[]>([])
+    const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
+    const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null)
+
+    // Recorder State
     const [currentStep, setCurrentStep] = useState(1) // 1: Record, 2: Script, 3: Training
     const [isRecording, setIsRecording] = useState(false)
     const [recordingDuration, setRecordingDuration] = useState(0)
@@ -30,8 +39,10 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
     const [isSaving, setIsSaving] = useState(false)
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
-    // Voices List (Mock + Current)
-    const [savedVoices, setSavedVoices] = useState<any[]>(currentVoiceId ? [{ id: currentVoiceId, name: 'Mijn Huidige Stem', status: 'ready', date: new Date().toLocaleDateString() }] : [])
+    // New Voice Metadata Inputs
+    const [voiceName, setVoiceName] = useState('')
+    const [voicePhotoBlob, setVoicePhotoBlob] = useState<Blob | null>(null)
+    const [voicePhotoPreview, setVoicePhotoPreview] = useState<string | null>(null)
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const chunksRef = useRef<Blob[]>([])
@@ -43,15 +54,28 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
         return () => {
             if (timerRef.current) clearInterval(timerRef.current)
             if (audioUrl) URL.revokeObjectURL(audioUrl)
+            if (voicePhotoPreview) URL.revokeObjectURL(voicePhotoPreview)
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
         }
     }, [])
 
-    // Update saved voices if prop changes
+    // Load Library on mount
     useEffect(() => {
-        if (currentVoiceId) {
-            setSavedVoices([{ id: currentVoiceId, name: 'Mijn Huidige Stem', status: 'ready', date: new Date().toLocaleDateString() }])
+        fetchLibrary()
+    }, [])
+
+    const fetchLibrary = async () => {
+        setIsLoadingLibrary(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            const voices = await getVoiceLibrary(supabase, user.id)
+            setLibrary(voices)
         }
-    }, [currentVoiceId])
+        setIsLoadingLibrary(false)
+    }
 
     const vibes = [
         {
@@ -83,7 +107,6 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             setIsPlayingVibe(null)
         } else {
             setIsPlayingVibe(vibeId)
-            // Simulate playing duration
             setTimeout(() => setIsPlayingVibe(null), 3000)
         }
     }
@@ -127,8 +150,6 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             setIsRecording(false)
             if (timerRef.current) clearInterval(timerRef.current)
             timerRef.current = null;
-
-            // Auto advance to next step after short delay
             setTimeout(() => setCurrentStep(2), 500)
         }
     }
@@ -136,8 +157,6 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
     const startTraining = () => {
         setCurrentStep(3)
         setTrainingProgress(0)
-
-        // Simulate training progress
         const interval = setInterval(() => {
             setTrainingProgress(prev => {
                 if (prev >= 100) {
@@ -166,53 +185,91 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
 
     const saveVoice = async () => {
         if (!recordedBlob) return
+        if (!voiceName.trim()) {
+            alert('Geef je stem een naam (bijv. "Mijn Zakelijke Stem")')
+            return
+        }
 
         setIsSaving(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error('Not authenticated')
 
-            const filename = `${user.id}/${Date.now()}.webm`
+            // Save to Library (JSON + Storage)
+            const newEntry = await saveVoiceToLibrary(supabase, user.id, recordedBlob, {
+                name: voiceName,
+                vibe: selectedVibe,
+                photoBlob: voicePhotoBlob
+            })
 
-            // 1. Upload to Storage
-            // Note: Error handling for missing bucket needs attention in real world, assuming 'voice-clones' exists
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('voice-clones')
-                .upload(filename, recordedBlob)
+            // Set as active voice (optional, but good UX to auto-activate new one)
+            await activateVoice(newEntry.url)
 
-            if (uploadError) {
-                // Fallback if bucket doesn't exist or permissions (for demo purposes)
-                console.error('Storage upload failed', uploadError)
-                // Proceed to simulate save for demo if upload fails? No, better alert user.
-                // throw uploadError
-            }
+            alert('Stem succesvol opgeslagen in je bibliotheek!')
 
-            // 2. Get Public URL (or use path)
-            const { data: { publicUrl } } = supabase.storage
-                .from('voice-clones')
-                .getPublicUrl(filename)
+            // Reset state
+            setRecordedBlob(null)
+            setVoiceName('')
+            setVoicePhotoBlob(null)
+            setVoicePhotoPreview(null)
+            setCurrentStep(1)
+            setActiveTab('library')
+            fetchLibrary() // Refresh list
 
-            // 3. Update User Profile
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ cloned_voice_id: publicUrl })
-                .eq('id', user.id)
-
-            if (updateError) throw updateError
-
-            // 4. Update UI
-            setSavedVoices([{ id: publicUrl, name: 'Mijn Nieuwe Stem', status: 'ready', date: new Date().toLocaleDateString() }])
-            alert('Stem succesvol opgeslagen!')
-            router.refresh()
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('Save error:', error)
-            // For demo purposes, we will simulate a "save" if backend fails so user sees UI update
-            // Remove this in production!!
-            setSavedVoices([{ id: 'simulated_id', name: 'Mijn Nieuwe Stem (Simulatie)', status: 'ready', date: new Date().toLocaleDateString() }])
-            alert('Stem opgeslagen (Simulatie - Check Backend)')
+            alert(`Fout bij opslaan: ${error.message || 'Onbekende fout'}`)
         } finally {
             setIsSaving(false)
+        }
+    }
+
+    const activateVoice = async (voiceUrl: string) => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { error } = await supabase
+            .from('users')
+            .update({ cloned_voice_id: voiceUrl })
+            .eq('id', user.id)
+
+        if (error) {
+            console.error('Error activating voice:', error)
+            alert('Kon stem niet activeren.')
+        } else {
+            router.refresh()
+        }
+    }
+
+    const deleteVoice = async (voiceId: string) => {
+        if (!confirm('Weet je zeker dat je deze stem wilt verwijderen?')) return
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        await deleteVoiceFromLibrary(supabase, user.id, voiceId)
+        fetchLibrary()
+    }
+
+    const playLibraryVoice = (url: string, id: string) => {
+        if (playingVoiceId === id) {
+            audioRef.current?.pause()
+            setPlayingVoiceId(null)
+        } else {
+            if (audioRef.current) audioRef.current.pause()
+            const audio = new Audio(url)
+            audioRef.current = audio
+            audio.onended = () => setPlayingVoiceId(null)
+            audio.play()
+            setPlayingVoiceId(id)
+        }
+    }
+
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0]
+            setVoicePhotoBlob(file)
+            setVoicePhotoPreview(URL.createObjectURL(file))
         }
     }
 
@@ -227,14 +284,10 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             <div className="relative overflow-hidden rounded-3xl bg-[#050505] border border-white/10 p-8 text-center">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 z-10" />
                 <div className="relative z-20 flex flex-col items-center">
-                    <div className="size-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                        <span className="material-symbols-outlined text-3xl text-gray-400">lock</span>
-                    </div>
+                    <span className="material-symbols-outlined text-3xl text-gray-400 mb-4">lock</span>
                     <h3 className="text-xl font-bold text-white mb-2">Upgrade naar Elite</h3>
-                    <p className="text-gray-400 mb-6 max-w-sm">Ontgrendel Voice Cloning en laat uw AI-agent spreken met uw eigen stem.</p>
-                    <a href="/pricing" className="bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold py-3 px-8 rounded-full transition-all">
-                        Bekijk Opties
-                    </a>
+                    <p className="text-gray-400 mb-6">Ontgrendel Voice Cloning.</p>
+                    <a href="/pricing" className="bg-[#0df2a2] text-black font-bold py-3 px-8 rounded-full">Bekijk Opties</a>
                 </div>
             </div>
         )
@@ -243,255 +296,226 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
     return (
         <div className="space-y-8 bg-[#050505] min-h-screen md:min-h-0 md:bg-transparent -m-6 md:m-0 p-6 md:p-0">
 
-            {/* Header / Nav for Sections */}
-            <div className="flex items-center justify-between">
-                <div className="flex gap-4 p-1 bg-white/5 rounded-full">
-                    <button
-                        onClick={() => setActiveTab('vibe')}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'vibe' ? 'bg-[#0df2a2] text-black' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        Vibe
+            {/* Navigation Tabs */}
+            <div className="flex items-center justify-between overflow-x-auto">
+                <div className="flex gap-2 p-1 bg-white/5 rounded-full">
+                    <button onClick={() => setActiveTab('library')} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeTab === 'library' ? 'bg-[#0df2a2] text-black' : 'text-gray-400 hover:text-white'}`}>
+                        Mijn Stemmen
                     </button>
-                    <button
-                        onClick={() => setActiveTab('clone')}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'clone' ? 'bg-[#0df2a2] text-black' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        Clone Setup
+                    <button onClick={() => setActiveTab('record')} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeTab === 'record' ? 'bg-[#0df2a2] text-black' : 'text-gray-400 hover:text-white'}`}>
+                        Nieuwe Stem
+                    </button>
+                    <button onClick={() => setActiveTab('vibe')} className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeTab === 'vibe' ? 'bg-[#0df2a2] text-black' : 'text-gray-400 hover:text-white'}`}>
+                        Vibe Info
                     </button>
                 </div>
             </div>
 
-            {activeTab === 'vibe' && (
+            {/* === LIBRARY TAB === */}
+            {activeTab === 'library' && (
                 <div className="space-y-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Kies de vibe van de AI</h2>
-                        <p className="text-gray-400">Bepaal hoe je AI-agent spreekt met potentiële kopers. De toon zet de eerste indruk van je makelaardij.</p>
-                    </div>
-
-                    <div className="space-y-4">
-                        {vibes.map((vibe) => (
-                            <div
-                                key={vibe.id}
-                                onClick={() => setSelectedVibe(vibe.id as VibeType)}
-                                className={`relative group p-6 rounded-3xl border transition-all cursor-pointer ${selectedVibe === vibe.id
-                                        ? 'bg-[#0df2a2]/5 border-[#0df2a2] shadow-[0_0_30px_rgba(13,242,162,0.1)]'
-                                        : 'bg-[#111] border-white/5 hover:border-white/10'
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`size-12 rounded-xl flex items-center justify-center ${selectedVibe === vibe.id ? 'bg-[#0df2a2] text-black' : 'bg-white/5 text-gray-400'}`}>
-                                            <span className="material-symbols-outlined text-2xl">{vibe.icon}</span>
-                                        </div>
-                                        <div>
-                                            <h3 className={`text-lg font-bold mb-1 ${selectedVibe === vibe.id ? 'text-[#0df2a2]' : 'text-white'}`}>
-                                                {vibe.label}
-                                                {selectedVibe === vibe.id && <span className="ml-3 text-[10px] bg-[#0df2a2]/20 text-[#0df2a2] px-2 py-0.5 rounded uppercase tracking-wider">Actief Profiel</span>}
-                                            </h3>
-
-                                            {/* Audio Visualizer Placeholder */}
-                                            <div className="flex items-center gap-1 h-6 mt-2">
-                                                <button
-                                                    onClick={(e) => handleVibePlay(vibe.id as VibeType, e)}
-                                                    className={`size-8 rounded-full flex items-center justify-center mr-2 transition-colors ${isPlayingVibe === vibe.id ? 'bg-[#0df2a2] text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                                                >
-                                                    <span className="material-symbols-outlined text-lg">{isPlayingVibe === vibe.id ? 'stop' : 'play_arrow'}</span>
-                                                </button>
-                                                {/* Bars */}
-                                                {[...Array(12)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`w-1 rounded-full transition-all duration-300 ${isPlayingVibe === vibe.id ? 'bg-[#0df2a2] animate-pulse' : 'bg-white/10'}`}
-                                                        style={{ height: isPlayingVibe === vibe.id ? `${Math.random() * 24 + 4}px` : '4px' }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${selectedVibe === vibe.id ? 'border-[#0df2a2] bg-[#0df2a2]' : 'border-gray-600'}`}>
-                                        {selectedVibe === vibe.id && <span className="material-symbols-outlined text-black text-sm font-bold">check</span>}
-                                    </div>
-                                </div>
-
-                                <p className="mt-4 text-gray-400 font-medium">{vibe.description}</p>
-                                {vibe.tags && (
-                                    <p className="mt-2 text-xs font-bold text-[#0df2a2]/70 uppercase tracking-wider">{vibe.tags}</p>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="fixed bottom-6 left-6 right-6 md:static md:w-full z-30">
-                        <button className="w-full bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition-all active:scale-95">
-                            <span className="material-symbols-outlined">save</span>
-                            Vibe Opslaan
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-white">Mijn Stemmen Bibliotheek</h2>
+                        <button onClick={fetchLibrary} className="size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-white">
+                            <span className="material-symbols-outlined">refresh</span>
                         </button>
                     </div>
+
+                    {isLoadingLibrary ? (
+                        <div className="text-center py-12 text-gray-500">Laden...</div>
+                    ) : library.length === 0 ? (
+                        <div className="text-center py-12 border border-white/5 rounded-3xl bg-white/[0.02]">
+                            <div className="size-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="material-symbols-outlined text-gray-500 text-3xl">graphic_eq</span>
+                            </div>
+                            <h3 className="text-white font-bold mb-2">Nog geen stemmen</h3>
+                            <p className="text-gray-500 text-sm mb-6">Maak je eerste AI-kloon aan om te beginnen.</p>
+                            <button onClick={() => setActiveTab('record')} className="text-[#0df2a2] font-bold text-sm hover:underline">
+                                Start Opname
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {library.map((voice) => {
+                                const isActive = currentVoiceId === voice.url
+                                return (
+                                    <div key={voice.id} className={`group bg-[#111] border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${isActive ? 'border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                                            {/* Photo or Placeholder */}
+                                            <div className="size-14 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 relative">
+                                                {voice.photoUrl ? (
+                                                    <img src={voice.photoUrl} alt={voice.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                                        <span className="material-symbols-outlined">person</span>
+                                                    </div>
+                                                )}
+                                                {/* Play Overlay */}
+                                                <button
+                                                    onClick={() => playLibraryVoice(voice.url, voice.id)}
+                                                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <span className="material-symbols-outlined text-white">{playingVoiceId === voice.id ? 'pause' : 'play_arrow'}</span>
+                                                </button>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-white font-bold text-lg leading-tight">{voice.name}</h4>
+                                                <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                                    {new Date(voice.createdAt).toLocaleDateString()}
+                                                    {voice.vibe && <span className="bg-white/10 px-1.5 rounded text-[9px] uppercase">{voice.vibe}</span>}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                            {isActive ? (
+                                                <div className="flex-1 sm:flex-none bg-[#0df2a2]/10 text-[#0df2a2] px-4 py-2 rounded-xl text-xs font-bold text-center border border-[#0df2a2]/20">
+                                                    ACTIEF
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => activateVoice(voice.url)}
+                                                    className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors border border-white/10"
+                                                >
+                                                    Activeer
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => deleteVoice(voice.id)}
+                                                className="size-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20"
+                                                title="Verwijderen"
+                                            >
+                                                <span className="material-symbols-outlined text-lg">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {activeTab === 'clone' && (
+            {/* === RECORD TAB === */}
+            {activeTab === 'record' && (
                 <div className="space-y-6 pb-24 md:pb-0">
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <button onClick={() => setActiveTab('vibe')} className="md:hidden text-gray-400">
-                                <span className="material-symbols-outlined">arrow_back</span>
-                            </button>
-                            <span className="text-xs font-bold text-[#0df2a2] bg-[#0df2a2]/10 px-2 py-1 rounded border border-[#0df2a2]/20">ELITE</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Configureer uw Digitale Tweeling</h2>
-                        <p className="text-gray-400">Voltooi de volgende stappen om uw AI-stem te trainen voor premium vastgoedpresentaties.</p>
+                        <h2 className="text-2xl font-bold text-white mb-2">Nieuwe Stem Opnemen</h2>
+                        <p className="text-gray-400">Volg de stappen om een nieuwe stem toe te voegen aan je bibliotheek.</p>
                     </div>
 
-                    {/* --- My Voices List Section --- */}
-                    {savedVoices.length > 0 && (
-                        <div className="mb-8">
-                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[#0df2a2]">mic</span>
-                                Mijn Stemmen
-                            </h3>
-                            <div className="grid gap-4">
-                                {savedVoices.map((voice, idx) => (
-                                    <div key={idx} className="bg-[#111] border border-white/10 rounded-2xl p-4 flex items-center justify-between group hover:border-[#0df2a2]/50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="size-10 rounded-full bg-[#0df2a2]/10 flex items-center justify-center text-[#0df2a2]">
-                                                <span className="material-symbols-outlined">graphic_eq</span>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-white font-bold">{voice.name || 'Naamloze Stem'}</h4>
-                                                <p className="text-xs text-gray-400">Actief sinds {voice.date}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-[#0df2a2] bg-[#0df2a2]/10 px-2 py-1 rounded">ACTIEF</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STEPS PREVIEW (Simplified) */}
+                    {/* Progress Bar */}
                     <div className="flex gap-2">
                         {[1, 2, 3].map(step => (
                             <div key={step} className={`h-1 flex-1 rounded-full transition-colors ${step <= currentStep ? 'bg-[#0df2a2]' : 'bg-white/10'}`} />
                         ))}
                     </div>
 
-                    {/* STEP 1: RECORD */}
-                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-[#111] border-[#0df2a2] relative z-20' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                    {/* Step 1: Record */}
+                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 01 — Opname</h3>
-                            {recordedBlob && <span className="text-emerald-500 material-symbols-outlined">check_circle</span>}
+                        </div>
+                        <div className="flex flex-col items-center justify-center py-4">
+                            <div className="relative mb-6 cursor-pointer" onClick={isRecording ? stopRecording : startRecording}>
+                                <div className={`size-24 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black border-2 border-white/10 hover:border-[#0df2a2]'}`}>
+                                    <span className="material-symbols-outlined text-4xl text-white">{isRecording ? 'stop' : 'mic'}</span>
+                                </div>
+                            </div>
+                            <h4 className="text-xl font-bold text-white mb-1">{isRecording ? formatTime(recordingDuration) : 'Start Opname'}</h4>
+                            <p className="text-gray-500 text-sm">Lees de tekst hieronder hardop voor.</p>
+                        </div>
+                    </div>
+
+                    {/* Step 2: Confirmation / Name / Photo */}
+                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 2 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 02 — Details</h3>
                         </div>
 
-                        <div className="flex flex-col items-center justify-center py-8">
-                            <div className={`relative mb-6 group ${currentStep === 1 ? 'cursor-pointer' : ''}`} onClick={currentStep === 1 ? (isRecording ? stopRecording : startRecording) : undefined}>
-                                {isRecording && (
-                                    <>
-                                        <div className="absolute inset-0 bg-[#0df2a2] rounded-full animate-ping opacity-20" />
-                                        <div className="absolute -inset-4 bg-[#0df2a2] rounded-full animate-pulse opacity-10" />
-                                    </>
-                                )}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Naam van de stem</label>
+                                <input
+                                    type="text"
+                                    value={voiceName}
+                                    onChange={(e) => setVoiceName(e.target.value)}
+                                    placeholder="Bijv. Zakelijk, Enthousiast, Engels..."
+                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#0df2a2]"
+                                />
+                            </div>
 
-                                <div className={`size-24 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black border-2 border-white/10 group-hover:border-[#0df2a2]'}`}>
-                                    <span className={`material-symbols-outlined text-4xl ${isRecording ? 'text-white' : 'text-[#0df2a2]'}`}>
-                                        {isRecording ? 'stop' : 'mic'}
-                                    </span>
+                            <div>
+                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Foto (Optioneel)</label>
+                                <div className="flex items-center gap-4">
+                                    <label className="size-16 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center cursor-pointer hover:border-[#0df2a2] overflow-hidden">
+                                        {voicePhotoPreview ? (
+                                            <img src={voicePhotoPreview} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-gray-500">add_photo_alternate</span>
+                                        )}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+                                    </label>
+                                    <p className="text-xs text-gray-500">Voeg een foto toe om deze stem herkenbaar te maken.</p>
                                 </div>
                             </div>
 
-                            <h4 className="text-xl font-bold text-white mb-2">{isRecording ? 'Opname Bezig...' : (recordedBlob ? 'Opname Voltooid' : 'Stem Opname')}</h4>
-                            <p className="text-gray-500 text-sm mb-6">{isRecording ? formatTime(recordingDuration) : 'Zoek een stille ruimte voor de beste kwaliteit.'}</p>
-
-                            {currentStep === 1 && (
-                                <button
-                                    onClick={isRecording ? stopRecording : startRecording}
-                                    className={`px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-[#0df2a2] hover:bg-emerald-400 text-black'}`}
-                                >
-                                    <span className="material-symbols-outlined">{isRecording ? 'stop_circle' : 'fiber_manual_record'}</span>
-                                    {isRecording ? 'Stop Opname' : 'Start Opname'}
+                            {currentStep === 2 && (
+                                <button onClick={() => setCurrentStep(3)} className="w-full bg-[#0df2a2] text-black font-bold py-3 rounded-xl mt-4">
+                                    Verder naar Training
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* STEP 2: SCRIPT */}
-                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 2 ? 'bg-[#111] border-[#0df2a2] relative z-20' : 'bg-[#050505] border-white/5 opacity-50'}`}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 02 — Script</h3>
-                            <span className="material-symbols-outlined text-gray-600">description</span>
-                        </div>
+                    {/* Step 3: Training & Save */}
+                    {currentStep >= 3 && (
+                        <div className={`p-6 rounded-3xl border transition-all ${currentStep === 3 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 03 — Finaliseren</h3>
+                            </div>
 
-                        <div className="bg-white/5 rounded-xl p-6 font-serif text-lg leading-relaxed text-gray-300">
-                            "Welkom bij dit exclusieve object. Mijn naam is uw <span className="text-[#0df2a2]">VoiceRealty</span> AI-partner. Ik ben geoptimaliseerd om uw cliënten een gepersonaliseerde ervaring te bieden die exact klinkt zoals u."
-                        </div>
-                        <p className="text-gray-600 text-xs italic mt-4 text-center">Lees deze tekst hardop voor tijdens de opname.</p>
+                            {trainingProgress < 100 && (
+                                <div className="bg-white/5 h-2 rounded-full overflow-hidden mb-4">
+                                    {/* Auto-start training when step 3 is reached could be done in useEffect, but for now manual trigger via button above works or auto-start */}
+                                    {/* We'll just simulate "Done" state for simplicity if user clicks "Save" */}
+                                </div>
+                            )}
 
-                        {currentStep === 2 && (
-                            <div className="mt-6 flex justify-center">
-                                <button onClick={() => startTraining()} className="text-[#0df2a2] hover:text-white font-bold flex items-center gap-2">
-                                    Bevestig Opname & Trainen <span className="material-symbols-outlined">arrow_forward</span>
+                            <div className="flex gap-2">
+                                <button onClick={playRecording} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2">
+                                    <span className="material-symbols-outlined">{isPlayingRecording ? 'pause' : 'play_arrow'}</span>
+                                    Luister
+                                </button>
+                                <button onClick={saveVoice} disabled={isSaving} className="flex-1 bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold py-3 rounded-xl flex justify-center items-center gap-2">
+                                    {isSaving ? 'Opslaan...' : 'Opslaan & Activeer'}
                                 </button>
                             </div>
-                        )}
-                    </div>
-
-                    {/* STEP 3: TRAINING */}
-                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 3 ? 'bg-[#111] border-[#0df2a2] relative z-20' : 'bg-[#050505] border-white/5 opacity-50'}`}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 03 — AI Training</h3>
-                            {trainingProgress === 100 ? (
-                                <span className="bg-[#0df2a2] text-black text-[10px] font-bold px-2 py-0.5 rounded">VOLTOOID</span>
-                            ) : (
-                                <span className="bg-white/10 text-white text-[10px] font-bold px-2 py-0.5 rounded">IN WACHTRIJ</span>
-                            )}
-                        </div>
-
-                        <div className="relative pt-4 pb-2">
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-[#0df2a2] transition-all duration-300" style={{ width: `${trainingProgress}%` }} />
-                            </div>
-                            <div className="flex justify-between mt-2 text-xs font-mono text-gray-500">
-                                <span>Status: {trainingProgress === 0 ? 'Wachten...' : (trainingProgress < 100 ? 'Initialiseren...' : 'Gereed')}</span>
-                                <span>{trainingProgress}%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {trainingProgress === 100 && (
-                        <div className="pt-4 flex flex-col gap-4">
-                            <button
-                                onClick={playRecording}
-                                className={`w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all ${isPlayingRecording ? 'border-[#0df2a2] text-[#0df2a2]' : ''}`}
-                            >
-                                <span className="material-symbols-outlined text-[#0df2a2]">{isPlayingRecording ? 'pause_circle' : 'play_circle'}</span>
-                                {isPlayingRecording ? 'Aan het afspelen...' : 'Test Mijn AI Stem'}
-                            </button>
-
-                            <button
-                                onClick={saveVoice}
-                                disabled={isSaving}
-                                className="w-full bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <span className="material-symbols-outlined animate-spin">refresh</span>
-                                        Opslaan...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="material-symbols-outlined">save</span>
-                                        Activeer Stem
-                                    </>
-                                )}
-                            </button>
                         </div>
                     )}
-
                 </div>
             )}
+
+            {/* === VIBE TAB === */}
+            {activeTab === 'vibe' && (
+                <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">Vibe Informatie</h2>
+                    <div className="space-y-4">
+                        {vibes.map((vibe) => (
+                            <div key={vibe.id} className="bg-[#111] border border-white/10 rounded-2xl p-6">
+                                <div className="flex items-center gap-4 mb-2">
+                                    <span className="material-symbols-outlined text-[#0df2a2] text-2xl">{vibe.icon}</span>
+                                    <h3 className="text-white font-bold text-lg">{vibe.label}</h3>
+                                </div>
+                                <p className="text-gray-400">{vibe.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }
