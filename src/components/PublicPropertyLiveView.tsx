@@ -136,9 +136,9 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                             )}
                         </div>
 
-                        {/* Thumbnails — wrap, no scrollbar */}
+                        {/* Thumbnails — grid on mobile, flex on desktop */}
                         {allImages.length > 1 && (
-                            <div className="flex flex-wrap gap-2 mt-4">
+                            <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mt-4">
                                 {allImages.map((img, i) => (
                                     <button
                                         key={i}
@@ -300,8 +300,8 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                                     isEnergy: key === 'energy',
                                 })),
                             ].filter(r => r.value).map((row, i) => (
-                                <div key={i} className="grid grid-cols-2 px-6 py-3.5 hover:bg-white/[0.02] transition-colors">
-                                    <span className="text-sm text-gray-500 font-medium">{row.label}</span>
+                                <div key={i} className="flex flex-col sm:grid sm:grid-cols-2 px-6 py-5 gap-1 sm:gap-0 hover:bg-white/[0.02] transition-colors">
+                                    <span className="text-xs sm:text-sm text-gray-500 font-bold sm:font-medium uppercase sm:normal-case tracking-wider sm:tracking-normal">{row.label}</span>
                                     <span className="text-sm text-white font-semibold">
                                         {(row as any).isEnergy ? (
                                             <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-2 py-0.5 rounded-lg text-xs font-bold">

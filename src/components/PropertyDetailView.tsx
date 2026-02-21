@@ -339,15 +339,15 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
         <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans">
             <Sidebar userEmail={userEmail} />
 
-            {/* Mobile header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 px-4 py-4 flex items-center justify-between">
+            {/* Mobile header - Visible only on mobile */}
+            <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 px-4 py-4 flex items-center justify-between">
                 <Link href="/properties" className="flex items-center gap-2 text-sm font-bold text-gray-400">
                     <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                     Woningen
                 </Link>
                 <button
                     onClick={() => setIsEditMode(!isEditMode)}
-                    className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl transition-all ${isEditMode ? 'bg-white text-black' : 'bg-[#0df2a2] text-black'}`}
+                    className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl transition-all ${isEditMode ? 'bg-[#0df2a2] text-black ring-4 ring-[#0df2a2]/20' : 'bg-white/5 text-white border border-white/10'}`}
                 >
                     <span className="material-symbols-outlined text-[18px]">{isEditMode ? 'check' : 'edit'}</span>
                     {isEditMode ? 'Klaar' : 'Bewerken'}
@@ -356,8 +356,8 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
 
             <main className="flex-1 md:ml-72 pt-20 md:pt-0">
 
-                {/* ── TOP HEADER BAR ── */}
-                <div className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-white/5 bg-[#0a0a0a]">
+                {/* ── TOP HEADER BAR ── hidden on mobile to avoid duplication */}
+                <div className="hidden md:flex items-center justify-between px-6 md:px-8 py-4 border-b border-white/5 bg-[#0a0a0a]">
                     <Link href="/properties" className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">
                         <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                         <span className="hidden sm:inline">Alle Woningen</span>
@@ -441,8 +441,8 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                 )}
                             </div>
 
-                            {/* Thumbnails — wrap row, no scrollbar */}
-                            <div className="flex flex-wrap gap-2 mt-4">
+                            {/* Thumbnails — better distribution on mobile */}
+                            <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 mt-4">
                                 {allImages.map((img, i) => (
                                     <div key={i} className="relative group/thumb">
                                         <button
@@ -737,10 +737,10 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                     </div>
                                                 ) : (
                                                     <div
-                                                        className={`grid grid-cols-2 px-6 py-3.5 ${isEditMode ? 'cursor-pointer bg-[#0df2a2]/5' : ''}`}
+                                                        className={`flex flex-col sm:grid sm:grid-cols-2 px-6 py-5 gap-1 sm:gap-0 ${isEditMode ? 'cursor-pointer bg-[#0df2a2]/5' : ''}`}
                                                         onClick={() => isEditMode && startEditing(row.key, row.type === 'number' ? property[row.key] : row.value)}
                                                     >
-                                                        <span className="text-sm text-gray-500 font-medium">{row.label}</span>
+                                                        <span className="text-xs sm:text-sm text-gray-500 font-bold sm:font-medium uppercase sm:normal-case tracking-wider sm:tracking-normal">{row.label}</span>
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-sm text-white font-semibold">
                                                                 {row.isEnergy ? (
