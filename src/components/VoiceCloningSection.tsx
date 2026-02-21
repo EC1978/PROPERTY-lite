@@ -339,15 +339,15 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                             {library.map((voice) => {
                                 const isActive = currentVoiceId === voice.url
                                 return (
-                                    <div key={voice.id} className={`group bg-[#111] border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${isActive ? 'border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                                    <div key={voice.id} className={`group bg-[#111] border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all ${isActive ? 'border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
                                         <div className="flex items-center gap-4 w-full sm:w-auto">
                                             {/* Photo or Placeholder */}
-                                            <div className="size-14 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 relative">
+                                            <div className="size-12 md:size-14 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 relative">
                                                 {voice.photoUrl ? (
                                                     <img src={voice.photoUrl} alt={voice.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                                        <span className="material-symbols-outlined">person</span>
+                                                        <span className="material-symbols-outlined text-xl">person</span>
                                                     </div>
                                                 )}
                                                 {/* Play Overlay */}
@@ -359,32 +359,32 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                                                 </button>
                                             </div>
 
-                                            <div>
-                                                <h4 className="text-white font-bold text-lg leading-tight">{voice.name}</h4>
-                                                <p className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                            <div className="min-w-0">
+                                                <h4 className="text-white font-bold text-base md:text-lg leading-tight truncate">{voice.name}</h4>
+                                                <p className="text-[10px] text-gray-500 flex items-center gap-2 mt-1">
                                                     {new Date(voice.createdAt).toLocaleDateString()}
-                                                    {voice.vibe && <span className="bg-white/10 px-1.5 rounded text-[9px] uppercase">{voice.vibe}</span>}
+                                                    {voice.vibe && <span className="bg-white/10 px-1.5 rounded text-[8px] uppercase tracking-wider">{voice.vibe}</span>}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
                                             {isActive ? (
-                                                <div className="flex-1 sm:flex-none bg-[#0df2a2]/10 text-[#0df2a2] px-4 py-2 rounded-xl text-xs font-bold text-center border border-[#0df2a2]/20">
+                                                <div className="flex-1 sm:flex-none bg-[#0df2a2]/10 text-[#0df2a2] px-4 py-2 rounded-xl text-[10px] font-black tracking-widest text-center border border-[#0df2a2]/20">
                                                     ACTIEF
                                                 </div>
                                             ) : (
                                                 <button
                                                     onClick={() => activateVoice(voice.url)}
-                                                    className="flex-1 sm:flex-none bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors border border-white/10"
+                                                    className="flex-1 sm:flex-none bg-white/10 hover:bg-[#0df2a2] hover:text-black text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all border border-white/10"
                                                 >
-                                                    Activeer
+                                                    ACTIVEREN
                                                 </button>
                                             )}
 
                                             <button
                                                 onClick={() => deleteVoice(voice.id)}
-                                                className="size-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20"
+                                                className="size-9 md:size-10 rounded-xl flex items-center justify-center text-gray-500 hover:bg-red-500/10 hover:text-red-500 transition-colors border border-white/5"
                                                 title="Verwijderen"
                                             >
                                                 <span className="material-symbols-outlined text-lg">delete</span>
@@ -414,18 +414,21 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                     </div>
 
                     {/* Step 1: Record */}
-                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                    <div className={`p-4 md:p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 01 — Opname</h3>
+                            <h3 className="text-[10px] font-black text-[#0df2a2] uppercase tracking-widest">Stap 01 — Opname</h3>
                         </div>
                         <div className="flex flex-col items-center justify-center py-4">
                             <div className="relative mb-6 cursor-pointer" onClick={isRecording ? stopRecording : startRecording}>
-                                <div className={`size-24 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black border-2 border-white/10 hover:border-[#0df2a2]'}`}>
-                                    <span className="material-symbols-outlined text-4xl text-white">{isRecording ? 'stop' : 'mic'}</span>
+                                <div className={`size-20 md:size-24 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110 shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-black border-2 border-white/10 hover:border-[#0df2a2]'}`}>
+                                    <span className="material-symbols-outlined text-3xl md:text-4xl text-white">{isRecording ? 'stop' : 'mic'}</span>
                                 </div>
+                                {isRecording && (
+                                    <div className="absolute -inset-2 rounded-full border-2 border-red-500 animate-ping opacity-20" />
+                                )}
                             </div>
-                            <h4 className="text-xl font-bold text-white mb-1">{isRecording ? formatTime(recordingDuration) : 'Start Opname'}</h4>
-                            <p className="text-gray-500 text-sm">Lees de tekst hieronder hardop voor.</p>
+                            <h4 className="text-lg md:text-xl font-bold text-white mb-1 tracking-tight">{isRecording ? formatTime(recordingDuration) : 'Tik om te Starten'}</h4>
+                            <p className="text-gray-500 text-xs text-center max-w-[200px] leading-relaxed">Lees de tekst hieronder hardop voor na het starten.</p>
                         </div>
                     </div>
 

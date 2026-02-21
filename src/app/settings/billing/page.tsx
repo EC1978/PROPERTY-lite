@@ -56,36 +56,60 @@ export default async function BillingSettingsPage() {
             <div>
                 <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Recente Facturen</h4>
                 <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400">
-                            <tr>
-                                <th className="px-6 py-3 font-medium">Factuur #</th>
-                                <th className="px-6 py-3 font-medium">Datum</th>
-                                <th className="px-6 py-3 font-medium">Bedrag</th>
-                                <th className="px-6 py-3 font-medium text-right">Status</th>
-                                <th className="px-6 py-3 font-medium text-right">Download</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                            {invoices.map((invoice) => (
-                                <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{invoice.id}</td>
-                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{invoice.date}</td>
-                                    <td className="px-6 py-4 text-gray-900 dark:text-white">{invoice.amount}</td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="bg-emerald-500/10 text-emerald-500 text-xs font-bold px-2 py-1 rounded-full">
-                                            {invoice.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                                            <span className="material-symbols-outlined text-[20px]">download</span>
-                                        </button>
-                                    </td>
+                    {/* Desktop View */}
+                    <div className="hidden md:block">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400">
+                                <tr>
+                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Factuur #</th>
+                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Datum</th>
+                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Bedrag</th>
+                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Status</th>
+                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Download</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                {invoices.map((invoice) => (
+                                    <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{invoice.id}</td>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{invoice.date}</td>
+                                        <td className="px-6 py-4 text-gray-900 dark:text-white font-bold">{invoice.amount}</td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                                {invoice.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                                <span className="material-symbols-outlined text-[20px]">download</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+                        {invoices.map((invoice) => (
+                            <div key={invoice.id} className="p-5 flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white">{invoice.id}</h4>
+                                    <p className="text-xs text-gray-500 mt-0.5">{invoice.date}</p>
+                                    <div className="mt-2 text-sm font-bold text-gray-900 dark:text-white">{invoice.amount}</div>
+                                </div>
+                                <div className="flex flex-col items-end gap-3">
+                                    <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                                        {invoice.status}
+                                    </span>
+                                    <button className="size-10 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-400 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">download</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
