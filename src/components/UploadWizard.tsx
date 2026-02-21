@@ -54,8 +54,8 @@ export default function UploadWizard() {
             return
         }
 
-        // Redirect to edit page for verification as requested
-        router.push(`/properties/${property.id}/edit`)
+        // Redirect to detail page (which now has inline editing)
+        router.push(`/properties/${property.id}`)
     }
 
     const processFile = async (file: File) => {

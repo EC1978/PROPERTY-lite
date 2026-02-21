@@ -23,6 +23,7 @@ export default async function DashboardPage() {
         .from('properties')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(3) // Only show recent 3
 

@@ -56,7 +56,7 @@ export default function Hero({ backgroundImage }: HeroProps) {
                 </div>
             </div>
             <div className="relative z-10">
-                <Link href="/register" className="w-full flex items-center justify-center gap-2 bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] font-bold h-12 rounded-xl transition-all active:scale-[0.98]">
+                <Link href="/woning/123" className="w-full flex items-center justify-center gap-2 bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] font-bold h-12 rounded-xl transition-all active:scale-[0.98]">
                     <span>Probeer Demo</span>
                     <span className="material-symbols-outlined text-lg font-bold">arrow_forward</span>
                 </Link>

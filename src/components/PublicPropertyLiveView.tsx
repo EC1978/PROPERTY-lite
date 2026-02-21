@@ -1,449 +1,409 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useVoiceAgent } from '@/hooks/useVoiceAgent'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface PublicPropertyLiveViewProps {
-    property: any
+    property: Record<string, any>
     isAdmin?: boolean
 }
 
 export default function PublicPropertyLiveView({ property, isAdmin = false }: PublicPropertyLiveViewProps) {
     const { startSession, stopSession, isConnected, isListening, isSpeaking, error } = useVoiceAgent({ propertyId: property.id })
-    const [activeMedia, setActiveMedia] = useState(property.image_url)
+
+    const allImages: string[] = property.images?.length
+        ? property.images
+        : property.image_url
+            ? [property.image_url]
+            : []
+
+    const [activeIndex, setActiveIndex] = useState(0)
     const [showQRModal, setShowQRModal] = useState(false)
     const [showGallery, setShowGallery] = useState(false)
-    const [mediaModal, setMediaModal] = useState<{ url: string, title: string } | null>(null)
+    const [mediaModal, setMediaModal] = useState<{ url: string; title: string } | null>(null)
     const qrRef = useRef<HTMLDivElement>(null)
 
     const featureLabels: Record<string, string> = {
         constructionYear: 'Bouwjaar',
         type: 'Woningtype',
         layout: 'Indeling',
-        energy: 'Energie-label',
+        energy: 'Energielabel',
         maintenance: 'Onderhoud',
-        surroundings: 'Omgeving'
+        surroundings: 'Omgeving',
     }
 
+    const features = property.features || {}
+
+    // Stat cards for top (short values only)
+    const statCards = [
+        property.surface_area && { label: 'Woonoppervlak', value: `${property.surface_area} m²` },
+        property.bedrooms && { label: 'Slaapkamers', value: property.bedrooms },
+        property.bathrooms && { label: 'Badkamers', value: property.bathrooms },
+        features.energy && { label: 'Energielabel', value: features.energy.length <= 6 ? features.energy : features.energy.charAt(0) },
+        features.constructionYear && { label: 'Bouwjaar', value: features.constructionYear },
+        features.type && { label: 'Woningtype', value: features.type },
+    ].filter(Boolean) as { label: string; value: string | number }[]
+
+    const mediaLinks = [
+        { icon: 'smart_display', label: 'Video', value: property.video_url },
+        { icon: 'architecture', label: 'Plattegrond', value: property.floorplan_url },
+        { icon: 'view_in_ar', label: '360° Tour', value: property.tour_360_url },
+        ...(property.custom_links || []).map((l: any) => ({ icon: 'link', label: l.label, value: l.url })),
+    ].filter(m => m.value)
+
     const getEmbedUrl = (url: string) => {
-        if (!url) return url;
-        const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/);
-        if (ytMatch && ytMatch[1]) {
-            return `https://www.youtube.com/embed/${ytMatch[1].split('&')[0]}`;
-        }
-        const vimeoMatch = url.match(/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(.+)/);
-        if (vimeoMatch && vimeoMatch[1]) {
-            return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-        }
-        return url;
+        if (!url) return url
+        const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/)
+        if (ytMatch?.[1]) return `https://www.youtube.com/embed/${ytMatch[1].split('&')[0]}`
+        const vimeoMatch = url.match(/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(.+)/)
+        if (vimeoMatch?.[1]) return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+        return url
     }
 
     const isBlockedDomain = (url: string) => {
-        if (!url) return false;
-        const normalized = url.toLowerCase();
-        const blocked = [
-            'funda.nl', 'fundainbusiness.nl', 'funda.io', 'jaap.nl', 'huislijn.nl', 'pararius.nl',
-            'facebook.com', 'google.com', 'linkedin.com', 'instagram.com',
-            'youtube.com/watch', 'vimeo.com/'
-        ];
-        return blocked.some(domain => normalized.includes(domain));
+        if (!url) return false
+        const blocked = ['funda.nl', 'jaap.nl', 'huislijn.nl', 'pararius.nl', 'facebook.com', 'google.com', 'linkedin.com', 'instagram.com']
+        return blocked.some(d => url.toLowerCase().includes(d))
     }
 
-    const getFeature = (key: string) => (property.features as any)?.[key] || '-'
+    const isVoiceActive = isConnected || isListening || isSpeaking
+    const addressParts = property.address?.split(',') || []
+    const streetName = addressParts[0]?.trim() || property.address
 
     return (
-        <div className="min-h-screen bg-[#F8F9FB] dark:bg-[#050606] text-slate-900 dark:text-white font-sans selection:bg-[#10b77f]/30 transition-colors duration-300">
+        <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-[#0df2a2]/20">
 
-            {/* ═══════════════════════════════════════════════
-                HEADER
-            ═══════════════════════════════════════════════ */}
-            <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-white/5 sticky top-0 z-50 bg-white/80 dark:bg-[#050606]/80 backdrop-blur-md transition-colors duration-300">
+            {/* ── HEADER ── */}
+            <header className="flex items-center justify-between px-6 md:px-10 py-5 border-b border-white/5">
                 <div className="flex items-center gap-2">
-                    <div className="size-8 rounded-full bg-[#10b77f] flex items-center justify-center">
+                    <div className="size-8 rounded-full bg-[#0df2a2] flex items-center justify-center">
                         <span className="material-symbols-outlined text-black text-lg">graphic_eq</span>
                     </div>
-                    <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">VOICEREALTY<span className="text-[#10b77f]">AI</span></span>
+                    <span className="font-bold text-lg tracking-tight">
+                        VOICEREALTY<span className="text-[#0df2a2]">AI</span>
+                    </span>
                 </div>
-
                 {isAdmin && (
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <Link href="/dashboard" className="px-3 sm:px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                            <span className="hidden sm:inline">Dashboard</span>
+                    <div className="flex items-center gap-3">
+                        <Link href={`/properties/${property.id}`} className="px-4 py-2 rounded-xl bg-[#0df2a2] text-black font-bold text-sm hover:bg-emerald-400 transition-colors flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                            <span className="hidden sm:inline">Woning Bewerken</span>
                         </Link>
-                        <button
-                            onClick={() => setShowQRModal(true)}
-                            className="px-3 sm:px-4 py-2 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-2"
-                        >
+                        <button onClick={() => setShowQRModal(true)} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold text-gray-400 hover:text-white flex items-center gap-2">
                             <span className="material-symbols-outlined text-[18px]">qr_code_2</span>
                             <span className="hidden sm:inline">QR Code</span>
                         </button>
-                        <Link href={`/properties/${property.id}/edit`} className="px-3 sm:px-4 py-2 rounded-xl bg-[#10b77f] text-black font-bold text-sm hover:bg-[#0ea371] transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(16,183,127,0.2)]">
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
-                            <span className="hidden sm:inline">Bewerken</span>
-                        </Link>
                     </div>
                 )}
             </header>
 
-            <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+            {/* ── MAIN HERO: TWO-COLUMN ── */}
+            <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
 
-                {/* ═══════════════════════════════════════════════
-                    1. VOICE AGENT — TOP HERO CARD
-                ═══════════════════════════════════════════════ */}
-                <section className="relative bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 rounded-[2rem] p-6 sm:p-8 overflow-hidden shadow-xl dark:shadow-none">
-                    {/* Subtle glow behind */}
-                    <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#10b77f]/10 rounded-full blur-[100px] pointer-events-none" />
-
-                    {/* Property address + price */}
-                    <div className="relative mb-6">
-                        <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-1 text-slate-900 dark:text-white">{property.address}</h1>
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm mb-4">
-                            <span className="material-symbols-outlined text-lg">location_on</span>
-                            {property.city || "Amsterdam-Centrum"}
-                        </div>
-                        <div className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-                            € {property.price?.toLocaleString()} <span className="text-base font-normal text-gray-500">k.k.</span>
-                        </div>
-                    </div>
-
-                    {/* Voice CTA button */}
-                    <button
-                        onClick={isConnected ? stopSession : startSession}
-                        className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-bold text-black transition-all shadow-[0_10px_30px_rgba(16,183,127,0.2)] hover:shadow-[0_15px_40px_rgba(16,183,127,0.4)]
-                            ${isConnected ? 'bg-red-500 text-white animate-pulse' : 'bg-[#10b77f] hover:bg-[#0ea371]'}
-                        `}
-                    >
-                        <div className={`size-10 rounded-full flex items-center justify-center ${isConnected ? 'bg-white/20' : 'bg-black/10'}`}>
-                            <span className="material-symbols-outlined text-2xl">{isConnected ? 'stop' : 'mic'}</span>
-                        </div>
-                        <span className="text-sm sm:text-base uppercase tracking-wider">{isConnected ? 'Stop Gesprek' : 'Stel een vraag aan de AI-assistent'}</span>
-                    </button>
-
-                    {/* Agent profile row */}
-                    <div className="mt-5 flex items-center gap-4 px-1">
-                        <div className="size-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-black border border-gray-200 dark:border-white/20 flex items-center justify-center overflow-hidden">
-                            <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">smart_toy</span>
-                        </div>
-                        <div>
-                            <p className="font-bold text-sm text-slate-900 dark:text-white">VoiceRealty AI</p>
-                            <p className="text-[10px] text-[#10b77f] font-bold uppercase tracking-wide flex items-center gap-1">
-                                <span className="size-1.5 rounded-full bg-[#10b77f] animate-pulse"></span>
-                                Altijd online • Direct antwoord
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Status overlay */}
-                    {isConnected && (
-                        <div className="mt-4 p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-center">
-                            <p className="text-[#10b77f] font-medium text-sm animate-pulse">
-                                {isListening ? 'Ik luister naar je...' : isSpeaking ? 'Aan het spreken...' : 'Verbinden...'}
-                            </p>
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="mt-4 p-2 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded text-center">
-                            {error}
-                        </div>
-                    )}
-                </section>
-
-                {/* ═══════════════════════════════════════════════
-                    2. HERO IMAGE
-                ═══════════════════════════════════════════════ */}
-                <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-2xl sm:rounded-[2rem] overflow-hidden group shadow-lg dark:shadow-none">
-                    <Image
-                        src={activeMedia || '/placeholder-house.jpg'}
-                        alt={property.address}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        priority
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                        <span className="px-3 py-1 bg-[#10b77f] text-black text-[10px] font-bold uppercase tracking-widest rounded-full shadow-md">Nieuwbouw</span>
-                        <span className="px-3 py-1 bg-white/90 dark:bg-white/20 backdrop-blur-md text-slate-900 dark:text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-md">Luxe</span>
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════
-                    3. GALLERY STRIP
-                ═══════════════════════════════════════════════ */}
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-4">
-                    {property.images && property.images.slice(0, 4).map((img: string, i: number) => (
-                        <div key={i} className="relative aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer border border-gray-200 dark:border-white/5 hover:border-gray-400 dark:hover:border-white/20 transition-all shadow-sm dark:shadow-none" onClick={() => setActiveMedia(img)}>
-                            <Image src={img} alt={`Gallery ${i}`} fill className="object-cover" />
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => setShowGallery(true)}
-                        className="relative aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 flex flex-col items-center justify-center group hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all shadow-sm dark:shadow-none"
-                    >
-                        <span className="material-symbols-outlined text-gray-400 group-hover:text-emerald-500 dark:group-hover:text-white mb-1 transition-colors">photo_library</span>
-                        <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Alle foto's</span>
-                    </button>
-                </div>
-
-                {/* ═══════════════════════════════════════════════
-                    4. STATS ROW
-                ═══════════════════════════════════════════════ */}
-                <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 p-4 sm:p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-1 sm:gap-2 group hover:border-[#10b77f]/50 dark:hover:border-[#10b77f]/30 transition-all shadow-sm dark:shadow-none">
-                        <span className="material-symbols-outlined text-[#10b77f] text-xl sm:text-2xl">bed</span>
-                        <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{property.bedrooms || 0}</span>
-                        <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-500">Slaapkamers</span>
-                    </div>
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 p-4 sm:p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-1 sm:gap-2 group hover:border-[#10b77f]/50 dark:hover:border-[#10b77f]/30 transition-all shadow-sm dark:shadow-none">
-                        <span className="material-symbols-outlined text-[#10b77f] text-xl sm:text-2xl">bathtub</span>
-                        <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{property.bathrooms || 0}</span>
-                        <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-500">Badkamers</span>
-                    </div>
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 p-4 sm:p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-1 sm:gap-2 group hover:border-[#10b77f]/50 dark:hover:border-[#10b77f]/30 transition-all shadow-sm dark:shadow-none">
-                        <span className="material-symbols-outlined text-[#10b77f] text-xl sm:text-2xl">crop_free</span>
-                        <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{property.surface_area || 0}</span>
-                        <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-500">m²</span>
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════
-                    5. MEDIA BUTTONS
-                ═══════════════════════════════════════════════ */}
-                {(property.video_url || property.floorplan_url || property.tour_360_url) && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                        {property.video_url && (
-                            <button
-                                onClick={() => setMediaModal({ url: property.video_url, title: 'Video Tour' })}
-                                className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white shadow-sm dark:shadow-none"
-                            >
-                                <span className="material-symbols-outlined text-lg">play_circle</span> Video
-                            </button>
-                        )}
-                        {property.floorplan_url && (
-                            <button
-                                onClick={() => setMediaModal({ url: property.floorplan_url, title: 'Plattegrond' })}
-                                className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white shadow-sm dark:shadow-none"
-                            >
-                                <span className="material-symbols-outlined text-lg">map</span> Plattegrond
-                            </button>
-                        )}
-                        {property.tour_360_url && (
-                            <button
-                                onClick={() => setMediaModal({ url: property.tour_360_url, title: '360° Tour' })}
-                                className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-all font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white shadow-sm dark:shadow-none"
-                            >
-                                <span className="material-symbols-outlined text-lg">360</span> 360° Tour
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* ═══════════════════════════════════════════════
-                    6. DESCRIPTION
-                ═══════════════════════════════════════════════ */}
-                <section className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 rounded-2xl p-6 sm:p-8 shadow-sm dark:shadow-none">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 text-slate-900 dark:text-white">Omschrijving</h2>
-                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-base sm:text-lg font-light">
-                        {property.description || "Geen omschrijving beschikbaar."}
-                    </p>
-                </section>
-
-                {/* ═══════════════════════════════════════════════
-                    7. KENMERKEN / FEATURES TABLE
-                ═══════════════════════════════════════════════ */}
-                <section>
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 text-slate-900 dark:text-white">Kenmerken</h2>
-                    <div className="border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/5 bg-white dark:bg-[#121212] shadow-sm dark:shadow-none">
-                        {/* Basic info rows */}
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Adres</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">{property.address || '-'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Stad</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">{property.city || '-'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Vraagprijs</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">€ {property.price?.toLocaleString() || '-'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Oppervlakte</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">{property.surface_area ? `${property.surface_area} m²` : '-'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Slaapkamers</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">{property.bedrooms || '-'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                            <span className="text-gray-500 font-medium">Badkamers</span>
-                            <span className="text-slate-900 dark:text-white font-semibold">{property.bathrooms || '-'}</span>
-                        </div>
-                        {property.label && (
-                            <div className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                                <span className="text-gray-500 font-medium">Energielabel</span>
-                                <span className="text-slate-900 dark:text-white font-semibold">
-                                    <span className="bg-[#10b77f]/10 dark:bg-[#10b77f]/20 text-[#10b77f] px-2 py-0.5 rounded text-xs font-bold border border-[#10b77f]/20 dark:border-[#10b77f]/30">{property.label}</span>
+                    {/* ── LEFT: GALLERY ── */}
+                    <div className="flex-1 lg:max-w-[58%]">
+                        {/* Main photo */}
+                        <div
+                            className="relative rounded-3xl overflow-hidden bg-[#111] aspect-[4/3] cursor-pointer group"
+                            onClick={() => allImages.length > 0 && setShowGallery(true)}
+                        >
+                            {allImages.length > 0 ? (
+                                <img
+                                    src={allImages[activeIndex]}
+                                    alt={property.address}
+                                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.02]"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-gray-600 text-[80px]">image</span>
+                                </div>
+                            )}
+                            {/* Badge */}
+                            <div className="absolute top-5 left-5">
+                                <span className="bg-[#0df2a2] text-black text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full">
+                                    {property.status === 'active' ? 'Actief Aanbod' : 'Beschikbaar'}
                                 </span>
+                            </div>
+                            {/* All photos button */}
+                            {allImages.length > 1 && (
+                                <div className="absolute bottom-5 right-5 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 group-hover:bg-[#0df2a2] group-hover:text-black transition-all">
+                                    <span className="material-symbols-outlined text-[14px]">photo_library</span>
+                                    {allImages.length} foto's
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Thumbnails — wrap, no scrollbar */}
+                        {allImages.length > 1 && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                                {allImages.map((img, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setActiveIndex(i)}
+                                        className={`rounded-xl overflow-hidden transition-all border-2 h-14 w-20 flex-shrink-0 ${i === activeIndex
+                                            ? 'border-[#0df2a2] ring-2 ring-[#0df2a2]/20'
+                                            : 'border-transparent opacity-50 hover:opacity-80'
+                                            }`}
+                                    >
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
                             </div>
                         )}
 
-                        {/* Dynamic features */}
-                        {Object.entries(property.features || {}).map(([key, value]) => {
-                            if (!value) return null;
-                            return (
-                                <div key={key} className="grid grid-cols-2 p-4 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                                    <span className="text-gray-500 font-medium">{featureLabels[key] || key}</span>
-                                    <span className="text-slate-900 dark:text-white font-semibold flex items-center gap-2">
-                                        {key === 'energy' ? (
-                                            <span className="bg-[#10b77f]/10 dark:bg-[#10b77f]/20 text-[#10b77f] px-2 py-0.5 rounded text-xs font-bold border border-[#10b77f]/20 dark:border-[#10b77f]/30">{value as string}</span>
-                                        ) : (
-                                            value as string
-                                        )}
+                        {/* Media links */}
+                        {mediaLinks.length > 0 && (
+                            <div className="flex flex-wrap gap-3 mt-5">
+                                {mediaLinks.map((m, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setMediaModal({ url: getEmbedUrl(m.value), title: m.label })}
+                                        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#0df2a2]/40 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">{m.icon}</span>
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── RIGHT: INFO ── */}
+                    <div className="lg:w-[42%] flex flex-col gap-6">
+
+                        {/* Title + price */}
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white">
+                                {features.type || 'Woning'}
+                            </h1>
+                            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-[#0df2a2] mt-1">
+                                {streetName}
+                            </h2>
+                            <p className="text-gray-400 text-sm mt-2 italic">{property.address}{property.city ? `, ${property.city}` : ''}</p>
+                            {property.price > 0 && (
+                                <p className="text-3xl font-bold text-[#0df2a2] mt-4">
+                                    € {property.price?.toLocaleString()} <span className="text-gray-400 text-base font-normal">k.k.</span>
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Stat cards */}
+                        {statCards.length > 0 && (
+                            <div className="grid grid-cols-3 gap-3">
+                                {statCards.slice(0, 3).map((stat, i) => (
+                                    <div key={i} className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 flex flex-col gap-1">
+                                        <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-widest leading-tight">{stat.label}</span>
+                                        <span className="text-xl font-bold text-white mt-1">{stat.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {statCards.length > 3 && (
+                            <div className="grid grid-cols-3 gap-3 -mt-3">
+                                {statCards.slice(3, 6).map((stat, i) => (
+                                    <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
+                                        <span className="text-[10px] uppercase text-gray-600 font-semibold tracking-widest leading-tight">{stat.label}</span>
+                                        <span className="text-base font-bold text-white mt-0.5">{stat.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* AI AGENT CARD */}
+                        <div className="bg-[#111] border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col items-center text-center gap-4">
+                            <button
+                                onClick={isVoiceActive ? stopSession : startSession}
+                                className={`size-16 rounded-full flex items-center justify-center transition-all shadow-lg ${isVoiceActive
+                                    ? 'bg-red-500 hover:bg-red-400 shadow-red-500/30 animate-pulse'
+                                    : 'bg-[#0df2a2] hover:bg-emerald-400 shadow-[#0df2a2]/30'
+                                    }`}
+                            >
+                                <span className="material-symbols-outlined text-black text-[28px]">
+                                    {isSpeaking ? 'record_voice_over' : 'mic'}
+                                </span>
+                            </button>
+
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Praat met onze AI Makelaar</h3>
+                                <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+                                    {isVoiceActive
+                                        ? isSpeaking ? 'AI Makelaar spreekt...' : isListening ? 'Luisteren...' : 'Verbonden!'
+                                        : 'Vraag naar verbouwingsopties, buurtinformatie of plan direct een bezichtiging.'}
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={isVoiceActive ? stopSession : startSession}
+                                className={`w-full py-4 rounded-2xl font-bold text-base transition-all flex items-center justify-center gap-2 ${isVoiceActive
+                                    ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20'
+                                    : 'bg-[#0df2a2] text-black hover:bg-emerald-400 shadow-[0_0_30px_rgba(13,242,162,0.2)]'
+                                    }`}
+                            >
+                                {isVoiceActive
+                                    ? 'Gesprek Beëindigen'
+                                    : <><span>Start AI Conversatie</span><span className="material-symbols-outlined text-[20px]">arrow_forward</span></>
+                                }
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                                <div className="size-2 rounded-full bg-[#0df2a2] animate-pulse" />
+                                <span className="text-xs text-gray-400">{isVoiceActive ? 'Gesprek actief' : 'AI is online en klaar om te helpen'}</span>
+                            </div>
+
+                            {error && (
+                                <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl w-full text-center">{error}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════
+                    ALL INFO BELOW — dark cards in new style
+                ══════════════════════════════════════ */}
+                <div className="mt-14 space-y-6">
+
+                    {/* Description */}
+                    {property.description && (
+                        <div className="bg-[#111] border border-white/5 rounded-3xl p-6 md:p-8">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="size-8 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">notes</span>
+                                </div>
+                                <h3 className="text-base font-bold text-white">Omschrijving</h3>
+                            </div>
+                            <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-line">{property.description}</p>
+                        </div>
+                    )}
+
+                    {/* Details table */}
+                    <div className="bg-[#111] border border-white/5 rounded-3xl overflow-hidden">
+                        <div className="flex items-center gap-3 p-6 pb-4 border-b border-white/5">
+                            <div className="size-8 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">home</span>
+                            </div>
+                            <h3 className="text-base font-bold text-white">Woningdetails</h3>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                            {[
+                                { label: 'Adres', value: property.address },
+                                { label: 'Stad', value: property.city },
+                                { label: 'Vraagprijs', value: property.price ? `€ ${property.price.toLocaleString()}` : null },
+                                { label: 'Oppervlakte', value: property.surface_area ? `${property.surface_area} m²` : null },
+                                { label: 'Slaapkamers', value: property.bedrooms },
+                                { label: 'Badkamers', value: property.bathrooms },
+                                ...Object.entries(features).map(([key, value]) => ({
+                                    label: featureLabels[key] || key,
+                                    value: value as string,
+                                    isEnergy: key === 'energy',
+                                })),
+                            ].filter(r => r.value).map((row, i) => (
+                                <div key={i} className="grid grid-cols-2 px-6 py-3.5 hover:bg-white/[0.02] transition-colors">
+                                    <span className="text-sm text-gray-500 font-medium">{row.label}</span>
+                                    <span className="text-sm text-white font-semibold">
+                                        {(row as any).isEnergy ? (
+                                            <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-2 py-0.5 rounded-lg text-xs font-bold">
+                                                {row.value}
+                                            </span>
+                                        ) : row.value}
                                     </span>
                                 </div>
-                            );
-                        })}
-                        {!property.features && <p className="p-4 text-gray-500 italic">Geen kenmerken beschikbaar.</p>}
+                            ))}
+                        </div>
                     </div>
-                </section>
 
-                {/* ═══════════════════════════════════════════════
-                    8. MAP / SURROUNDINGS
-                ═══════════════════════════════════════════════ */}
-                <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                    <div className="sm:col-span-2 relative h-[220px] sm:h-[300px] rounded-2xl sm:rounded-[2rem] overflow-hidden bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 group shadow-sm dark:shadow-none">
-                        <div className="absolute inset-0 bg-[url('https://api.mapbox.com/styles/v1/mapbox/dark-v10/static/-122.4241,37.78,14.25,0,0/600x600?access_token=YOUR_ACCESS_TOKEN')] bg-cover opacity-50 grayscale group-hover:grayscale-0 transition-all"></div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/10 to-transparent dark:from-black/80"></div>
-                        <div className="absolute bottom-5 left-5">
-                            <h3 className="text-lg sm:text-xl font-bold mb-1 text-slate-900 dark:text-white">In de buurt</h3>
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium bg-white/80 dark:bg-transparent px-2 py-1 rounded-lg inline-block">9 Negen Straatjes, Anne Frank Huis, Westertoren</p>
+                    {/* Bezichtiging CTA */}
+                    <div className="bg-gradient-to-br from-[#0df2a2]/10 to-transparent border border-[#0df2a2]/20 rounded-3xl p-8 text-center">
+                        <h3 className="text-xl font-bold text-white mb-2">Interesse in deze woning?</h3>
+                        <p className="text-gray-400 text-sm mb-6">Plan een bezichtiging of stel direct een vraag aan onze AI Makelaar.</p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button
+                                onClick={isVoiceActive ? stopSession : startSession}
+                                className="flex items-center justify-center gap-2 bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold px-8 py-3.5 rounded-2xl transition-all shadow-[0_0_30px_rgba(13,242,162,0.2)]"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">mic</span>
+                                {isVoiceActive ? 'Gesprek Beëindigen' : 'Stel een Vraag via AI'}
+                            </button>
+                            {isAdmin && (
+                                <Link
+                                    href={`/properties/${property.id}`}
+                                    className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold px-8 py-3.5 rounded-2xl transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[20px] text-[#0df2a2]">edit</span>
+                                    Woning Bewerken
+                                </Link>
+                            )}
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 rounded-2xl sm:rounded-[2rem] p-6 sm:p-8 flex flex-col justify-center space-y-5 shadow-sm dark:shadow-none">
-                        <div>
-                            <p className="text-[10px] uppercase tracking-widest text-[#10b77f] font-bold mb-1">Bereikbaarheid</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">9.5/10</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] uppercase tracking-widest text-[#10b77f] font-bold mb-1">Luchthaven</p>
-                            <p className="text-xl font-bold text-slate-900 dark:text-white">20 min <span className="text-sm font-normal text-gray-500">(Trein)</span></p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] uppercase tracking-widest text-[#10b77f] font-bold mb-1">Supermarkt</p>
-                            <p className="text-xl font-bold text-slate-900 dark:text-white">3 min <span className="text-sm font-normal text-gray-500">(Lopen)</span></p>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ═══════════════════════════════════════════════
-                    9. CONTACT / BEZICHTIGING CTA
-                ═══════════════════════════════════════════════ */}
-                <section className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-white/5 rounded-2xl p-6 sm:p-8 text-center shadow-sm dark:shadow-none">
-                    <h3 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">Interesse in deze woning?</h3>
-                    <p className="text-sm text-gray-500 mb-5">Plan een bezichtiging of stel direct een vraag aan onze AI-assistent.</p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <button
-                            onClick={isConnected ? stopSession : startSession}
-                            className="px-6 py-3 rounded-xl bg-[#10b77f] text-black font-bold text-sm hover:bg-[#0ea371] transition-colors shadow-[0_0_20px_rgba(16,183,127,0.2)] flex items-center justify-center gap-2"
-                        >
-                            <span className="material-symbols-outlined text-lg">mic</span>
-                            Vraag de AI-assistent
-                        </button>
-                        <button className="px-6 py-3 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-                            <span className="material-symbols-outlined text-lg">calendar_month</span>
-                            Plan bezichtiging
-                        </button>
-                    </div>
-                </section>
-
+                </div>
             </main>
 
-            {/* Footer */}
-            <footer className="mt-12 border-t border-gray-200 dark:border-white/5 py-8 sm:py-12 bg-white dark:bg-[#020202] transition-colors duration-300">
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <p className="text-gray-500 dark:text-gray-600 text-sm">© 2026 VoiceRealty AI. Alle rechten voorbehouden.</p>
-                    <div className="flex gap-6 text-sm text-gray-500">
-                        <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacybeleid</a>
-                        <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Voorwaarden</a>
-                    </div>
+            {/* ── FOOTER ── */}
+            <footer className="border-t border-white/5 mt-16 px-6 md:px-10 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-gray-600 text-xs">
+                <p>© {new Date().getFullYear()} VoiceRealty AI. Alle rechten voorbehouden.</p>
+                <div className="flex gap-6">
+                    <a href="#" className="hover:text-gray-400 transition-colors uppercase tracking-wider">Privacy</a>
+                    <a href="#" className="hover:text-gray-400 transition-colors uppercase tracking-wider">Voorwaarden</a>
+                    <a href="#" className="hover:text-gray-400 transition-colors uppercase tracking-wider">Contact</a>
                 </div>
             </footer>
 
-            {/* ═══════════════════════════════════════════════
-                MODALS (unchanged)
-            ═══════════════════════════════════════════════ */}
-
-            {/* QR Marketing Modal */}
+            {/* ── QR MODAL ── */}
             {showQRModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[3rem] p-8 md:p-12 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95 duration-300">
-                        <button
-                            onClick={() => setShowQRModal(false)}
-                            className="absolute top-6 right-6 size-10 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                        >
-                            <span className="material-symbols-outlined">close</span>
-                        </button>
-
-                        <div className="text-center mb-8">
-                            <div className="size-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-                                <span className="material-symbols-outlined text-emerald-500 text-3xl">campaign</span>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setShowQRModal(false)}>
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                    <div className="relative bg-[#111] border border-white/10 rounded-3xl p-8 flex flex-col items-center gap-5 shadow-[0_0_60px_rgba(13,242,162,0.1)]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-3">
+                            <div className="size-8 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">campaign</span>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Marketing QR Kit</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Gereed voor flyers en te-koop borden</p>
+                            <h3 className="text-lg font-bold text-white">Marketing QR Code</h3>
                         </div>
-
-                        <div className="bg-white p-6 rounded-[2rem] shadow-inner mb-8 flex justify-center border border-gray-100" ref={qrRef}>
+                        <p className="text-xs text-gray-500 text-center">Gereed voor flyers en te-koop borden</p>
+                        <div ref={qrRef} className="bg-white p-5 rounded-2xl shadow-inner">
                             <QRCodeSVG
                                 value={`https://voicerealty.ai/woning/${property.id}`}
                                 size={200}
+                                bgColor="#ffffff"
+                                fgColor="#000000"
                                 level="H"
                                 includeMargin={false}
                                 imageSettings={{
-                                    src: "/logo-icon.png",
-                                    x: undefined,
-                                    y: undefined,
-                                    height: 40,
-                                    width: 40,
+                                    src: '/logo-icon.png',
+                                    x: undefined, y: undefined,
+                                    height: 40, width: 40,
                                     excavate: true,
                                 }}
                             />
                         </div>
-
-                        <div className="space-y-3">
+                        <div className="w-full space-y-3">
                             <button
                                 onClick={() => {
-                                    const svg = qrRef.current?.querySelector('svg');
+                                    const svg = qrRef.current?.querySelector('svg')
                                     if (svg) {
-                                        const svgData = new XMLSerializer().serializeToString(svg);
-                                        const canvas = document.createElement("canvas");
-                                        const ctx = canvas.getContext("2d");
-                                        const img = new window.Image();
+                                        const svgData = new XMLSerializer().serializeToString(svg)
+                                        const canvas = document.createElement('canvas')
+                                        const ctx = canvas.getContext('2d')
+                                        const img = new window.Image()
                                         img.onload = () => {
-                                            canvas.width = img.width;
-                                            canvas.height = img.height;
-                                            ctx?.drawImage(img, 0, 0);
-                                            const pngFile = canvas.toDataURL("image/png");
-                                            const downloadLink = document.createElement("a");
-                                            downloadLink.download = `QR-${property.address}.png`;
-                                            downloadLink.href = pngFile;
-                                            downloadLink.click();
-                                        };
-                                        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+                                            canvas.width = img.width; canvas.height = img.height
+                                            ctx?.drawImage(img, 0, 0)
+                                            const link = document.createElement('a')
+                                            link.download = `QR-${property.address}.png`
+                                            link.href = canvas.toDataURL('image/png')
+                                            link.click()
+                                        }
+                                        img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
                                     }
                                 }}
-                                className="w-full py-4 bg-[#10b77f] hover:bg-[#0ea371] text-black font-extrabold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                                className="w-full py-3.5 bg-[#0df2a2] hover:bg-emerald-400 text-black font-extrabold rounded-2xl transition-all flex items-center justify-center gap-2"
                             >
-                                <span className="material-symbols-outlined text-lg">download</span>
+                                <span className="material-symbols-outlined text-[18px]">download</span>
                                 Download PNG
                             </button>
-                            <button
-                                onClick={() => setShowQRModal(false)}
-                                className="w-full py-4 text-gray-400 hover:text-slate-900 dark:hover:text-white font-bold text-sm transition-colors"
-                            >
+                            <button onClick={() => setShowQRModal(false)} className="w-full py-3 text-gray-500 hover:text-white font-bold text-sm transition-colors">
                                 Sluiten
                             </button>
                         </div>
@@ -451,67 +411,95 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                 </div>
             )}
 
-            {/* Full Photo Gallery Modal */}
+
+            {/* ── FULLSCREEN LIGHTBOX GALLERY ── */}
             {showGallery && (
-                <div className="fixed inset-0 z-[100] flex flex-col bg-black animate-in fade-in duration-300">
-                    <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10 bg-black/80 backdrop-blur-md">
-                        <div className="flex items-center gap-4">
-                            <span className="font-bold text-white">Fotogalerij</span>
-                            <span className="px-2 py-0.5 rounded bg-white/10 text-[10px] text-gray-400 font-bold">{property.images?.length || 0} Foto's</span>
-                        </div>
-                        <button
-                            onClick={() => setShowGallery(false)}
-                            className="size-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
-                        >
-                            <span className="material-symbols-outlined">close</span>
-                        </button>
+                <div className="fixed inset-0 z-[100] flex bg-black/95 backdrop-blur-sm">
+                    {/* Left: vertical thumbnail strip */}
+                    <div className="hidden md:flex flex-col gap-2 p-4 overflow-y-auto w-28 bg-black/60 border-r border-white/5 shrink-0">
+                        {allImages.map((img, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setActiveIndex(i)}
+                                className={`rounded-xl overflow-hidden border-2 aspect-[4/3] w-full shrink-0 transition-all ${i === activeIndex ? 'border-[#0df2a2] ring-2 ring-[#0df2a2]/20' : 'border-transparent opacity-40 hover:opacity-80'
+                                    }`}
+                            >
+                                <img src={img} alt="" className="w-full h-full object-cover" />
+                            </button>
+                        ))}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-12">
-                        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 sm:gap-6 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto">
-                            {property.images?.map((img: string, i: number) => (
-                                <div key={i} className="relative rounded-2xl overflow-hidden break-inside-avoid shadow-2xl border border-white/5">
-                                    <img src={img} alt={`Gallery Full ${i}`} className="w-full h-auto object-cover" />
-                                </div>
+
+                    {/* Right: main image area */}
+                    <div className="flex-1 flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                            <span className="text-sm font-bold text-white">{activeIndex + 1} / {allImages.length}</span>
+                            <span className="text-sm text-gray-400 hidden sm:block">{property.address}</span>
+                            <button onClick={() => setShowGallery(false)} className="size-10 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white transition-colors">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Image + arrows */}
+                        <div className="flex-1 relative flex items-center justify-center p-4">
+                            <img
+                                src={allImages[activeIndex]}
+                                alt={`Foto ${activeIndex + 1}`}
+                                className="max-h-full max-w-full object-contain rounded-2xl"
+                            />
+                            {activeIndex > 0 && (
+                                <button
+                                    onClick={() => setActiveIndex(i => i - 1)}
+                                    className="absolute left-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
+                                >
+                                    <span className="material-symbols-outlined">chevron_left</span>
+                                </button>
+                            )}
+                            {activeIndex < allImages.length - 1 && (
+                                <button
+                                    onClick={() => setActiveIndex(i => i + 1)}
+                                    className="absolute right-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
+                                >
+                                    <span className="material-symbols-outlined">chevron_right</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Mobile thumbnails */}
+                        <div className="md:hidden flex gap-2 p-3 overflow-x-auto bg-black/40 border-t border-white/5">
+                            {allImages.map((img, i) => (
+                                <button key={i} onClick={() => setActiveIndex(i)} className={`shrink-0 h-12 w-16 rounded-lg overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-[#0df2a2]' : 'border-transparent opacity-50'}`}>
+                                    <img src={img} alt="" className="w-full h-full object-cover" />
+                                </button>
                             ))}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Media Preview Modal */}
+
+            {/* ── MEDIA MODAL ── */}
             {mediaModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-6xl aspect-video bg-black rounded-2xl sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
-                        <div className="px-4 sm:px-8 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-xl" onClick={() => setMediaModal(null)}>
+                    <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl border border-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
                             <div className="flex items-center gap-3">
-                                <div className="h-1 w-6 rounded-full bg-[#10b77f]/40"></div>
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-white">{mediaModal.title}</h3>
-                                <a
-                                    href={mediaModal.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-4 flex items-center gap-1 text-[10px] font-bold text-[#10b77f] hover:underline"
-                                >
+                                <h3 className="text-sm font-bold text-white">{mediaModal.title}</h3>
+                                <a href={mediaModal.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#0df2a2] hover:underline flex items-center gap-1">
                                     OPEN EXTERN <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                                 </a>
                             </div>
-                            <button
-                                onClick={() => setMediaModal(null)}
-                                className="size-10 rounded-full hover:bg-white/5 flex items-center justify-center transition-colors text-white"
-                            >
-                                <span className="material-symbols-outlined">close</span>
+                            <button onClick={() => setMediaModal(null)} className="size-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">close</span>
                             </button>
                         </div>
-                        <div className="flex-1 bg-[#050606] relative overflow-hidden group">
-                            <iframe
-                                src={isBlockedDomain(mediaModal.url)
-                                    ? `/api/proxy?url=${encodeURIComponent(mediaModal.url)}`
-                                    : getEmbedUrl(mediaModal.url)}
-                                className="w-full h-full border-none"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                        </div>
+                        <iframe
+                            src={isBlockedDomain(mediaModal.url) ? `/api/proxy?url=${encodeURIComponent(mediaModal.url)}` : mediaModal.url}
+                            className="w-full h-full border-none"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={mediaModal.title}
+                        />
                     </div>
                 </div>
             )}

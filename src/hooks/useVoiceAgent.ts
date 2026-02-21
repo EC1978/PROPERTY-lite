@@ -140,7 +140,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             console.log("🔊 AudioContext Created:", audioCtx.state);
 
             // 3. Connect to Gemini
-            const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+            const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
             if (!API_KEY) throw new Error("Google API Key missing in environment");
 
             // CHANGED: Use v1beta AND gemini-2.5-flash-native-audio-latest

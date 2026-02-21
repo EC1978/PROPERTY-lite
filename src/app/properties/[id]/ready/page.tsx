@@ -59,7 +59,7 @@ export default async function PropertyReadyPage({ params }: { params: Promise<{ 
                         <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
                             <img src={qrCodeUrl} alt="Property QR Code" className="size-40 object-contain mix-blend-multiply dark:mix-blend-normal" />
                         </div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Scan voor Virtuele Tour</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-[#0df2a2] mb-3">Scan om direct te worden verbonden met onze ai agent.</p>
                         <div className="flex items-center gap-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 px-4 py-2 rounded-xl w-full">
                             <span className="material-symbols-outlined text-gray-400 text-sm">link</span>
                             <span className="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 font-mono">{publicUrl}</span>
@@ -70,7 +70,7 @@ export default async function PropertyReadyPage({ params }: { params: Promise<{ 
                     </div>
 
                     {/* Property Details Preview */}
-                    <Link href={`/properties/${id}/edit`} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-2xl group cursor-pointer hover:border-emerald-500/30 transition-all">
+                    <Link href={`/woning/${id}`} target="_blank" className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-2xl group cursor-pointer hover:border-emerald-500/30 transition-all">
                         <div className="size-16 rounded-xl bg-gray-200 dark:bg-white/10 flex-shrink-0 bg-cover bg-center overflow-hidden relative">
                             {property.image_url ? (
                                 <img src={property.image_url} alt={property.address} className="w-full h-full object-cover" />

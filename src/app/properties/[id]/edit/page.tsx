@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { deleteProperty } from '../../actions'
 import PropertyEditForm from '@/components/PropertyEditForm'
+import Sidebar from '@/components/layout/Sidebar'
+import MobileNav from '@/components/layout/MobileNav'
 import { revalidatePath } from 'next/cache'
 import { getVoiceLibrary } from '@/lib/voice-library'
 
@@ -53,6 +55,8 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
         const imagesRaw = formData.get('all_images') as string
         const images = imagesRaw ? JSON.parse(imagesRaw) : []
+        console.log('[updateProperty] all_images raw:', imagesRaw)
+        console.log('[updateProperty] images parsed:', images)
 
         const customLinksRaw = formData.get('custom_links') as string
         const custom_links = customLinksRaw ? JSON.parse(customLinksRaw) : []
@@ -77,23 +81,34 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             }
         })
 
-        await supabase.from('properties').update({
+        // Main update - all stable columns
+        const { error: updateError } = await supabase.from('properties').update({
             address,
             price: parseFloat(price),
             surface_area: parseInt(surface_area),
             description,
-            image_url,
+            image_url: image_url || null,
             video_url,
             floorplan_url,
             tour_360_url,
             features,
-            images,
+            images: images && images.length > 0 ? images : [],
             custom_links,
-            voice_id // Save the selected voice ID
         }).eq('id', id)
 
-        revalidatePath(`/properties/${id}`)
+        if (updateError) {
+            console.error('[updateProperty] Main update failed:', updateError)
+            throw new Error(`Failed to update property: ${updateError.message}`)
+        }
+
+        // Try to update voice_id separately (column may not exist yet)
+        if (voice_id !== undefined) {
+            await supabase.from('properties').update({ voice_id }).eq('id', id)
+        }
+
         revalidatePath(`/woning/${id}`)
+        revalidatePath('/properties', 'layout')
+        revalidatePath('/dashboard', 'page')
         redirect(`/properties/${id}/ready`)
     }
 
@@ -103,14 +118,55 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
     }
 
     return (
-        // ... wrapper
-        <PropertyEditForm
-            property={property}
-            voices={voices || []}
-            myVoices={myVoices || []} // Pass library
-            updateAction={updateProperty}
-            deleteAction={deletePropertyAction}
-        />
-        // ...
+        <div className="flex min-h-screen bg-[#f5f8f7] dark:bg-[#050505] text-gray-900 dark:text-white font-sans">
+            <Sidebar userEmail={user.email} />
+
+            {/* Mobile header */}
+            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-4 py-4 flex items-center justify-between">
+                <Link href={`/properties/${id}`} className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400">
+                    <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                    Woning
+                </Link>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">Bewerken</span>
+            </div>
+
+            <main className="flex-1 md:ml-72 pt-20 md:pt-0">
+
+                {/* ── TOP HEADER BAR (same as detail page) ── */}
+                <div className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#0a0a0a]">
+                    <Link
+                        href={`/properties/${id}`}
+                        className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                        <span className="hidden sm:inline">Terug naar Woning</span>
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-3 py-1.5 bg-gray-100 dark:bg-white/5 rounded-full">
+                            Bewerkmodus
+                        </span>
+                    </div>
+                </div>
+
+                {/* ── ADDRESS STRIP (same as detail page) ── */}
+                <div className="px-6 md:px-8 py-5 border-b border-gray-100 dark:border-white/5">
+                    <p className="text-[10px] uppercase text-gray-500 dark:text-gray-500 tracking-wider font-semibold mb-1">Woning Bewerken</p>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{property.address}</h1>
+                </div>
+
+                {/* ── FORM ── */}
+                <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+                    <PropertyEditForm
+                        property={property}
+                        voices={voices || []}
+                        myVoices={myVoices || []}
+                        updateAction={updateProperty}
+                        deleteAction={deletePropertyAction}
+                    />
+                </div>
+            </main>
+
+            <MobileNav />
+        </div>
     )
 }

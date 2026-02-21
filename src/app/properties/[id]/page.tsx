@@ -2,7 +2,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import PublicPropertyLiveView from '@/components/PublicPropertyLiveView'
+import PropertyDetailView from '@/components/PropertyDetailView'
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const supabase = await createClient()
@@ -23,14 +23,14 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
     if (!property) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white">
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold">Woning niet gevonden</h1>
-                    <Link href="/dashboard" className="text-[#10b77f] hover:underline mt-4 block">Terug naar Dashboard</Link>
+                    <Link href="/dashboard" className="text-[#0df2a2] hover:underline mt-4 block">Terug naar Dashboard</Link>
                 </div>
             </div>
         )
     }
 
-    return <PublicPropertyLiveView property={property} isAdmin={true} />
+    return <PropertyDetailView property={property} userEmail={user.email || ''} />
 }

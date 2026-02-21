@@ -68,46 +68,68 @@ export default async function PropertiesIndexPage() {
 
                 {/* Properties Grid */}
                 {properties && properties.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {properties.map((property) => (
-                            <Link key={property.id} href={`/properties/${property.id}`} className="group block">
-                                <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all group-hover:-translate-y-1">
-                                    <div className="h-56 bg-gray-200 dark:bg-[#222] bg-cover bg-center relative" style={{ backgroundImage: `url(${property.image_url || '/placeholder-house.jpg'})` }}>
-                                        {!property.image_url && (
-                                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-gray-600">
-                                                <span className="material-symbols-outlined text-[48px]">image</span>
+                            <div
+                                key={property.id}
+                                className="relative rounded-2xl bg-white dark:bg-[#1c1c1e] border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                            >
+                                {/* Stretched overlay link for the whole card */}
+                                <Link href={`/properties/${property.id}`} className="absolute inset-0 z-0" aria-label={property.address} />
+                                <div className="flex flex-col h-full">
+                                    {/* Image */}
+                                    <div className="h-44 relative bg-gray-100 dark:bg-white/5">
+                                        {property.image_url ? (
+                                            <div
+                                                className="absolute inset-0 bg-cover bg-center"
+                                                style={{ backgroundImage: `url("${property.image_url}")` }}
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 text-[48px]">image</span>
                                             </div>
                                         )}
-                                        <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-gray-900 dark:text-white shadow-sm border border-black/5">
-                                            {property.status === 'active' ? 'Active' : property.status}
-                                        </div>
-                                        <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                                            <div className="bg-black/60 backdrop-blur-md text-white text-xs px-2 py-1 rounded-lg">
-                                                {new Date(property.created_at).toLocaleDateString()}
-                                            </div>
+                                        {/* Status Badge */}
+                                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 border border-white/10">
+                                            <span className="material-symbols-outlined text-[#0df2a2] text-[10px] animate-pulse">fiber_manual_record</span>
+                                            <span className="text-xs font-bold text-white uppercase tracking-wider">
+                                                {property.status === 'active' ? 'Actief' : property.status}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">{property.address}</h3>
-                                        <p className="text-emerald-500 font-bold mb-4">€ {property.price?.toLocaleString()}</p>
 
-                                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-white/5 pt-4">
-                                            <div className="flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[18px]">square_foot</span>
-                                                {property.surface_area} m²
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[18px]">bed</span>
-                                                {property.bedrooms || '-'}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[18px]">bathtub</span>
-                                                {property.bathrooms || '-'}
+                                    {/* Info */}
+                                    <div className="p-5 flex flex-col justify-between flex-1">
+                                        <div>
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white leading-tight">{property.address}</h4>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                                {property.city || 'Den Haag'}
+                                            </p>
+                                            <div className="flex items-center gap-4 mt-4 mb-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Prijs</span>
+                                                    <span className="text-base font-bold text-gray-900 dark:text-white">€{property.price?.toLocaleString()}</span>
+                                                </div>
+                                                <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Status</span>
+                                                    <span className="text-base font-bold text-[#0df2a2]">
+                                                        {property.status === 'active' ? 'Actief' : property.status}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
+                                        <Link
+                                            href={`/properties/${property.id}/ready`}
+                                            className="relative z-10 w-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 group/qr border border-transparent hover:border-[#0df2a2]/50"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px] text-[#0df2a2] group-hover/qr:scale-110 transition-transform">qr_code_2</span>
+                                            <span>QR-code downloaden</span>
+                                        </Link>
                                     </div>
                                 </div>
-                            </Link>
+                            </div>
                         ))}
                     </div>
                 ) : (
