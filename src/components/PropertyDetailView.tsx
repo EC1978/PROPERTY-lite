@@ -1,5 +1,7 @@
 'use client'
 
+// Latest update: Archiving, Deletion and Inline Editing
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Sidebar from '@/components/layout/Sidebar'
