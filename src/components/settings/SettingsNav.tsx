@@ -15,7 +15,7 @@ export default function SettingsNav() {
     ]
 
     return (
-        <aside className="w-full md:w-64 flex-shrink-0 flex md:flex-col gap-2 overflow-x-auto hide-scrollbar pb-4 md:pb-0 sticky top-[72px] md:top-0 z-30 bg-white dark:bg-[#050505] md:bg-transparent -mx-6 px-6 md:mx-0 md:px-0">
+        <aside className="w-full md:w-64 flex-shrink-0 flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 sticky top-[72px] md:top-0 z-30 bg-transparent -mx-6 px-6 md:mx-0 md:px-0 no-scrollbar">
             {navigation.map((item) => {
                 const isActive = pathname === item.href || (item.href === '/settings/profile' && pathname === '/settings')
                 return (
@@ -24,7 +24,7 @@ export default function SettingsNav() {
                         href={item.href}
                         className={`flex items-center gap-2.5 px-5 py-2.5 rounded-full md:rounded-2xl transition-all font-bold text-[13px] whitespace-nowrap shrink-0 border transition-all duration-200 ${isActive
                             ? 'bg-emerald-500 text-white md:bg-emerald-500/10 md:text-emerald-500 border-emerald-500 md:border-emerald-500/20 shadow-lg shadow-emerald-500/20'
-                            : 'bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10'
+                            : 'bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10'
                             }`}
                     >
                         <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
