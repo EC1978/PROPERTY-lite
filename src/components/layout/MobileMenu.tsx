@@ -63,10 +63,13 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
 
             {/* Drawer */}
             <div
-                className={`fixed top-0 left-0 bottom-0 z-[101] w-[280px] bg-white dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-white/5 shadow-2xl transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed top-0 left-0 bottom-0 z-[99999] w-[280px] transition-transform duration-300 transform shadow-2xl ${isOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
-                <div className="flex flex-col h-full p-6">
+                {/* SOLID BACKGROUND LAYER */}
+                <div className="absolute inset-0 bg-white dark:bg-[#0a0a0a] -z-10" />
+
+                <div className="flex flex-col h-full p-6 relative z-10">
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-2">
@@ -77,7 +80,7 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                         </div>
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="size-10 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                            className="size-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
                         >
                             <span className="material-symbols-outlined">close</span>
                         </button>
