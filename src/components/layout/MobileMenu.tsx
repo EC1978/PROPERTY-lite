@@ -63,13 +63,12 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
 
             {/* Drawer */}
             <div
-                className={`fixed top-0 left-0 bottom-0 z-[999999] w-[280px] !bg-white dark:!bg-[#0a0a0a] shadow-[20px_0_60px_-15px_rgba(0,0,0,0.5)] transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed top-0 left-0 bottom-0 z-[1000000] w-[280px] bg-white dark:bg-[#0a0a0a] shadow-[rgba(0,0,0,0.5)_20px_0px_60px_-15px] transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
-                style={{ backgroundColor: typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? '#0a0a0a' : '#ffffff' }}
             >
-                <div className="flex flex-col h-full p-6">
+                <div className="flex flex-col h-full p-6 bg-white dark:bg-[#0a0a0a]">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-8 flex-shrink-0">
                         <div className="flex items-center gap-2">
                             <div className="size-8 bg-emerald-500 rounded-lg flex items-center justify-center">
                                 <span className="material-symbols-outlined text-white text-[20px]">graphic_eq</span>
@@ -84,28 +83,28 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                         </button>
                     </div>
 
-                    {/* Navigation */}
-                    <nav className="flex-1 space-y-2 py-4 overflow-y-auto">
+                    {/* Navigation - No flex-1 to prevent shrinking */}
+                    <div className="space-y-1 py-4 overflow-y-auto no-scrollbar">
                         {navigation.map((item) => {
                             const active = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all border ${active
+                                    className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all border ${active
                                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-[#0df2a2] font-bold border-emerald-500/20'
                                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white border-transparent'
                                         }`}
                                 >
                                     <span className="material-symbols-outlined text-[24px]">{item.icon}</span>
-                                    <span className="text-[15px] font-bold">{item.label}</span>
+                                    <span className="text-[16px] font-bold">{item.label}</span>
                                 </Link>
                             )
                         })}
-                    </nav>
+                    </div>
 
-                    {/* Footer - Fixed bottom */}
-                    <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/5 space-y-4 bg-white dark:bg-[#0a0a0a]">
+                    {/* Footer - Pushed to bottom */}
+                    <div className="mt-auto pt-6 border-t border-gray-100 dark:border-white/5 space-y-4 bg-white dark:bg-[#0a0a0a] flex-shrink-0">
                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-white/[0.03] rounded-2xl border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-3">
                                 <div className="size-10 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm border-2 border-white/20">
@@ -113,7 +112,7 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-sm font-bold text-gray-900 dark:text-white leading-none mb-1">{userEmail?.split('@')[0]}</span>
-                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-black">Premium Account</span>
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-widest font-black">Premium Account</span>
                                 </div>
                             </div>
                             <ThemeToggle />
