@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
+import MobileMenu from '@/components/layout/MobileMenu'
 
 export default async function AnalyticsPage() {
     const supabase = await createClient()
@@ -23,7 +24,8 @@ export default async function AnalyticsPage() {
 
             {/* --- MOBILE HEADER --- */}
             <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <MobileMenu userEmail={user.email || undefined} />
                     <span className="font-bold text-lg tracking-tight">Kantoor Statistieken</span>
                 </div>
                 <div className="size-8 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
@@ -143,7 +145,7 @@ export default async function AnalyticsPage() {
                                         <td className="px-6 py-4">{prop.price}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${prop.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                                                    prop.status === 'Sold' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                                                prop.status === 'Sold' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {prop.status}
                                             </span>

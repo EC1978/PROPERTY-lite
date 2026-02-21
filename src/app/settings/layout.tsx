@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
+import MobileMenu from '@/components/layout/MobileMenu'
 import SettingsNav from '@/components/settings/SettingsNav'
 
 export default async function SettingsLayout({
@@ -23,7 +24,8 @@ export default async function SettingsLayout({
 
             {/* --- MOBILE HEADER --- */}
             <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <MobileMenu userEmail={user.email || undefined} />
                     <span className="font-bold text-lg tracking-tight">Instellingen</span>
                 </div>
                 <div className="size-8 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">

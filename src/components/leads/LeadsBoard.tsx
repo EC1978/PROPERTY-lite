@@ -59,26 +59,26 @@ export default function LeadsBoard() {
             <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden">
                 <div className="divide-y divide-gray-100 dark:divide-white/5">
                     {filteredLeads.map((lead) => (
-                        <div key={lead.id} className="p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group flex items-center justify-between gap-4">
+                        <div key={lead.id} className="p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4 min-w-0">
-                                <div className="size-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-white/5 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold shrink-0">
+                                <div className="size-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/10 dark:to-white/5 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold shrink-0 shadow-sm">
                                     {lead.name.split(' ').map(n => n[0]).join('')}
                                 </div>
                                 <div className="min-w-0">
-                                    <h4 className="font-bold text-gray-900 dark:text-white truncate">{lead.name}</h4>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                        <span className="truncate">{lead.address}</span>
-                                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                        <span>{lead.lastContact}</span>
+                                    <h4 className="font-bold text-gray-900 dark:text-white truncate text-base">{lead.name}</h4>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="truncate max-w-[200px]">{lead.address}</span>
+                                        <span className="hidden sm:inline w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                                        <span className="font-medium text-[#0df2a2]/80">{lead.lastContact}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-2 shrink-0">
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusColor(lead.status)}`}>
-                                    {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                            <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-white/5">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusColor(lead.status)}`}>
+                                    {lead.status}
                                 </span>
-                                <div className="text-xs font-medium text-gray-500">
+                                <div className="text-xs font-bold text-gray-900 dark:text-white sm:text-gray-500">
                                     {lead.price_range}
                                 </div>
                             </div>

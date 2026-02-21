@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Sidebar from './layout/Sidebar'
 import MobileNav from './layout/MobileNav'
+import MobileMenu from './layout/MobileMenu'
 
 interface Property {
     id: string
@@ -184,15 +185,10 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
             {/* ===== STITCH HEADER (mobile) ===== */}
             <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 bg-[#f5f8f7]/80 dark:bg-[#050505]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/5">
                 <div className="flex items-center gap-3">
-                    <div className="relative group cursor-pointer">
-                        <div className="size-10 rounded-full bg-gradient-to-tr from-[#0df2a2] to-cyan-500 flex items-center justify-center text-white font-bold text-sm border-2 border-[#0df2a2]">
-                            {userName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="absolute bottom-0 right-0 size-3 bg-[#0df2a2] rounded-full border-2 border-[#050505]" />
-                    </div>
+                    <MobileMenu userEmail={userEmail} />
                     <div>
                         <h1 className="text-[10px] font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">VoiceRealty AI</h1>
-                        <h2 className="text-lg font-bold leading-none tracking-tight">Makelaar Dashboard</h2>
+                        <h2 className="text-lg font-bold leading-none tracking-tight">Dashboard</h2>
                     </div>
                 </div>
                 <button className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-white">
