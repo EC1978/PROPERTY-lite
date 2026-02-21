@@ -84,24 +84,24 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 space-y-2 py-4 overflow-y-auto">
+                    <div className="py-4 space-y-1">
                         {navigation.map((item) => {
                             const active = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all border ${active
+                                    className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all border ${active
                                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-[#0df2a2] font-bold border-emerald-500/20'
                                         : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white border-transparent'
                                         }`}
                                 >
                                     <span className="material-symbols-outlined text-[24px]">{item.icon}</span>
-                                    <span className="text-[15px] font-semibold">{item.label}</span>
+                                    <span className="text-[16px] font-bold">{item.label}</span>
                                 </Link>
                             )
                         })}
-                    </nav>
+                    </div>
 
                     {/* Footer - Fixed bottom */}
                     <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/5 space-y-4 bg-white dark:bg-[#0a0a0a]">
