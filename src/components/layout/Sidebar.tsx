@@ -38,6 +38,7 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                     <NavLink href="/archive" icon="archive" label="Archief" />
                     <NavLink href="/leads" icon="groups" label="Leads" />
                     <NavLink href="/analytics" icon="monitoring" label="Statistieken" />
+                    <NavLink href="/shop" icon="shopping_bag" label="Shop" />
                     <NavLink href="/settings" icon="settings" label="Instellingen" />
                     <NavLink href="/support" icon="help" label="Ondersteuning" />
                 </div>
