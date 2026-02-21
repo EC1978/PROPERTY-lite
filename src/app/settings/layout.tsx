@@ -23,7 +23,7 @@ export default async function SettingsLayout({
             <Sidebar userEmail={user.email} />
 
             {/* --- MOBILE HEADER --- */}
-            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between">
+            <div className="md:hidden fixed top-0 left-0 right-0 z-[50] bg-white dark:bg-[#050505] border-b border-gray-200 dark:border-white/5 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <MobileMenu userEmail={user.email || undefined} />
                     <span className="font-bold text-lg tracking-tight">Instellingen</span>
@@ -34,7 +34,7 @@ export default async function SettingsLayout({
             </div>
 
             {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 md:ml-72 p-6 pt-24 md:p-10 md:pt-10 pb-32 md:pb-10 max-w-7xl mx-auto">
+            <main className="flex-1 md:ml-72 p-6 pt-28 md:p-10 md:pt-10 pb-32 md:pb-10 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row gap-8">
                     <SettingsNav />
 

@@ -15,7 +15,7 @@ export default function SettingsNav() {
     ]
 
     return (
-        <aside className="w-full md:w-64 flex-shrink-0 flex md:flex-col gap-2 overflow-x-auto no-scrollbar pb-2 md:pb-0 sticky top-[72px] md:top-0 z-30 bg-transparent -mx-6 px-4 md:mx-0 md:px-0 scroll-smooth">
+        <aside className="w-full md:w-64 flex-shrink-0 flex md:flex-col gap-2 overflow-x-auto hide-scrollbar pb-3 md:pb-0 sticky top-[72px] md:top-0 z-30 bg-[#F8F9FB] dark:bg-[#050505] md:bg-transparent -mx-6 px-6 md:mx-0 md:px-0 scroll-smooth">
             {navigation.map((item) => {
                 const isActive = pathname === item.href || (item.href === '/settings/profile' && pathname === '/settings')
                 return (
