@@ -9,15 +9,17 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: any }
 ) {
     let materialId = 'unknown'
     try {
+        // Next.js 15 robust params extraction
         const resolvedParams = await params
-        materialId = resolvedParams.id
+        materialId = resolvedParams?.id || 'id_not_found'
+
         const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-        console.log('QR Handler started for:', materialId)
+        console.log(`[VERIFIED-V3] QR Handler started for ID: ${materialId}`)
 
         // 1. Zoek het materiaal op
         const { data: material, error } = await supabase
