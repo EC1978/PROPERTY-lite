@@ -64,60 +64,62 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
 
                 {/* Overlay Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {/* QR Overlay */}
-                {showQR && (
-                    <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
-                        <div className="bg-white p-3 rounded-2xl shadow-2xl">
-                            <QRCodeSVG id={`qr-code-${material.id}`} value={qrUrl} size={140} />
-                        </div>
-                        <p className="mt-4 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center">Scan voor Voice AI</p>
-
-                        <div className="mt-4 flex gap-4">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const svg = document.getElementById(`qr-code-${material.id}`);
-                                    if (svg) {
-                                        const svgData = new XMLSerializer().serializeToString(svg);
-                                        const canvas = document.createElement("canvas");
-                                        const ctx = canvas.getContext("2d");
-                                        const img = new Image();
-                                        img.onload = () => {
-                                            canvas.width = 1000; // High res for printing
-                                            canvas.height = 1000;
-                                            if (ctx) {
-                                                ctx.fillStyle = "white";
-                                                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                                ctx.drawImage(img, 50, 50, 900, 900);
-                                                const pngFile = canvas.toDataURL("image/png");
-                                                const downloadLink = document.createElement("a");
-                                                downloadLink.download = `QR-${material.name}.png`;
-                                                downloadLink.href = `${pngFile}`;
-                                                downloadLink.click();
-                                            }
-                                        };
-                                        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-                                    }
-                                }}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">download</span>
-                                Download PNG
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    setShowQR(false)
-                                }}
-                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
-                            >
-                                Sluiten
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
+
+            {/* QR Overlay (Full Card Overlay) */}
+            {showQR && (
+                <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in duration-300">
+                    <div className="bg-white p-4 rounded-[2.5rem] shadow-[0_0_50px_rgba(13,242,162,0.2)] transform hover:scale-105 transition-transform duration-500">
+                        <QRCodeSVG id={`qr-code-${material.id}`} value={qrUrl} size={160} />
+                    </div>
+                    <div className="mt-6 px-4 py-1.5 bg-[#0df2a2]/10 border border-[#0df2a2]/20 rounded-full">
+                        <p className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.2em] text-center">Scan voor Voice AI</p>
+                    </div>
+
+                    <div className="mt-10 flex flex-col gap-3 w-full max-w-[220px]">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const svg = document.getElementById(`qr-code-${material.id}`);
+                                if (svg) {
+                                    const svgData = new XMLSerializer().serializeToString(svg);
+                                    const canvas = document.createElement("canvas");
+                                    const ctx = canvas.getContext("2d");
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        canvas.width = 1200;
+                                        canvas.height = 1200;
+                                        if (ctx) {
+                                            ctx.fillStyle = "white";
+                                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                            ctx.drawImage(img, 100, 100, 1000, 1000);
+                                            const pngFile = canvas.toDataURL("image/png");
+                                            const downloadLink = document.createElement("a");
+                                            downloadLink.download = `QR-${material.name}.png`;
+                                            downloadLink.href = pngFile;
+                                            downloadLink.click();
+                                        }
+                                    };
+                                    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                                }
+                            }}
+                            className="w-full bg-[#0df2a2] hover:bg-emerald-400 text-[#050505] py-4 rounded-2xl text-[11px] font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/10 active:scale-95 uppercase tracking-wider"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">download</span>
+                            Download PNG
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setShowQR(false)
+                            }}
+                            className="w-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white py-3 px-4 rounded-xl text-[10px] font-bold tracking-[0.1em] transition-all uppercase flex items-center justify-center"
+                        >
+                            Sluiten
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="p-6 cursor-pointer" onClick={() => onLink(material.id)}>
                 <div className="flex justify-between items-start mb-1">
