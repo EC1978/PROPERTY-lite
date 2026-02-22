@@ -7,7 +7,7 @@ import MobileMenu from '@/components/layout/MobileMenu'
 import MaterialCard from '@/components/materials/MaterialCard'
 import LinkPropertyModal from '@/components/materials/LinkPropertyModal'
 import AddMaterialModal from '@/components/materials/AddMaterialModal'
-import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial } from './actions'
+import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial, updateMaterialImage } from './actions'
 
 interface Material {
     id: string
@@ -95,6 +95,18 @@ export default function MaterialsPage() {
         }
     }
 
+    const handleUpdateImage = async (imageUrl: string) => {
+        if (!selectedMaterial) return
+        try {
+            await updateMaterialImage(selectedMaterial.id, imageUrl)
+            // Update local state to reflect change immediately in the modal preview
+            setSelectedMaterial(prev => prev ? { ...prev, image_url: imageUrl } : null)
+            loadData()
+        } catch (error: any) {
+            alert(`Fout bij het bijwerken van afbeelding: ${error.message || 'Onbekende fout'}`)
+        }
+    }
+
     return (
         <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-sans overflow-x-hidden">
             <Sidebar userEmail={userEmail} />
@@ -124,10 +136,10 @@ export default function MaterialsPage() {
                         </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 mb-10">
+                    <div className="flex flex-nowrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2 md:pb-0">
                         <button
                             onClick={() => setFilter('all')}
-                            className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${filter === 'all'
+                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'all'
                                 ? 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-lg shadow-black/10'
                                 : 'bg-white dark:bg-white/5 text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-100 dark:border-white/5'
                                 }`}
@@ -136,7 +148,7 @@ export default function MaterialsPage() {
                         </button>
                         <button
                             onClick={() => setFilter('linked')}
-                            className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${filter === 'linked'
+                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'linked'
                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                                 : 'bg-white dark:bg-white/5 text-gray-400 hover:text-emerald-500 border border-gray-100 dark:border-white/5'
                                 }`}
@@ -145,7 +157,7 @@ export default function MaterialsPage() {
                         </button>
                         <button
                             onClick={() => setFilter('storage')}
-                            className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${filter === 'storage'
+                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'storage'
                                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                                 : 'bg-white dark:bg-white/5 text-gray-400 hover:text-amber-500 border border-gray-100 dark:border-white/5'
                                 }`}
@@ -210,7 +222,9 @@ export default function MaterialsPage() {
                     properties={properties}
                     materialName={selectedMaterial.name}
                     currentPropertyId={selectedMaterial.active_property_id}
+                    currentImageUrl={selectedMaterial.image_url}
                     onDelete={() => handleDeleteMaterial(selectedMaterial.id)}
+                    onUpdateImage={handleUpdateImage}
                 />
             )}
 

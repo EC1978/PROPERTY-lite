@@ -154,3 +154,25 @@ export async function deleteMaterial(materialId: string) {
 
     revalidatePath('/dashboard/materialen')
 }
+
+export async function updateMaterialImage(materialId: string, imageUrl: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Niet geautoriseerd')
+    }
+
+    const { error } = await supabase
+        .from('agent_materials')
+        .update({ image_url: imageUrl })
+        .eq('id', materialId)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Error updating material image:', error)
+        throw new Error('Update mislukt')
+    }
+
+    revalidatePath('/dashboard/materialen')
+}
