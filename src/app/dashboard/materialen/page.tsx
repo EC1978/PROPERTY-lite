@@ -8,6 +8,7 @@ import MaterialCard from '@/components/materials/MaterialCard'
 import LinkPropertyModal from '@/components/materials/LinkPropertyModal'
 import AddMaterialModal from '@/components/materials/AddMaterialModal'
 import ScansPerPropertyModal from '@/components/materials/ScansPerPropertyModal'
+import { createClient } from '@/utils/supabase/client'
 import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial, updateMaterialImage, updateMaterialName } from './actions'
 
 interface Material {
@@ -33,10 +34,15 @@ export default function MaterialsPage() {
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [filter, setFilter] = useState<'all' | 'linked' | 'storage'>('all')
-
-    const userEmail = "demo@voicerealty.ai"
+    const [userEmail, setUserEmail] = useState<string>('')
+    const supabase = createClient()
 
     useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) setUserEmail(user.email || '')
+        }
+        getUser()
         loadData()
     }, [])
 
