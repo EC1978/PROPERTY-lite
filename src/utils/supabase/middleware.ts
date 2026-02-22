@@ -38,8 +38,10 @@ export async function updateSession(request: NextRequest) {
         !request.nextUrl.pathname.startsWith('/register') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
         !request.nextUrl.pathname.startsWith('/woning') &&
+        !request.nextUrl.pathname.startsWith('/qr') &&
         !request.nextUrl.pathname.startsWith('/api/voice') &&
         request.nextUrl.pathname !== '/'
+
     ) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
