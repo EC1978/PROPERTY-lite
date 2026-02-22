@@ -132,3 +132,25 @@ export async function getActiveProperties() {
 
     return data
 }
+
+export async function deleteMaterial(materialId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        throw new Error('Niet geautoriseerd')
+    }
+
+    const { error } = await supabase
+        .from('agent_materials')
+        .delete()
+        .eq('id', materialId)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Error deleting material:', error)
+        throw new Error('Verwijderen mislukt')
+    }
+
+    revalidatePath('/dashboard/materialen')
+}

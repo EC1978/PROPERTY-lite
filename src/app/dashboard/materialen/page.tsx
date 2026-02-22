@@ -7,7 +7,7 @@ import MobileMenu from '@/components/layout/MobileMenu'
 import MaterialCard from '@/components/materials/MaterialCard'
 import LinkPropertyModal from '@/components/materials/LinkPropertyModal'
 import AddMaterialModal from '@/components/materials/AddMaterialModal'
-import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial } from './actions'
+import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial } from './actions'
 
 interface Material {
     id: string
@@ -78,6 +78,15 @@ export default function MaterialsPage() {
         }
     }
 
+    const handleDeleteMaterial = async (materialId: string) => {
+        try {
+            await deleteMaterial(materialId)
+            loadData()
+        } catch (error: any) {
+            alert(`Fout bij het verwijderen: ${error.message || 'Onbekende fout'}`)
+        }
+    }
+
     return (
         <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-sans overflow-x-hidden">
             <Sidebar userEmail={userEmail} />
@@ -120,6 +129,7 @@ export default function MaterialsPage() {
                                     key={material.id}
                                     material={material}
                                     onLink={handleLinkClick}
+                                    onDelete={handleDeleteMaterial}
                                 />
                             ))}
                         </div>

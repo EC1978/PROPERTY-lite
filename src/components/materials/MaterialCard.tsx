@@ -13,9 +13,10 @@ interface Material {
 interface MaterialCardProps {
     material: Material
     onLink: (id: string) => void
+    onDelete: (id: string) => void
 }
 
-export default function MaterialCard({ material, onLink }: MaterialCardProps) {
+export default function MaterialCard({ material, onLink, onDelete }: MaterialCardProps) {
     const [showQR, setShowQR] = useState(false)
     const isLinked = !!material.active_property_id
     const qrUrl = typeof window !== 'undefined'
@@ -56,10 +57,24 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
                         e.stopPropagation()
                         setShowQR(!showQR)
                     }}
-                    className="absolute top-4 right-4 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-emerald-500 transition-colors"
+                    className="absolute top-4 right-16 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-emerald-500 transition-colors"
                     title="Toon QR Code"
                 >
                     <span className="material-symbols-outlined text-[20px]">qr_code_2</span>
+                </button>
+
+                {/* Delete Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm('Weet je zeker dat je dit materiaal wilt verwijderen?')) {
+                            onDelete(material.id)
+                        }
+                    }}
+                    className="absolute top-4 right-4 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                    title="Verwijder Materiaal"
+                >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
                 </button>
 
                 {/* Overlay Gradient */}
