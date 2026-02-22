@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { uploadMaterialImage } from '@/app/dashboard/materialen/actions'
 
 interface Property {
     id: string
@@ -17,9 +18,9 @@ interface LinkPropertyModalProps {
     currentImageUrl?: string
     onDelete: () => void
     onUpdateImage: (url: string) => Promise<void>
+    onUpdateName: (name: string) => Promise<void>
+    onShowScans?: () => void
 }
-
-import { uploadMaterialImage } from '@/app/dashboard/materialen/actions'
 
 export default function LinkPropertyModal({
     isOpen,
@@ -30,10 +31,14 @@ export default function LinkPropertyModal({
     currentPropertyId,
     currentImageUrl,
     onDelete,
-    onUpdateImage
+    onUpdateImage,
+    onUpdateName,
+    onShowScans
 }: LinkPropertyModalProps) {
     const [selectedId, setSelectedId] = useState<string | null>(currentPropertyId)
     const [isUploading, setIsUploading] = useState(false)
+    const [localName, setLocalName] = useState(materialName)
+    const [isUpdatingName, setIsUpdatingName] = useState(false)
 
     if (!isOpen) return null
 
@@ -48,7 +53,8 @@ export default function LinkPropertyModal({
             const url = await uploadMaterialImage(formData)
             await onUpdateImage(url)
         } catch (error: any) {
-            alert(`Fout bij uploaden: ${error.message || 'Onbekende fout'}`)
+            console.error('Upload handler error:', error)
+            alert(`Fout bij bijwerken foto: ${error.message || 'Onbekende fout'}`)
         } finally {
             setIsUploading(false)
         }
@@ -67,42 +73,90 @@ export default function LinkPropertyModal({
                         </button>
                     </div>
 
-                    {/* Image Management Section */}
-                    <div className="mb-8 p-4 bg-gray-50 dark:bg-white/5 rounded-[2rem] border border-gray-100 dark:border-white/5">
-                        <div className="flex items-center gap-4">
-                            <div className="relative size-20 rounded-2xl overflow-hidden bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 shrink-0">
-                                {currentImageUrl ? (
-                                    <img src={currentImageUrl} alt={materialName} className="size-full object-cover" />
-                                ) : (
-                                    <div className="size-full flex items-center justify-center opacity-20">
-                                        <span className="material-symbols-outlined">image</span>
-                                    </div>
-                                )}
-                                {isUploading && (
-                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-                                        <div className="size-4 border-2 border-[#0df2a2] border-t-transparent rounded-full animate-spin" />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-black text-sm text-gray-900 dark:text-white mb-1">{materialName}</h3>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        id="modal-image-upload"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={isUploading}
-                                    />
-                                    <label
-                                        htmlFor="modal-image-upload"
-                                        className="text-[10px] font-black uppercase tracking-widest text-[#0df2a2] cursor-pointer hover:text-emerald-400 transition-colors"
-                                    >
-                                        {isUploading ? 'Uploaden...' : 'Afbeelding wijzigen'}
-                                    </label>
+                    {/* Image Section */}
+                    <div className="mb-6 p-4 bg-gray-50 dark:bg-white/5 rounded-[2rem] border border-gray-100 dark:border-white/5 flex items-center gap-4">
+                        <div className="relative size-16 rounded-2xl overflow-hidden bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 shrink-0">
+                            {currentImageUrl ? (
+                                <img src={currentImageUrl} alt={materialName} className="size-full object-cover" />
+                            ) : (
+                                <div className="size-full flex items-center justify-center opacity-20 text-gray-400">
+                                    <span className="material-symbols-outlined">image</span>
                                 </div>
-                            </div>
+                            )}
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                                    <div className="size-4 border-2 border-[#0df2a2] border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="file"
+                                id="modal-image-upload"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                disabled={isUploading}
+                            />
+                            <label
+                                htmlFor="modal-image-upload"
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0df2a2] cursor-pointer hover:text-emerald-400 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                                {isUploading ? 'Uploaden...' : 'Foto wijzigen'}
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Name Edit Section */}
+                    <div className="mb-8 space-y-3">
+                        <div className="flex justify-between items-center px-2">
+                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                <span className="material-symbols-outlined text-[14px]">edit</span>
+                                Materiaal Naam
+                            </label>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onClose();
+                                    onShowScans?.();
+                                }}
+                                className="flex items-center gap-1.5 text-[9px] font-black text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-[0.15em]"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">analytics</span>
+                                Statistieken & Reset
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={localName}
+                                onChange={(e) => setLocalName(e.target.value)}
+                                placeholder="Voer nieuwe naam in..."
+                                className="flex-1 bg-gray-50 dark:bg-white/5 border-2 border-transparent focus:border-[#0df2a2] rounded-[1.5rem] px-5 py-4 text-sm font-bold text-gray-900 dark:text-white outline-none transition-all shadow-inner"
+                            />
+                            {localName !== materialName && localName.trim() !== '' && (
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            setIsUpdatingName(true)
+                                            await onUpdateName(localName)
+                                        } catch (error: any) {
+                                            alert(`Fout bij wijzigen naam: ${error.message}`)
+                                        } finally {
+                                            setIsUpdatingName(false)
+                                        }
+                                    }}
+                                    disabled={isUpdatingName}
+                                    className="bg-[#0df2a2] text-black h-[56px] px-6 rounded-[1.5rem] flex items-center justify-center font-black text-xs hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 disabled:opacity-50 shrink-0"
+                                >
+                                    {isUpdatingName ? (
+                                        <div className="size-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        'OPSLAAN'
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
 

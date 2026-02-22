@@ -13,9 +13,10 @@ interface Material {
 interface MaterialCardProps {
     material: Material
     onLink: (id: string) => void
+    onShowScans: (id: string) => void
 }
 
-export default function MaterialCard({ material, onLink }: MaterialCardProps) {
+export default function MaterialCard({ material, onLink, onShowScans }: MaterialCardProps) {
     const [showQR, setShowQR] = useState(false)
     const isLinked = !!material.active_property_id
     const qrUrl = typeof window !== 'undefined'
@@ -82,10 +83,16 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
                                 e.stopPropagation();
                                 const svg = document.getElementById(`qr-code-${material.id}`);
                                 if (svg) {
+                                    // Ensure xmlns is present for standalone SVG use
+                                    if (!svg.getAttribute('xmlns')) {
+                                        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                                    }
+
                                     const svgData = new XMLSerializer().serializeToString(svg);
                                     const canvas = document.createElement("canvas");
                                     const ctx = canvas.getContext("2d");
                                     const img = new Image();
+
                                     img.onload = () => {
                                         canvas.width = 1200;
                                         canvas.height = 1200;
@@ -93,14 +100,28 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
                                             ctx.fillStyle = "white";
                                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                                             ctx.drawImage(img, 100, 100, 1000, 1000);
-                                            const pngFile = canvas.toDataURL("image/png");
-                                            const downloadLink = document.createElement("a");
-                                            downloadLink.download = `QR-${material.name}.png`;
-                                            downloadLink.href = pngFile;
-                                            downloadLink.click();
+
+                                            canvas.toBlob((blob) => {
+                                                if (blob) {
+                                                    const url = URL.createObjectURL(blob);
+                                                    const downloadLink = document.createElement("a");
+                                                    downloadLink.download = `QR-${material.name}.png`;
+                                                    downloadLink.href = url;
+                                                    downloadLink.click();
+                                                    // Cleanup
+                                                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                                                }
+                                            }, 'image/png');
                                         }
                                     };
-                                    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+
+                                    // Robust base64 encoding for SVG
+                                    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                        img.src = reader.result as string;
+                                    };
+                                    reader.readAsDataURL(svgBlob);
                                 }
                             }}
                             className="w-full bg-[#0df2a2] hover:bg-emerald-400 text-[#050505] py-4 rounded-2xl text-[11px] font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/10 active:scale-95 uppercase tracking-wider"
@@ -108,6 +129,68 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
                             <span className="material-symbols-outlined text-[18px]">download</span>
                             Download PNG
                         </button>
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                const svg = document.getElementById(`qr-code-${material.id}`);
+                                try {
+                                    if (!svg) return;
+                                    if (!svg.getAttribute('xmlns')) {
+                                        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                                    }
+                                    const svgData = new XMLSerializer().serializeToString(svg);
+                                    const canvas = document.createElement("canvas");
+                                    const ctx = canvas.getContext("2d");
+                                    const img = new Image();
+
+                                    await new Promise((resolve, reject) => {
+                                        img.onload = resolve;
+                                        img.onerror = reject;
+                                        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            img.src = reader.result as string;
+                                        };
+                                        reader.readAsDataURL(svgBlob);
+                                    });
+
+                                    canvas.width = 1200;
+                                    canvas.height = 1200;
+                                    if (ctx) {
+                                        ctx.fillStyle = "white";
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                        ctx.drawImage(img, 100, 100, 1000, 1000);
+
+                                        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+                                        if (blob && navigator.share && navigator.canShare?.({ files: [new File([blob], 'qr.png', { type: 'image/png' })] })) {
+                                            const file = new File([blob], `QR-${material.name}.png`, { type: 'image/png' });
+                                            await navigator.share({
+                                                files: [file],
+                                                title: `QR Code: ${material.name}`,
+                                                text: `Bekijk de Voice AI van ${material.name}`
+                                            });
+                                        } else {
+                                            // Fallback: share the URL if file sharing is not supported
+                                            await navigator.share({
+                                                title: `QR Code: ${material.name}`,
+                                                text: `Bekijk de Voice AI van ${material.name}`,
+                                                url: qrUrl
+                                            });
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Sharing failed:', error);
+                                    // Final fallback: copy link
+                                    navigator.clipboard.writeText(qrUrl);
+                                    alert('Link gekopieerd naar klembord!');
+                                }
+                            }}
+                            className="w-full bg-white/10 hover:bg-white/20 text-white py-4 rounded-2xl text-[11px] font-black transition-all flex items-center justify-center gap-2 active:scale-95 uppercase tracking-wider"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">share</span>
+                            Delen
+                        </button>
+
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
@@ -149,9 +232,18 @@ export default function MaterialCard({ material, onLink }: MaterialCardProps) {
                     </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-gray-400 group-hover:text-emerald-500 transition-colors">
-                    <span>ID: {material.id}</span>
-                    <div className="flex items-center gap-1">
+                <div className="mt-4 flex items-center justify-between">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onShowScans(material.id)
+                        }}
+                        className="flex items-center gap-1.5 text-[11px] font-black text-emerald-500 hover:text-emerald-400 transition-colors uppercase tracking-widest"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">analytics</span>
+                        Statistieken
+                    </button>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-gray-400 group-hover:text-gray-600 transition-colors">
                         <span>Beheer</span>
                         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                     </div>

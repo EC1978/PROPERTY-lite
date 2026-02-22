@@ -31,8 +31,9 @@ export default function AddMaterialModal({ isOpen, onClose, onConfirm }: AddMate
             formDataUpload.append('file', file)
             const publicUrl = await uploadMaterialImage(formDataUpload)
             setFormData(prev => ({ ...prev, image_url: publicUrl }))
-        } catch (error) {
-            alert('Fout bij het uploaden van afbeelding.')
+        } catch (error: any) {
+            console.error('File upload error:', error)
+            alert(`Fout bij uploaden: ${error.message || 'Onbekende fout'}`)
         } finally {
             setIsUploading(false)
         }

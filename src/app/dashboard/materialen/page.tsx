@@ -7,7 +7,8 @@ import MobileMenu from '@/components/layout/MobileMenu'
 import MaterialCard from '@/components/materials/MaterialCard'
 import LinkPropertyModal from '@/components/materials/LinkPropertyModal'
 import AddMaterialModal from '@/components/materials/AddMaterialModal'
-import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial, updateMaterialImage } from './actions'
+import ScansPerPropertyModal from '@/components/materials/ScansPerPropertyModal'
+import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial, updateMaterialImage, updateMaterialName } from './actions'
 
 interface Material {
     id: string
@@ -28,6 +29,7 @@ export default function MaterialsPage() {
     const [properties, setProperties] = useState<Property[]>([])
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [isScanModalOpen, setIsScanModalOpen] = useState(false)
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [filter, setFilter] = useState<'all' | 'linked' | 'storage'>('all')
@@ -107,6 +109,25 @@ export default function MaterialsPage() {
         }
     }
 
+    const handleUpdateName = async (newName: string) => {
+        if (!selectedMaterial) return
+        try {
+            await updateMaterialName(selectedMaterial.id, newName)
+            setSelectedMaterial(prev => prev ? { ...prev, name: newName } : null)
+            loadData()
+        } catch (error: any) {
+            alert(`Fout bij het bijwerken van naam: ${error.message || 'Onbekende fout'}`)
+        }
+    }
+
+    const handleShowScans = (materialId: string) => {
+        const mat = materials.find(m => m.id === materialId)
+        if (mat) {
+            setSelectedMaterial(mat)
+            setIsScanModalOpen(true)
+        }
+    }
+
     return (
         <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-sans overflow-x-hidden">
             <Sidebar userEmail={userEmail} />
@@ -179,6 +200,7 @@ export default function MaterialsPage() {
                                     key={material.id}
                                     material={material}
                                     onLink={handleLinkClick}
+                                    onShowScans={handleShowScans}
                                 />
                             ))}
                         </div>
@@ -214,8 +236,9 @@ export default function MaterialsPage() {
 
             <MobileNav />
 
-            {selectedMaterial && (
+            {isLinkModalOpen && selectedMaterial && (
                 <LinkPropertyModal
+                    key={`link-modal-${selectedMaterial.id}-${isLinkModalOpen}`}
                     isOpen={isLinkModalOpen}
                     onClose={() => setIsLinkModalOpen(false)}
                     onConfirm={handleConfirmLink}
@@ -225,6 +248,8 @@ export default function MaterialsPage() {
                     currentImageUrl={selectedMaterial.image_url}
                     onDelete={() => handleDeleteMaterial(selectedMaterial.id)}
                     onUpdateImage={handleUpdateImage}
+                    onUpdateName={handleUpdateName}
+                    onShowScans={() => handleShowScans(selectedMaterial.id)}
                 />
             )}
 
@@ -233,6 +258,15 @@ export default function MaterialsPage() {
                 onClose={() => setIsAddModalOpen(false)}
                 onConfirm={handleAddMaterial}
             />
+
+            {isScanModalOpen && selectedMaterial && (
+                <ScansPerPropertyModal
+                    isOpen={isScanModalOpen}
+                    onClose={() => setIsScanModalOpen(false)}
+                    materialId={selectedMaterial.id}
+                    materialName={selectedMaterial.name}
+                />
+            )}
         </div>
     )
 }
