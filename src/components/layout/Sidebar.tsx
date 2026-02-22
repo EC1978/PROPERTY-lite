@@ -35,6 +35,7 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                 <div className="space-y-1">
                     <NavLink href="/dashboard" icon="dashboard" label="Dashboard" />
                     <NavLink href="/properties" icon="real_estate_agent" label="Woningen" />
+                    <NavLink href="/dashboard/materialen" icon="inventory" label="Materialen" />
                     <NavLink href="/archive" icon="archive" label="Archief" />
                     <NavLink href="/leads" icon="groups" label="Leads" />
                     <NavLink href="/analytics" icon="monitoring" label="Statistieken" />
