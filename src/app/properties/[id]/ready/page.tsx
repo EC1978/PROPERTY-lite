@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { generateQrCode } from '@/utils/qr'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import Image from 'next/image'
 
 export default async function PropertyReadyPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,9 @@ export default async function PropertyReadyPage({ params }: { params: Promise<{ 
         redirect('/dashboard')
     }
 
-    const publicUrl = `https://voicerealty.ai/woning/${id}` // Mock public URL
+    const host = (await headers()).get('host')
+    const protocol = host?.includes('localhost') ? 'http' : 'https'
+    const publicUrl = `${protocol}://${host}/woning/${id}`
     const qrCodeUrl = await generateQrCode(publicUrl)
 
     // Update property with QR code URL if not set (optional, good for caching)

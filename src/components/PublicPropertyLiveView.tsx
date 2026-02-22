@@ -364,7 +364,7 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                         <p className="text-xs text-gray-500 text-center">Gereed voor flyers en te-koop borden</p>
                         <div ref={qrRef} className="bg-white p-5 rounded-2xl shadow-inner">
                             <QRCodeSVG
-                                value={`https://voicerealty.ai/woning/${property.id}`}
+                                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/woning/${property.id}`}
                                 size={200}
                                 bgColor="#ffffff"
                                 fgColor="#000000"
