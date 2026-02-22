@@ -62,7 +62,7 @@ export default async function PropertiesIndexPage() {
                     </div>
                     <div className="bg-white dark:bg-[#111] p-5 rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm">
                         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Totale Waarde</p>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
                             € {(properties?.reduce((acc, curr) => acc + (curr.price || 0), 0) || 0).toLocaleString()}
                         </div>
                     </div>
@@ -111,7 +111,7 @@ export default async function PropertiesIndexPage() {
                                             <div className="flex items-center gap-4 mt-4 mb-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Prijs</span>
-                                                    <span className="text-base font-bold text-gray-900 dark:text-white">€{property.price?.toLocaleString()}</span>
+                                                    <span className="text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">€{property.price?.toLocaleString()}</span>
                                                 </div>
                                                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                                                 <div className="flex flex-col">

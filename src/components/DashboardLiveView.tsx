@@ -372,7 +372,7 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                                             <div className="flex items-center gap-4 mt-4 mb-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-wider">Prijs</span>
-                                                    <span className="text-base font-bold text-gray-900 dark:text-white">€{prop.price?.toLocaleString()}</span>
+                                                    <span className="text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">€{prop.price?.toLocaleString()}</span>
                                                 </div>
                                                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                                                 <div className="flex flex-col">
