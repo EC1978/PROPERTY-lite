@@ -13,10 +13,9 @@ interface Material {
 interface MaterialCardProps {
     material: Material
     onLink: (id: string) => void
-    onDelete: (id: string) => void
 }
 
-export default function MaterialCard({ material, onLink, onDelete }: MaterialCardProps) {
+export default function MaterialCard({ material, onLink }: MaterialCardProps) {
     const [showQR, setShowQR] = useState(false)
     const isLinked = !!material.active_property_id
     const qrUrl = typeof window !== 'undefined'
@@ -57,24 +56,10 @@ export default function MaterialCard({ material, onLink, onDelete }: MaterialCar
                         e.stopPropagation()
                         setShowQR(!showQR)
                     }}
-                    className="absolute top-4 right-16 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-emerald-500 transition-colors"
+                    className="absolute top-4 right-4 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-emerald-500 transition-colors"
                     title="Toon QR Code"
                 >
                     <span className="material-symbols-outlined text-[20px]">qr_code_2</span>
-                </button>
-
-                {/* Delete Button */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        if (confirm('Weet je zeker dat je dit materiaal wilt verwijderen?')) {
-                            onDelete(material.id)
-                        }
-                    }}
-                    className="absolute top-4 right-4 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
-                    title="Verwijder Materiaal"
-                >
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
                 </button>
 
                 {/* Overlay Gradient */}
@@ -84,18 +69,52 @@ export default function MaterialCard({ material, onLink, onDelete }: MaterialCar
                 {showQR && (
                     <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
                         <div className="bg-white p-3 rounded-2xl shadow-2xl">
-                            <QRCodeSVG value={qrUrl} size={140} />
+                            <QRCodeSVG id={`qr-code-${material.id}`} value={qrUrl} size={140} />
                         </div>
                         <p className="mt-4 text-[10px] font-black text-white uppercase tracking-[0.2em] text-center">Scan voor Voice AI</p>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                setShowQR(false)
-                            }}
-                            className="mt-4 text-xs font-bold text-gray-400 hover:text-white transition-colors"
-                        >
-                            Sluiten
-                        </button>
+
+                        <div className="mt-4 flex gap-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const svg = document.getElementById(`qr-code-${material.id}`);
+                                    if (svg) {
+                                        const svgData = new XMLSerializer().serializeToString(svg);
+                                        const canvas = document.createElement("canvas");
+                                        const ctx = canvas.getContext("2d");
+                                        const img = new Image();
+                                        img.onload = () => {
+                                            canvas.width = 1000; // High res for printing
+                                            canvas.height = 1000;
+                                            if (ctx) {
+                                                ctx.fillStyle = "white";
+                                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                                ctx.drawImage(img, 50, 50, 900, 900);
+                                                const pngFile = canvas.toDataURL("image/png");
+                                                const downloadLink = document.createElement("a");
+                                                downloadLink.download = `QR-${material.name}.png`;
+                                                downloadLink.href = `${pngFile}`;
+                                                downloadLink.click();
+                                            }
+                                        };
+                                        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                                    }
+                                }}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                Download PNG
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    setShowQR(false)
+                                }}
+                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            >
+                                Sluiten
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

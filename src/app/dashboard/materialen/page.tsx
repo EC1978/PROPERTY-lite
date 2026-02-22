@@ -81,6 +81,7 @@ export default function MaterialsPage() {
     const handleDeleteMaterial = async (materialId: string) => {
         try {
             await deleteMaterial(materialId)
+            setIsLinkModalOpen(false)
             loadData()
         } catch (error: any) {
             alert(`Fout bij het verwijderen: ${error.message || 'Onbekende fout'}`)
@@ -129,7 +130,6 @@ export default function MaterialsPage() {
                                     key={material.id}
                                     material={material}
                                     onLink={handleLinkClick}
-                                    onDelete={handleDeleteMaterial}
                                 />
                             ))}
                         </div>
@@ -163,6 +163,7 @@ export default function MaterialsPage() {
                     properties={properties}
                     materialName={selectedMaterial.name}
                     currentPropertyId={selectedMaterial.active_property_id}
+                    onDelete={() => handleDeleteMaterial(selectedMaterial.id)}
                 />
             )}
 

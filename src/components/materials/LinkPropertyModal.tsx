@@ -14,6 +14,7 @@ interface LinkPropertyModalProps {
     properties: Property[]
     materialName: string
     currentPropertyId: string | null
+    onDelete: () => void
 }
 
 export default function LinkPropertyModal({
@@ -22,7 +23,8 @@ export default function LinkPropertyModal({
     onConfirm,
     properties,
     materialName,
-    currentPropertyId
+    currentPropertyId,
+    onDelete
 }: LinkPropertyModalProps) {
     const [selectedId, setSelectedId] = useState<string | null>(currentPropertyId)
 
@@ -50,8 +52,8 @@ export default function LinkPropertyModal({
                         <button
                             onClick={() => setSelectedId(null)}
                             className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedId === null
-                                    ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-[#0df2a2]'
-                                    : 'bg-gray-50 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-[#0df2a2]'
+                                : 'bg-gray-50 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
                                 }`}
                         >
                             <div className="flex items-center gap-3">
@@ -72,8 +74,8 @@ export default function LinkPropertyModal({
                                 key={prop.id}
                                 onClick={() => setSelectedId(prop.id)}
                                 className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedId === prop.id
-                                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-[#0df2a2]'
-                                        : 'bg-gray-50 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                                    ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-[#0df2a2]'
+                                    : 'bg-gray-50 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
                                     }`}
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -93,10 +95,22 @@ export default function LinkPropertyModal({
                     </button>
 
                     <button
-                        onClick={onClose}
-                        className="w-full py-4 text-gray-400 dark:text-gray-500 font-bold text-sm hover:text-gray-900 dark:hover:text-white transition-colors"
+                        onClick={() => {
+                            if (confirm('Weet je zeker dat je dit materiaal wilt verwijderen?')) {
+                                onDelete()
+                            }
+                        }}
+                        className="w-full py-4 text-red-500 hover:text-red-600 font-bold text-sm transition-colors flex items-center justify-center gap-2"
                     >
-                        Annuleren
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        Materiaal Verwijderen
+                    </button>
+
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 text-gray-400 dark:text-gray-500 font-bold text-xs hover:text-gray-900 dark:hover:text-white transition-colors uppercase tracking-widest"
+                    >
+                        Sluiten
                     </button>
                 </div>
             </div>
