@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getUserPlan } from '@/utils/saas'
 
 export default async function BillingSettingsPage() {
     const supabase = await createClient()
@@ -11,12 +10,42 @@ export default async function BillingSettingsPage() {
         redirect('/login')
     }
 
-    const plan = await getUserPlan(supabase, user.id)
+    // Fetch subscription
+    const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('plan, status, period_end')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    const invoices = [
-        { id: 'INV-2024-001', date: '01 Feb 2024', amount: '€ 49.00', status: 'Betaald' },
-        { id: 'INV-2024-002', date: '01 Jan 2024', amount: '€ 49.00', status: 'Betaald' },
-    ]
+    const plan = subscription?.plan || 'Essential'
+    const status = subscription?.status || 'active'
+
+    // Format next billing date
+    let nextBillingDate = 'Niet beschikbaar'
+    if (subscription?.period_end) {
+        const d = new Date(subscription.period_end)
+        const months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
+        nextBillingDate = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+    }
+
+    // Fetch recent invoices (max 3)
+    const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, amount, date, status')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(3)
+
+    const formattedInvoices = (invoices || []).map((inv) => {
+        const d = new Date(inv.date)
+        const shortMonths = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+        return {
+            id: inv.invoice_number,
+            date: `${String(d.getDate()).padStart(2, '0')} ${shortMonths[d.getMonth()]} ${d.getFullYear()}`,
+            amount: `€ ${Number(inv.amount).toFixed(2)}`,
+            status: inv.status,
+        }
+    })
 
     return (
         <div className="space-y-8">
@@ -37,9 +66,11 @@ export default async function BillingSettingsPage() {
                         <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Huidig Plan</h4>
                         <div className="flex items-center gap-4 mb-2">
                             <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan}</span>
-                            <span className="bg-[#0df2a2]/10 text-[#0df2a2] text-xs font-bold px-2 py-1 rounded-full border border-[#0df2a2]/20">Actief</span>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full border ${status === 'active' ? 'bg-[#0df2a2]/10 text-[#0df2a2] border-[#0df2a2]/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                                {status === 'active' ? 'Actief' : 'Inactief'}
+                            </span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Je volgende factuur is op 1 Maart 2024.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Je volgende factuur is op {nextBillingDate}.</p>
                     </div>
 
                     <div className="relative z-10 flex gap-3">
@@ -93,38 +124,48 @@ export default async function BillingSettingsPage() {
                     </Link>
                 </div>
                 <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
-                    <div className="hidden md:block">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-white/5">
-                                <tr>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Factuur #</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Datum</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Bedrag</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Status</th>
-                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Download</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                                {invoices.map((invoice) => (
-                                    <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{invoice.id}</td>
-                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{invoice.date}</td>
-                                        <td className="px-6 py-4 text-gray-900 dark:text-white font-bold">{invoice.amount}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className="bg-[#0df2a2]/10 text-[#0df2a2] text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-[#0df2a2]/20">
-                                                {invoice.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="p-2 w-10 h-10 inline-flex items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-white hover:bg-[#0df2a2] transition-colors">
-                                                <span className="material-symbols-outlined text-[18px]">download</span>
-                                            </button>
-                                        </td>
+                    {formattedInvoices.length === 0 ? (
+                        <div className="p-10 text-center text-gray-500 dark:text-gray-400 text-sm">
+                            <span className="material-symbols-outlined text-3xl mb-2 block opacity-30">receipt_long</span>
+                            Nog geen facturen beschikbaar.
+                        </div>
+                    ) : (
+                        <div className="hidden md:block">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-white/5">
+                                    <tr>
+                                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Factuur #</th>
+                                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Datum</th>
+                                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Bedrag</th>
+                                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Status</th>
+                                        <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Download</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                    {formattedInvoices.map((invoice) => (
+                                        <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">{invoice.id}</td>
+                                            <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{invoice.date}</td>
+                                            <td className="px-6 py-4 text-gray-900 dark:text-white font-bold">{invoice.amount}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${invoice.status === 'Betaald'
+                                                    ? 'bg-[#0df2a2]/10 text-[#0df2a2] border-[#0df2a2]/20'
+                                                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                    }`}>
+                                                    {invoice.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button className="p-2 w-10 h-10 inline-flex items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-white hover:bg-[#0df2a2] transition-colors">
+                                                    <span className="material-symbols-outlined text-[18px]">download</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
