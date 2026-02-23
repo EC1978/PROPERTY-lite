@@ -11,7 +11,7 @@ VoiceRealty is een geavanceerde SaaS-applicatie voor makelaars. Het systeem tran
 ## 3. Ontwikkelingsfasen (Sectie voor Sectie)
 We bouwen deze app stap voor stap. De AI mag NOOIT meerdere fasen tegelijk bouwen.
 - [x] **Fase 1: Lead sectie** (Overzicht van alle, warme en onbehandelde leads, detailweergave, score out of 100)
-- [ ] **Fase 2: Abonnementen proces** (Pakketten kiezen zoals Essential/Pro/Elite, facturatieoverzicht)
+- [x] **Fase 2: Abonnementen proces** (Pakketten kiezen zoals Essential/Pro/Elite, facturatieoverzicht)
 - [ ] **Fase 3: Reviews** (Klantbeoordelingen verzamelen en tonen na bezichtiging/verkoop)
 - [ ] **Fase 4: Facturatie** (Mollie/Stripe koppeling, PDF facturen downloaden, betaalmethodes)
 - [ ] **Fase 5: Integratie tools** (Koppelingen met Google Calendar, Outlook, Realworks CRM)

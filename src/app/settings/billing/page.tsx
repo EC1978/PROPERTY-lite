@@ -14,58 +14,94 @@ export default async function BillingSettingsPage() {
     const plan = await getUserPlan(supabase, user.id)
 
     const invoices = [
-        { id: 'INV-2024-001', date: '01 Feb 2024', amount: '€ 49.00', status: 'Paid' },
-        { id: 'INV-2024-002', date: '01 Jan 2024', amount: '€ 49.00', status: 'Paid' },
-        { id: 'INV-2023-012', date: '01 Dec 2023', amount: '€ 49.00', status: 'Paid' },
+        { id: 'INV-2024-001', date: '01 Feb 2024', amount: '€ 49.00', status: 'Betaald' },
+        { id: 'INV-2024-002', date: '01 Jan 2024', amount: '€ 49.00', status: 'Betaald' },
     ]
 
     return (
         <div className="space-y-8">
-            <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Abonnement & Facturatie</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Beheer je abonnement en bekijk je facturen.</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Abonnement & Facturatie</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Beheer je abonnement, betaalmethodes en bekijk je facturen.</p>
+                </div>
             </div>
 
-            {/* Current Plan */}
-            <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <span className="material-symbols-outlined text-[120px] text-emerald-500">verified</span>
-                </div>
-                <div className="relative z-10">
-                    <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Huidig Plan</h4>
-                    <div className="flex items-center gap-4 mb-6">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan}</span>
-                        <span className="bg-emerald-500/10 text-emerald-500 text-xs font-bold px-2 py-1 rounded-full border border-emerald-500/20">Actief</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Current Plan */}
+                <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                        <span className="material-symbols-outlined text-[120px] text-[#0df2a2]">verified</span>
+                    </div>
+                    <div className="relative z-10 mb-8">
+                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Huidig Plan</h4>
+                        <div className="flex items-center gap-4 mb-2">
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan}</span>
+                            <span className="bg-[#0df2a2]/10 text-[#0df2a2] text-xs font-bold px-2 py-1 rounded-full border border-[#0df2a2]/20">Actief</span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Je volgende factuur is op 1 Maart 2024.</p>
                     </div>
 
-                    <div className="flex gap-3">
-                        {plan !== 'Elite' ? (
-                            <Link href="/pricing" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/20">
-                                Upgrade naar Elite
+                    <div className="relative z-10 flex gap-3">
+                        <Link href="/settings/billing/packages" className="bg-[#0df2a2] hover:bg-[#0bc081] text-black font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg shadow-[#0df2a2]/20 text-sm">
+                            {plan !== 'Elite' ? 'Upgrade Plan' : 'Pakketten Bekijken'}
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 p-6 flex flex-col justify-between">
+                    <div>
+                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Snelle Acties</h4>
+                        <div className="space-y-3">
+                            <Link href="/settings/billing/payment-method" className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-[#0df2a2] transition-colors">
+                                        <span className="material-symbols-outlined">credit_card</span>
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-bold text-gray-900 dark:text-white text-sm">Betaalmethode</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">Mastercard eindigend op 4242</div>
+                                    </div>
+                                </div>
+                                <span className="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors">chevron_right</span>
                             </Link>
-                        ) : (
-                            <button className="bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white font-semibold py-2.5 px-6 rounded-xl transition-colors">
-                                Abonnement Beheren
-                            </button>
-                        )}
+
+                            <Link href="/settings/billing/history" className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-[#0df2a2] transition-colors">
+                                        <span className="material-symbols-outlined">receipt_long</span>
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-bold text-gray-900 dark:text-white text-sm">Factuurhistorie</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">Bekijk en download oude facturen</div>
+                                    </div>
+                                </div>
+                                <span className="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors">chevron_right</span>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Invoices */}
+            {/* Recent Invoices Preview */}
             <div>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Recente Facturen</h4>
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Recente Facturen</h4>
+                    <Link href="/settings/billing/history" className="text-xs font-bold text-[#0df2a2] hover:underline">
+                        Bekijk Alles
+                    </Link>
+                </div>
                 <div className="bg-white dark:bg-slate-card rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden">
-                    {/* Desktop View */}
                     <div className="hidden md:block">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400">
+                            <thead className="bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-white/5">
                                 <tr>
-                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Factuur #</th>
-                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Datum</th>
-                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px]">Bedrag</th>
-                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Status</th>
-                                    <th className="px-6 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Download</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Factuur #</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Datum</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Bedrag</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Status</th>
+                                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px] text-right">Download</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -75,40 +111,19 @@ export default async function BillingSettingsPage() {
                                         <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{invoice.date}</td>
                                         <td className="px-6 py-4 text-gray-900 dark:text-white font-bold">{invoice.amount}</td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                            <span className="bg-[#0df2a2]/10 text-[#0df2a2] text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-[#0df2a2]/20">
                                                 {invoice.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                                                <span className="material-symbols-outlined text-[20px]">download</span>
+                                            <button className="p-2 w-10 h-10 inline-flex items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-white hover:bg-[#0df2a2] transition-colors">
+                                                <span className="material-symbols-outlined text-[18px]">download</span>
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-
-                    {/* Mobile View */}
-                    <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
-                        {invoices.map((invoice) => (
-                            <div key={invoice.id} className="p-5 flex items-center justify-between">
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white">{invoice.id}</h4>
-                                    <p className="text-xs text-gray-500 mt-0.5">{invoice.date}</p>
-                                    <div className="mt-2 text-sm font-bold text-gray-900 dark:text-white">{invoice.amount}</div>
-                                </div>
-                                <div className="flex flex-col items-end gap-3">
-                                    <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                                        {invoice.status}
-                                    </span>
-                                    <button className="size-10 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-400 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[20px]">download</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>
