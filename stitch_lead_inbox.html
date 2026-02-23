@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VoiceRealty AI - Lead Inbox Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10B981", // Electric Emerald
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#0A0A0A", // Deep Obsidian
+                        "soft-slate": "#94A3B8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .frosted-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .emerald-glow {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-white font-display min-h-screen">
+<!-- Top Navigation / Status Bar Area -->
+<header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md px-6 pt-12 pb-4">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black">
+<span class="material-symbols-outlined font-bold">analytics</span>
+</div>
+<h1 class="text-2xl font-bold tracking-tight">Lead Inbox</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 rounded-full hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background-dark"></span>
+</button>
+<div class="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5">
+<img alt="Profile" class="w-full h-full rounded-full object-cover" data-alt="Professional real estate agent profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtG-huEXuAUeij9BcfriVtTHK9EEs6RVwUDddTj12X2Zt9EU_1jjiF5-jzLEkx62js_J1RuX1bTElmHlAc4dNdr02TlrAgFUGCE1I4NdDM-KexeLXRkhhX6S1-wFQMx35CdFbgPjMDsuvj201sf7tO1_Zzwz8WF_C4motuTBMUeT8VDm66pZu_dvGwm75LUsihv7C9womT7T8-8WwtS2YladL-yiSeXkOwiHsAr4wAIVn-480ABabPGOeNC2HbiF7LRbq19J0fTEE"/>
+</div>
+</div>
+</div>
+<!-- Filter Pill Bar -->
+<div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary px-6 text-black font-semibold text-sm transition-all shadow-lg shadow-primary/20">
+                Alle
+            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white/5 border border-white/10 px-6 text-white font-medium text-sm hover:bg-white/10 transition-all">
+                Warme Leads
+            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white/5 border border-white/10 px-6 text-white font-medium text-sm hover:bg-white/10 transition-all">
+                Ingeplande Bezichtigingen
+            </button>
+</div>
+</header>
+<main class="px-4 pb-24 space-y-4 mt-2">
+<!-- Lead Card 1 -->
+<div class="frosted-glass rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden group hover:bg-white/5 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Lead" class="w-14 h-14 rounded-full object-cover" data-alt="Portrait of lead Jasper de Vries" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQpkG0hRxPqZw9uxp_LyIGDl5McEP-eTTidOPKVxFpqrG_ztlFQBI5jcInN0mdYNJP_jkRwA1DTJeLqjsBWBhKp_cuR82GVrIUHiTkwFCXWBX_SPQnSUL2BCe4hLaaUkSUvIMdEqkDq-neaGuX8LxmVySaF9MWW-Yo4S_m8kB7mvMfVDrVDbfr-pA2A51srt0ZqlZGergSSawv_QNTdn8OlQ_P3uArkhbONLxEPkVg8RcxEBbvKKdAB6f6s5do0tZWc0YiJKwX-f4"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-primary border-2 border-[#1A1A1A] rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<h3 class="text-white text-base font-bold leading-tight">Jasper de Vries</h3>
+<p class="text-soft-slate text-sm font-normal mt-0.5">Grachtengracht 12, Amsterdam</p>
+<p class="text-soft-slate/60 text-xs mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 14m geleden
+                        </p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="emerald-glow bg-primary/20 border border-primary/30 rounded-full px-3 py-1 text-primary text-xs font-bold tracking-wider">
+                        92/100
+                    </div>
+<span class="text-[10px] text-primary uppercase font-bold tracking-widest px-1">Hot Lead</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-background-dark">
+<span class="material-symbols-outlined text-primary text-sm">smart_toy</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center border-2 border-background-dark">
+<span class="material-symbols-outlined text-blue-400 text-sm">call</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lead Card 2 -->
+<div class="frosted-glass rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden group hover:bg-white/5 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Lead" class="w-14 h-14 rounded-full object-cover grayscale-[40%]" data-alt="Portrait of lead Sophie Bakker" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5HF1g9nxGEAbsn7J22vFAnxk-fyc4vTe_5rYF4q6wjZ84cinKRIfx_7OMdkve3bNe-mCfIeantpJ4g4OohM5y-W8qhpeBSmuAScpcseZ9OKQad_xJASQeNgMJn93KRNvlM1MuxT22ghQNkb4AOkV4-dxahRUs0anIxCM9Cq5izWTqGUaapDfvHJsXyTqiDkKgMTHGOzOBPno7NaKU_Y00NF7SpC6qozRfu979RX_CLMxjxNUqQ1rl-5DJEjq3eqDU9o-WU1lhRZg"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-primary/40 border-2 border-[#1A1A1A] rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<h3 class="text-white text-base font-bold leading-tight">Sophie Bakker</h3>
+<p class="text-soft-slate text-sm font-normal mt-0.5">Keizersgracht 45, Amsterdam</p>
+<p class="text-soft-slate/60 text-xs mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 1u geleden
+                        </p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-white text-xs font-bold tracking-wider">
+                        78/100
+                    </div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<p class="text-xs text-soft-slate italic">"Wil morgen de tuin bekijken..."</p>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined text-xl">calendar_month</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lead Card 3 -->
+<div class="frosted-glass rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden group hover:bg-white/5 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Lead" class="w-14 h-14 rounded-full object-cover" data-alt="Portrait of lead Mark van den Berg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUv33lMK3D9K5-nSsP-gmaidl7PTiXvv_NvTGwr_zyIjw1IhAv4m17HZwF7ptl_GcOkQloBc6lcSOvxxub2cvEEC31_s1dSHSjqcGFVfehq-GFrv9hZnnLdWWVF7z26IYTdwozHpeIkenFDgFwSuw_dxfL-Fh7eusYMwG2cyTsbq70xrPh0ByLS1hzHlH3Jewu2dfee3C3Y06Cq3K3ONPa3P47VBNYVVU2vTaEeihVd8vZ-u7SHcu5-JUGi-AUyQ_vUwORxIw2PfU"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-primary border-2 border-[#1A1A1A] rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<h3 class="text-white text-base font-bold leading-tight">Mark van den Berg</h3>
+<p class="text-soft-slate text-sm font-normal mt-0.5">Singel 102, Utrecht</p>
+<p class="text-soft-slate/60 text-xs mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 3u geleden
+                        </p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="emerald-glow bg-primary/20 border border-primary/30 rounded-full px-3 py-1 text-primary text-xs font-bold tracking-wider">
+                        88/100
+                    </div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded bg-white/5 text-[10px] text-soft-slate border border-white/10 uppercase font-semibold">Hypotheek check ok</span>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">mail</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lead Card 4 -->
+<div class="frosted-glass rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden group hover:bg-white/5 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex gap-4">
+<div class="relative">
+<img alt="Lead" class="w-14 h-14 rounded-full object-cover grayscale" data-alt="Portrait of lead Elena de Wit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBprq4vbcot7mDT9uTh0V0UjydRvvdpbt1Ael9f3WFuzV91FkLZaG1L-e9iWlmv1BqbAF3PukHpJHHxsLPdzETGsbvdF6gYgmOWkIBfPKqgOkZTcvGMni6Qum1rtFnsmDQ-PRuZP1XQ-0h6q-hG3s-SupeVgrjUWOlWolhuSHuEeo6jX5KUxqtu4PSnNul6t7N3ZkKn0Uak2PEt0JApAspIJDggS9QK1QN6eVeYJR19HcG9dVx2sQV6duDjv1qk9wnp5CTv2gMOvcM"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 border-2 border-[#1A1A1A] rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<h3 class="text-white text-base font-bold leading-tight">Elena de Wit</h3>
+<p class="text-soft-slate text-sm font-normal mt-0.5">Vondelstraat 8, Amsterdam</p>
+<p class="text-soft-slate/60 text-xs mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> Gisteren
+                        </p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<div class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-soft-slate text-xs font-bold tracking-wider">
+                        64/100
+                    </div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-white/5">
+<p class="text-[10px] text-orange-400 font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">warning</span> AI heeft verduidelijking nodig
+                </p>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-all">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Navigation Bar (iOS style) -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-dark/95 backdrop-blur-xl border-t border-white/5 px-6 pb-8 pt-4 flex justify-between items-center z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[28px] fill-1">inbox</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Inbox</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-soft-slate hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[28px]">home_work</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Woningen</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-14 bg-primary text-black rounded-full shadow-lg shadow-primary/30 -mt-10 border-4 border-background-dark">
+<span class="material-symbols-outlined text-[32px] font-bold">add</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-soft-slate hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[28px]">insights</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Stats</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-soft-slate hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[28px]">settings</span>
+<span class="text-[10px] font-medium uppercase tracking-widest">Instellingen</span>
+</button>
+</nav>
+<!-- Custom Cursor Glow (Optional mobile aesthetic) -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+<div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px]"></div>
+<div class="absolute top-1/2 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-[100px]"></div>
+</div>
+</body></html>
