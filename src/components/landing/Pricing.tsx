@@ -43,7 +43,7 @@ export default function Pricing() {
                         key={tier.name}
                         className={`min-w-[280px] snap-center rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden transition-all duration-300 ${tier.highlight
                             ? 'bg-gradient-to-b from-[#10b77f]/20 to-[#0A0A0A] border border-[#10b77f]/50 shadow-lg shadow-[#10b77f]/5'
-                            : 'glass-card border border-gray-200 dark:border-white/10'
+                            : 'bg-[#0A0A0A] border border-white/10'
                             }`}
                     >
                         {tier.recommended && (
@@ -53,18 +53,18 @@ export default function Pricing() {
                         )}
 
                         <div className="flex flex-col gap-1">
-                            <h4 className={`text-sm font-medium ${tier.highlight ? 'text-[#10b77f]' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <h4 className={`text-sm font-medium ${tier.highlight ? 'text-[#10b77f]' : 'text-gray-400'}`}>
                                 {tier.name}
                             </h4>
                             <div className="flex items-baseline gap-1">
-                                <span className={`text-3xl font-bold ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{tier.price}</span>
+                                <span className="text-3xl font-bold text-white">{tier.price}</span>
                                 <span className="text-sm text-gray-500">/mnd</span>
                             </div>
                         </div>
 
                         <ul className="flex flex-col gap-3 my-2">
                             {tier.features.map((item) => (
-                                <li key={item} className={`flex items-center gap-3 text-sm ${tier.highlight ? 'text-gray-300' : 'text-slate-600 dark:text-gray-300'}`}>
+                                <li key={item} className={`flex items-center gap-3 text-sm ${tier.highlight ? 'text-gray-300' : 'text-gray-300'}`}>
                                     <span className="material-symbols-outlined text-[#10b77f] text-[18px]">check_circle</span>
                                     {item}
                                 </li>
@@ -75,7 +75,7 @@ export default function Pricing() {
                             href={tier.href}
                             className={`mt-auto w-full py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center ${tier.highlight
                                 ? 'bg-[#10b77f] text-[#0A0A0A] hover:bg-[#10b77f]/90'
-                                : 'border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-slate-900 dark:text-white'
+                                : 'border border-gray-200 dark:border-white/10 hover:bg-gray-800 dark:hover:bg-white/5 text-white'
                                 }`}
                         >
                             {tier.cta}
