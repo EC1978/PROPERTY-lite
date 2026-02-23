@@ -6,7 +6,7 @@ interface HeroProps {
 
 export default function Hero({ backgroundImage }: HeroProps) {
     return (
-        <div className="group relative overflow-hidden rounded-2xl glass-panel p-6 sm:p-8 aspect-[4/5] sm:aspect-square md:aspect-[2/1] lg:aspect-[2.4/1] w-full flex flex-col justify-between">
+        <div className="group relative overflow-hidden rounded-2xl glass-panel p-6 sm:p-8 min-h-[550px] sm:min-h-0 sm:aspect-square md:aspect-[2/1] lg:aspect-[2.4/1] w-full flex flex-col justify-between">
             {backgroundImage && (
                 <div
                     className="absolute inset-y-0 right-0 w-full md:w-3/4 z-0 opacity-60 animate-in fade-in duration-1000"
