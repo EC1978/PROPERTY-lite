@@ -23,6 +23,12 @@ export default function MobileNav() {
                 </div>
                 <span className={`text-[10px] font-medium ${pathname === '/leads' ? 'text-white' : 'text-gray-400'} group-hover:text-white transition-colors`}>Leads</span>
             </Link>
+            <Link href="/dashboard/reviews" className="flex flex-col items-center justify-center w-full h-full gap-1 group">
+                <div className="relative p-1">
+                    <span className={`material-symbols-outlined text-[24px] ${pathname === '/dashboard/reviews' ? 'text-[#0df2a2]' : 'text-gray-400'} group-hover:text-white transition-colors`}>star</span>
+                </div>
+                <span className={`text-[10px] font-medium ${pathname === '/dashboard/reviews' ? 'text-white' : 'text-gray-400'} group-hover:text-white transition-colors`}>Reviews</span>
+            </Link>
             <Link href="/shop" className="flex flex-col items-center justify-center w-full h-full gap-1 group">
                 <div className="relative p-1">
                     <span className={`material-symbols-outlined text-[24px] ${pathname === '/shop' ? 'text-[#0df2a2]' : 'text-gray-400'} group-hover:text-white transition-colors`}>shopping_bag</span>

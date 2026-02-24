@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StarRating from "./StarRating";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { submitReview } from "@/app/review/actions";
 
 interface ReviewFormProps {
     propertyId: string;
@@ -12,20 +13,27 @@ interface ReviewFormProps {
 export default function ReviewForm({ propertyId }: ReviewFormProps) {
     const router = useRouter();
     const [rating, setRating] = useState(0);
+    const [name, setName] = useState("");
     const [feedback, setFeedback] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (rating === 0) return; // Optional: show an error message
 
         setIsSubmitting(true);
+        setErrorMsg("");
 
-        // Mock API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const result = await submitReview(propertyId, rating, feedback, name);
 
-        // Redirect to thank you page
-        router.push("/review/thank-you");
+        if (result.success) {
+            // Redirect to thank you page
+            router.push("/review/thank-you");
+        } else {
+            setErrorMsg(result.error || "Er is een fout opgetreden.");
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -44,6 +52,21 @@ export default function ReviewForm({ propertyId }: ReviewFormProps) {
                 )}
             </div>
 
+            {/* Name Input */}
+            <div className="w-full space-y-3">
+                <label htmlFor="name" className="block text-white font-semibold text-sm px-1">
+                    Uw naam (optioneel)
+                </label>
+                <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="bijv. Jan de Vries"
+                    className="w-full bg-[#161616] border border-white/10 rounded-xl p-4 text-sm text-white/80 placeholder:text-white/20 focus:ring-[#0df2a2] focus:border-[#0df2a2] transition-all"
+                />
+            </div>
+
             {/* Feedback Textarea */}
             <div className="w-full space-y-3">
                 <label htmlFor="feedback" className="block text-white font-semibold text-sm px-1">
@@ -57,6 +80,12 @@ export default function ReviewForm({ propertyId }: ReviewFormProps) {
                     className="w-full bg-[#161616] border border-white/10 rounded-xl p-4 text-sm text-white/80 placeholder:text-white/20 focus:ring-[#0df2a2] focus:border-[#0df2a2] transition-all min-h-[120px]"
                 />
             </div>
+
+            {errorMsg && (
+                <div className="text-red-500 text-sm italic bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                    {errorMsg}
+                </div>
+            )}
 
             {/* CTA Button */}
             <button

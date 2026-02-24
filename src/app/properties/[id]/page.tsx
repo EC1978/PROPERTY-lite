@@ -16,10 +16,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
     const { data: property } = await supabase
         .from('properties')
-        .select('*')
+        .select(`
+            *,
+            reviews (*)
+        `)
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
+
+    if (property && property.reviews) {
+        property.reviews = property.reviews.filter((r: any) => !r.is_hidden && !r.is_deleted)
+    }
 
     if (!property) {
         return (

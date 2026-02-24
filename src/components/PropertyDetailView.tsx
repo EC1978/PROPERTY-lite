@@ -780,6 +780,51 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                             </div>
                         )}
 
+                        {/* Customer Reviews Section */}
+                        {property.reviews && property.reviews.length > 0 && (
+                            <div className="bg-[#111] border border-white/5 rounded-3xl p-6 md:p-8">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="size-8 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">star</span>
+                                    </div>
+                                    <h3 className="text-base font-bold text-white">Klantbeoordelingen</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {property.reviews.map((review: any) => (
+                                        <div key={review.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden">
+                                            {/* Decorative top border */}
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#0df2a2]/30 to-transparent"></div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex gap-1">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <span key={i} className={`material-symbols-outlined text-[16px] ${i < review.rating ? 'text-[#0df2a2]' : 'text-white/20'}`} style={{ fontVariationSettings: i < review.rating ? "'FILL' 1" : "'FILL' 0" }}>
+                                                            star
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] text-white/40 font-medium">
+                                                    {new Date(review.created_at).toLocaleDateString('nl-NL')}
+                                                </span>
+                                            </div>
+
+                                            {review.feedback_text ? (
+                                                <p className="text-sm text-white/80 italic line-clamp-4">"{review.feedback_text}"</p>
+                                            ) : (
+                                                <p className="text-sm text-white/40 italic">Geen toelichting geschreven.</p>
+                                            )}
+
+                                            <div className="pt-3 border-t border-white/10 mt-auto">
+                                                <span className="text-xs font-bold text-[#0df2a2]">
+                                                    {review.reviewer_name || 'Anoniem'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Admin Beheer Section */}
                         {isAdmin && (
                             <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 mb-12">
