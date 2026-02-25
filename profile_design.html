@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>C5. Profiel &amp; Accountinstellingen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10B981", // Electric Emerald
+                        "primary-dark": "#059669",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#0A0A0A", // Deep Obsidian
+                        "surface-dark": "#161616",
+                        "surface-border": "#262626",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px -3px rgba(16, 185, 129, 0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .frosted-glass {
+                background: rgba(22, 22, 22, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .pb-safe {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0A0A0A;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 3px;
+        }
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #10B981;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10B981;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark font-display text-gray-100 min-h-screen flex flex-col antialiased selection:bg-primary selection:text-white">
+<header class="sticky top-0 z-50 w-full frosted-glass border-b border-surface-border">
+<div class="flex items-center justify-between px-4 h-14">
+<button class="flex items-center justify-center w-10 h-10 -ml-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="text-[13px] font-bold tracking-[0.05em] uppercase text-gray-200">C5. Profiel &amp; Accountinstellingen</h1>
+<button class="flex items-center justify-center w-10 h-10 -mr-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+</div>
+</header>
+<main class="flex-1 p-4 pb-24 w-full max-w-md mx-auto space-y-4">
+<div class="frosted-glass rounded-3xl p-6 relative group border-white/10">
+<div class="flex justify-between items-start mb-6">
+<div class="relative">
+<div class="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-primary to-transparent">
+<img alt="Jan de Vries" class="w-full h-full rounded-full object-cover border-4 border-[#0A0A0A]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeLpjY6-RVWywYpKg43pfaOu5ofnojxXaICaXUa7qRc8OAapLnpakpQftqOJfnQ9pv_F6WFFZ-Y8ug86N_zZz4gwHsGIPjEy4V1UApv2RVqejIOLU6FS8YgvmDyLrD-En3AhmDiK0J41OBOBQMCDnTOi4zzYZ9X3T8-SWqabpfRHaisoBFF7pBYoZEh6r4tB8m4wPP8NXzZBgMpiTJPfr5P3pJz9Au53J9iQe0YRrXM3XDUDtKaMiYd6BaIG7nYz8sbe_sLrn5dyE"/>
+</div>
+<button class="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-lg border-2 border-[#0A0A0A]">
+<span class="material-symbols-outlined text-[16px]">photo_camera</span>
+</button>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Bewerken</span>
+<span class="material-symbols-outlined text-[14px] text-primary">edit</span>
+</button>
+</div>
+<div>
+<h2 class="text-2xl font-bold text-white tracking-tight">Jan de Vries</h2>
+<p class="text-gray-400 text-sm font-medium">Hoofdmakelaar &amp; Oprichter</p>
+<div class="mt-4 flex flex-col gap-2">
+<div class="flex items-center gap-3 text-gray-300">
+<span class="material-symbols-outlined text-[18px] text-gray-500">mail</span>
+<span class="text-sm">jan@voicerealty.nl</span>
+</div>
+<div class="flex items-center gap-3 text-gray-300">
+<span class="material-symbols-outlined text-[18px] text-gray-500">call</span>
+<span class="text-sm">+31 6 12345678</span>
+</div>
+</div>
+</div>
+</div>
+<div class="frosted-glass rounded-3xl overflow-hidden border-white/10">
+<div class="px-5 py-3 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+<h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">apartment</span>
+                Kantoorgegevens
+            </h3>
+<button class="text-xs font-semibold text-primary">Beheer</button>
+</div>
+<div class="p-5 flex items-center gap-4">
+<div class="w-14 h-14 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-[28px] text-gray-400">domain</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-white leading-tight">De Vries Makelaardij B.V.</p>
+<p class="text-xs text-gray-400 mt-1">Keizersgracht 123, Amsterdam</p>
+<a class="text-xs text-primary mt-1 inline-flex items-center gap-1 hover:underline" href="#">
+                    www.devries.nl
+                    <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</div>
+<div class="frosted-glass rounded-3xl overflow-hidden border-white/10">
+<div class="px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+<h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">shield</span>
+                Beveiliging
+            </h3>
+</div>
+<div class="flex flex-col divide-y divide-white/5">
+<button class="flex items-center justify-between p-5 hover:bg-white/5 transition-colors group">
+<div class="flex flex-col gap-0.5">
+<span class="text-sm font-semibold text-white">Wachtwoord wijzigen</span>
+<span class="text-xs text-gray-500">Laatst bijgewerkt: 2 maanden geleden</span>
+</div>
+<span class="material-symbols-outlined text-gray-600 group-hover:text-white transition-colors">chevron_right</span>
+</button>
+<div class="flex items-center justify-between p-5">
+<div class="flex flex-col gap-0.5 pr-4">
+<span class="text-sm font-semibold text-white">Twee-factor authenticatie</span>
+<span class="text-xs text-gray-500">Activeer voor extra accountbeveiliging</span>
+</div>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-[#161616] appearance-none cursor-pointer transition-all duration-300 ease-in-out shadow-lg" id="toggle-2fa" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer" for="toggle-2fa"></label>
+</div>
+</div>
+</div>
+</div>
+<div class="frosted-glass rounded-3xl overflow-hidden border-white/10">
+<div class="px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+<h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">tune</span>
+                Voorkeuren
+            </h3>
+</div>
+<div class="flex flex-col divide-y divide-white/5">
+<div class="flex items-center justify-between p-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-gray-500 text-[20px]">language</span>
+<span class="text-sm font-semibold text-white">Taal</span>
+</div>
+<select class="bg-[#0A0A0A] border border-white/10 text-white text-xs rounded-xl focus:ring-primary focus:border-primary block py-2 px-3 outline-none">
+<option selected="">Nederlands</option>
+<option value="en">English</option>
+<option value="de">Deutsch</option>
+</select>
+</div>
+<div class="flex items-center justify-between p-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-gray-500 text-[20px]">dark_mode</span>
+<span class="text-sm font-semibold text-white">Donkere modus</span>
+</div>
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-[#161616] appearance-none cursor-not-allowed transition-all duration-300 ease-in-out shadow-lg opacity-80" disabled="" id="toggle-dark" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-not-allowed" for="toggle-dark"></label>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-4 flex flex-col items-center">
+<button class="w-full py-4 text-red-400 hover:text-red-300 text-sm font-bold transition-all flex items-center justify-center gap-2 rounded-2xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 active:scale-[0.98]">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+            Account Uitloggen
+        </button>
+<p class="mt-6 text-[10px] text-gray-600 font-medium uppercase tracking-widest">VoiceRealty AI v2.4.0</p>
+</div>
+</main>
+<nav class="fixed bottom-0 z-50 w-full bg-[#0A0A0A]/90 backdrop-blur-xl border-t border-white/5 pb-safe pt-2 px-6">
+<div class="flex justify-between items-center max-w-md mx-auto h-16">
+<a class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[26px]">dashboard</span>
+<span class="text-[10px] font-bold">DASHBOARD</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[26px]">description</span>
+<span class="text-[10px] font-bold">PROJECTEN</span>
+</a>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-glow hover:bg-primary-dark transition-all transform active:scale-95">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[26px]">smart_toy</span>
+<span class="text-[10px] font-bold">AGENTS</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[26px] fill-[1]">person</span>
+<span class="text-[10px] font-bold">PROFIEL</span>
+</a>
+</div>
+</nav>
+<div class="h-24 w-full"></div> 
+
+</body></html>
