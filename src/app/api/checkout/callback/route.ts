@@ -1,72 +1,50 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { getMollie } from '@/utils/mollie';
-
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userIdArg = searchParams.get('userId');
     const planArg = searchParams.get('plan');
+    const baseUrl = request.url.split('/api/')[0];
 
-    // Fallback for Stripe legacy URL (if any existing links)
-    const sessionId = searchParams.get('session_id');
+    // Local testing fallback: 
+    // Since ngrok is not used, Mollie cannot reach the webhook.
+    // Therefore, in development mode, we simulate the webhook logic upon redirect.
+    if (process.env.NODE_ENV === 'development' && userIdArg && planArg) {
+        console.log('[Callback Fallback] Local development mode detected. Simulating webhook success...');
 
-    if (sessionId) {
-        // Legacy Stripe handling or remove if not needed.
-        // For strict "replace", we can ignore or return error.
-        // Let's just focus on Mollie.
+        // Use the supabase-js client to bypass RLS with service role key, just like the webhook.
+        const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceKey);
+
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        await supabaseAdmin
+            .from('subscriptions')
+            .upsert({
+                user_id: userIdArg,
+                plan: planArg,
+                status: 'active',
+                period_start: new Date().toISOString(),
+                period_end: nextMonth.toISOString(),
+            });
+
+        await supabaseAdmin
+            .from('invoices')
+            .insert({
+                user_id: userIdArg,
+                invoice_number: `INV-LOCAL-${Date.now()}`,
+                amount: '€ 0.00', // Mock amount for local simulation
+                status: 'Betaald',
+                date: new Date().toISOString(),
+                document: planArg,
+            });
     }
 
-    if (!userIdArg || !planArg) {
-        // It might be that the user cancelled or just hit the URL?
-        // Mollie redirects here.
-        // If parameters are missing, redirect to pricing.
-        return NextResponse.redirect(new URL('/pricing', request.url));
-    }
-
-    try {
-        const mollie = getMollie();
-
-        // Fetch recent payments to find the one for this user
-        // Use page() instead of list()
-        const payments = await mollie.payments.page({ limit: 20 });
-
-        const validPayment = payments.find((p: any) =>
-            p.metadata?.userId === userIdArg &&
-            p.metadata?.plan === planArg &&
-            p.status === 'paid'
-        );
-
-        if (validPayment) {
-            const supabase = await createClient();
-
-            // Update subscription
-            const { error } = await supabase
-                .from('subscriptions')
-                .update({
-                    plan: planArg,
-                    status: 'active',
-                    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Fake 30 days
-                })
-                .eq('user_id', userIdArg);
-
-            if (error) {
-                console.error('Supabase Update Error:', error);
-            }
-
-            return NextResponse.redirect(new URL('/dashboard?payment=success', request.url));
-        } else {
-            // Payment not found or not paid yet (open/pending/cancelled)
-            // Redirect to dashboard with info? Or back to pricing?
-            // If it's 'open', maybe they just clicked back.
-            // Let's check if there is an 'open' payment?
-            // For now, redirect to dashboard.
-            return NextResponse.redirect(new URL('/dashboard?payment=pending_or_failed', request.url));
-        }
-
-    } catch (err: any) {
-        console.error(err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
-    }
+    // Redirect the user back to the billing dashboard where they can see their status.
+    return NextResponse.redirect(`${baseUrl}/settings/billing?checkout=return`);
 }

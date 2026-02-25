@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import CheckoutButton from './components/CheckoutButton'
 
 export default async function PackagesPage() {
     const supabase = await createClient()
@@ -134,15 +135,13 @@ export default async function PackagesPage() {
                                         Huidig Plan
                                     </button>
                                 ) : (
-                                    <Link
-                                        href={`/checkout?plan=${plan.name.toLowerCase()}`}
-                                        className={`block text-center w-full py-3.5 px-4 rounded-xl font-bold transition-all ${plan.highlight || plan.popular
+                                    <CheckoutButton
+                                        planName={plan.name}
+                                        cta={plan.cta}
+                                        className={plan.highlight || plan.popular
                                             ? 'bg-[#0df2a2] hover:bg-[#0bc081] text-black shadow-lg shadow-[#0df2a2]/20'
-                                            : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        {plan.cta}
-                                    </Link>
+                                            : 'bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'}
+                                    />
                                 )}
                             </div>
                         </div>

@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+import { getSubscription, getInvoices, handlePaymentMethod } from './actions'
+import DownloadInvoiceButton from './components/DownloadInvoiceButton'
+
 export default async function BillingSettingsPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -11,11 +14,7 @@ export default async function BillingSettingsPage() {
     }
 
     // Fetch subscription
-    const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('plan, status, period_end')
-        .eq('user_id', user.id)
-        .maybeSingle()
+    const subscription = await getSubscription()
 
     const plan = subscription?.plan || 'Essential'
     const status = subscription?.status || 'active'
@@ -29,12 +28,7 @@ export default async function BillingSettingsPage() {
     }
 
     // Fetch recent invoices (max 3)
-    const { data: invoices } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, amount, date, status')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(3)
+    const invoices = await getInvoices(3)
 
     const formattedInvoices = (invoices || []).map((inv) => {
         const d = new Date(inv.date)
@@ -85,18 +79,20 @@ export default async function BillingSettingsPage() {
                     <div>
                         <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Snelle Acties</h4>
                         <div className="space-y-3">
-                            <Link href="/settings/billing/payment-method" className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-[#0df2a2] transition-colors">
-                                        <span className="material-symbols-outlined">credit_card</span>
+                            <form action={handlePaymentMethod}>
+                                <button type="submit" className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-[#0df2a2] transition-colors">
+                                            <span className="material-symbols-outlined">credit_card</span>
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-bold text-gray-900 dark:text-white text-sm">Betaalmethode</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">Mastercard eindigend op 4242</div>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <div className="font-bold text-gray-900 dark:text-white text-sm">Betaalmethode</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">Mastercard eindigend op 4242</div>
-                                    </div>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors">chevron_right</span>
-                            </Link>
+                                    <span className="material-symbols-outlined text-gray-400 group-hover:text-white transition-colors">chevron_right</span>
+                                </button>
+                            </form>
 
                             <Link href="/settings/billing/history" className="flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
                                 <div className="flex items-center gap-3">
@@ -156,9 +152,7 @@ export default async function BillingSettingsPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="p-2 w-10 h-10 inline-flex items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5 text-gray-400 hover:text-white hover:bg-[#0df2a2] transition-colors">
-                                                    <span className="material-symbols-outlined text-[18px]">download</span>
-                                                </button>
+                                                <DownloadInvoiceButton invoice={invoice} />
                                             </td>
                                         </tr>
                                     ))}

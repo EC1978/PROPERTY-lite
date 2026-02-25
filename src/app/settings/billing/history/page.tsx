@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+import { getInvoiceHistory } from '../actions'
+import DownloadInvoiceButton from '../components/DownloadInvoiceButton'
+
 export default async function InvoiceHistoryPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -11,11 +14,7 @@ export default async function InvoiceHistoryPage() {
     }
 
     // Fetch all invoices
-    const { data: rawInvoices } = await supabase
-        .from('invoices')
-        .select('id, invoice_number, amount, date, status, download_url, document_type')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+    const rawInvoices = await getInvoiceHistory()
 
     const shortMonths = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
@@ -96,10 +95,7 @@ export default async function InvoiceHistoryPage() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-5 text-right flex justify-end">
-                                                <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-300 hover:text-white hover:bg-[#0df2a2] transition-colors font-bold text-xs">
-                                                    <span className="material-symbols-outlined text-[16px]">download</span>
-                                                    <span>PDF</span>
-                                                </button>
+                                                <DownloadInvoiceButton invoice={invoice} className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-300 hover:text-white hover:bg-[#0df2a2] transition-colors font-bold text-xs" />
                                             </td>
                                         </tr>
                                     ))}
@@ -128,10 +124,9 @@ export default async function InvoiceHistoryPage() {
                                             </span>
                                         </div>
                                     </div>
-                                    <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold text-sm">
-                                        <span className="material-symbols-outlined text-[18px]">download</span>
-                                        Download PDF
-                                    </button>
+                                    <div className="mt-2">
+                                        <DownloadInvoiceButton invoice={invoice} className="w-full" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
