@@ -14,6 +14,7 @@ export default function SettingsNav() {
         { name: 'Team Beheer', href: '/settings/team', icon: 'group' },
         { name: 'Integraties', href: '/settings/integrations', icon: 'extension' },
         { name: 'Geautomatiseerde E-mails', href: '/settings/emails', icon: 'mail' },
+        { name: 'Notificaties', href: '/settings/notifications', icon: 'notifications' },
     ]
 
     return (
