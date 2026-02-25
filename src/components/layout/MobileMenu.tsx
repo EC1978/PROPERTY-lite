@@ -40,6 +40,7 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
     const navigation = [
         { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
         { href: '/properties', icon: 'real_estate_agent', label: 'Woningen' },
+        { href: '/agenda', icon: 'calendar_month', label: 'Agenda' },
         { href: '/dashboard/materialen', icon: 'inventory', label: 'Materialen' },
         { href: '/archive', icon: 'archive', label: 'Archief' },
         { href: '/leads', icon: 'groups', label: 'Leads' },
