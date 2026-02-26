@@ -6,6 +6,8 @@ import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { toast, Toaster } from 'react-hot-toast'
 
+export const dynamic = 'force-dynamic'
+
 export default function AuditLogsPage() {
     const [logs, setLogs] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
