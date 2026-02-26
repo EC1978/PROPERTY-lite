@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { login } from '@/app/auth/actions';
 import { useState, useTransition } from 'react';
-
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense } from 'react';
+import toast from 'react-hot-toast';
 
 function LoginForm() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const plan = searchParams.get('plan');
     const [showPassword, setShowPassword] = useState(false);
@@ -17,14 +18,25 @@ function LoginForm() {
     const handleSubmit = async (formData: FormData) => {
         setError(null);
         startTransition(async () => {
-            // If plan is present, append it to formData
             if (plan) {
                 formData.append('plan', plan);
             }
             const result = await login(formData);
+
             if (result?.error) {
                 setError(result.error);
+                toast.error(result.error);
+                return;
             }
+
+            // MFA required — redirect to verify page
+            if (result?.requiresMfa) {
+                router.push(`/auth/verify-2fa?factorId=${result.factorId}&challengeId=${result.challengeId}`);
+                return;
+            }
+
+            // If no redirect happened (e.g. server redirect threw), show success
+            toast.success('Welkom terug!');
         });
     };
 
@@ -65,7 +77,9 @@ function LoginForm() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center ml-1">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">Wachtwoord</label>
-                                <a className="text-[11px] font-semibold text-primary/80 hover:text-primary transition-colors" href="#">Wachtwoord vergeten?</a>
+                                <Link className="text-[11px] font-semibold text-primary/80 hover:text-primary transition-colors" href="/forgot-password">
+                                    Wachtwoord vergeten?
+                                </Link>
                             </div>
                             <div className="relative group">
                                 <input name="password" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal pr-14" placeholder="••••••••" type={showPassword ? "text" : "password"} required />
@@ -82,14 +96,24 @@ function LoginForm() {
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center">
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center flex items-center gap-2 justify-center">
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
                                 {error}
                             </div>
                         )}
 
                         <button disabled={isPending} className="mt-4 w-full h-16 bg-primary hover:bg-emerald-400 active:scale-[0.98] rounded-2xl text-black font-extrabold text-base shadow-[0_10px_25px_rgba(16,183,127,0.15)] hover:shadow-[0_15px_35px_rgba(16,183,127,0.3)] transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>{isPending ? 'Bezig met inloggen...' : 'Inloggen'}</span>
-                            {!isPending && <span className="material-symbols-outlined font-bold" style={{ fontSize: '20px' }}>arrow_forward</span>}
+                            {isPending ? (
+                                <>
+                                    <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+                                    <span>Bezig met inloggen...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Inloggen</span>
+                                    <span className="material-symbols-outlined font-bold" style={{ fontSize: '20px' }}>arrow_forward</span>
+                                </>
+                            )}
                         </button>
                     </form>
 

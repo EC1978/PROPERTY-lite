@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { signup } from '@/app/auth/actions';
 import { useState, useTransition } from 'react';
-
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense } from 'react';
+import toast from 'react-hot-toast';
 
 function RegisterForm() {
     const searchParams = useSearchParams();
@@ -13,20 +13,53 @@ function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+    const [sent, setSent] = useState(false);
 
     const handleSubmit = async (formData: FormData) => {
         setError(null);
         startTransition(async () => {
-            // If plan is present, append it to formData
             if (plan) {
                 formData.append('plan', plan);
             }
             const result = await signup(formData);
             if (result?.error) {
                 setError(result.error);
+                toast.error(result.error);
+            } else if (result?.needsConfirmation) {
+                setSent(true);
+                toast.success('Account aangemaakt! Controleer je e-mail om te bevestigen.');
             }
         });
     };
+
+    if (sent) {
+        return (
+            <div className="bg-background-dark font-display text-white min-h-screen flex flex-col relative overflow-hidden antialiased selection:bg-primary selection:text-black">
+                <div className="fixed inset-0 pointer-events-none z-0">
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#050505] to-[#000]"></div>
+                    <div className="absolute top-[-5%] left-[-10%] w-[600px] h-[600px] bg-primary/10 rounded-full premium-blur opacity-60"></div>
+                </div>
+                <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-12 w-full max-w-[480px] mx-auto">
+                    <div className="w-full glass-card rounded-[2.5rem] p-10 relative overflow-hidden text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
+                            <span className="material-symbols-outlined text-primary" style={{ fontSize: '32px' }}>mark_email_read</span>
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight text-white mb-3">Check je inbox!</h2>
+                        <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                            We hebben een bevestigingsmail gestuurd. Klik op de link in de e-mail om je account te activeren.
+                        </p>
+                        <Link
+                            href="/login"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 border border-primary/20 text-primary font-semibold rounded-2xl hover:bg-primary/20 transition-all text-sm"
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+                            Terug naar login
+                        </Link>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-background-dark font-display text-white min-h-screen flex flex-col relative overflow-hidden antialiased selection:bg-primary selection:text-black">
@@ -88,14 +121,24 @@ function RegisterForm() {
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center">
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center flex items-center gap-2 justify-center">
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
                                 {error}
                             </div>
                         )}
 
                         <button disabled={isPending} className="mt-4 w-full h-16 bg-primary hover:bg-emerald-400 active:scale-[0.98] rounded-2xl text-black font-extrabold text-base shadow-[0_10px_25px_rgba(16,183,127,0.15)] hover:shadow-[0_15px_35px_rgba(16,183,127,0.3)] transition-all duration-500 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>{isPending ? 'Bezig met registreren...' : 'Registreren'}</span>
-                            {!isPending && <span className="material-symbols-outlined font-bold" style={{ fontSize: '20px' }}>arrow_forward</span>}
+                            {isPending ? (
+                                <>
+                                    <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+                                    <span>Bezig met registreren...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Registreren</span>
+                                    <span className="material-symbols-outlined font-bold" style={{ fontSize: '20px' }}>arrow_forward</span>
+                                </>
+                            )}
                         </button>
                     </form>
                     <div className="mt-10 text-center">

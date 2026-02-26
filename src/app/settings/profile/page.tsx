@@ -28,7 +28,7 @@ export default async function ProfileSettingsPage() {
 
             <div className="space-y-6">
                 <ProfileHeader user={user} />
-                <OfficeDetails />
+                <OfficeDetails user={user} />
                 <SecuritySettings />
                 <PreferencesSettings />
             </div>

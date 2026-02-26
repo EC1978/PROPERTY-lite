@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updateOfficeDetails } from './actions'
 import toast from 'react-hot-toast'
 
@@ -16,6 +16,16 @@ export default function OfficeDetails({ user }: { user?: any }) {
     const [name, setName] = useState(defaultName)
     const [address, setAddress] = useState(defaultAddress)
     const [website, setWebsite] = useState(defaultWebsite)
+
+    // Sync state if user prop changes (e.g. after a revalidatePath)
+    useEffect(() => {
+        if (user?.user_metadata) {
+            const meta = user.user_metadata
+            if (meta.office_name) setName(meta.office_name)
+            if (meta.office_address) setAddress(meta.office_address)
+            if (meta.office_website) setWebsite(meta.office_website)
+        }
+    }, [user])
 
     const handleSave = async () => {
         setIsSaving(true)

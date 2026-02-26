@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { updatePassword } from './actions'
+import { enrollTotp, verifyTotp, unenrollTotp, getMfaFactors } from '@/app/auth/actions'
 import toast from 'react-hot-toast'
+import QRCode from 'qrcode'
 
 export default function SecuritySettings() {
     const [isChangingPassword, setIsChangingPassword] = useState(false)
@@ -12,8 +14,29 @@ export default function SecuritySettings() {
 
     // 2FA state
     const [is2FAEnabled, setIs2FAEnabled] = useState(false)
+    const [factorId, setFactorId] = useState<string | null>(null)
     const [isSettingUp2FA, setIsSettingUp2FA] = useState(false)
     const [twoFACode, setTwoFACode] = useState('')
+    const [qrCode, setQrCode] = useState<string | null>(null)
+    const [secret, setSecret] = useState<string | null>(null)
+    const [enrollFactorId, setEnrollFactorId] = useState<string | null>(null)
+    const [isLoadingFactors, setIsLoadingFactors] = useState(true)
+    const [isPending2FA, startTransition2FA] = useTransition()
+
+    // Load existing MFA factors on mount
+    useEffect(() => {
+        const loadFactors = async () => {
+            setIsLoadingFactors(true)
+            const { factors } = await getMfaFactors()
+            const verified = factors.find((f: { status: string; id: string }) => f.status === 'verified')
+            if (verified) {
+                setIs2FAEnabled(true)
+                setFactorId(verified.id)
+            }
+            setIsLoadingFactors(false)
+        }
+        loadFactors()
+    }, [])
 
     const handleSavePassword = async () => {
         setIsSaving(true)
@@ -32,29 +55,69 @@ export default function SecuritySettings() {
         }
     }
 
-    const handleToggle2FA = (e: React.MouseEvent<HTMLLabelElement>) => {
-        // Prevent default toggle until flow is complete
+    const handleToggle2FA = async (e: React.MouseEvent<HTMLLabelElement>) => {
         e.preventDefault()
-        if (is2FAEnabled) {
-            // Flow to disable 2FA
-            setIs2FAEnabled(false)
-            toast.success('Twee-factor authenticatie uitgeschakeld')
-        } else {
-            // Start setup flow
-            setIsSettingUp2FA(true)
+
+        if (is2FAEnabled && factorId) {
+            // Disable 2FA
+            const res = await unenrollTotp(factorId)
+            if (res.error) {
+                toast.error(res.error)
+            } else {
+                setIs2FAEnabled(false)
+                setFactorId(null)
+                toast.success('Twee-factor authenticatie uitgeschakeld')
+            }
+            return
         }
+
+        // Start 2FA enrollment
+        setIsSettingUp2FA(true)
+        setQrCode(null)
+        setSecret(null)
+        setEnrollFactorId(null)
+        setTwoFACode('')
+
+        const res = await enrollTotp()
+        if (res.error) {
+            toast.error(res.error)
+            setIsSettingUp2FA(false)
+            return
+        }
+
+        if (res.uri) {
+            const qrDataUrl = await QRCode.toDataURL(res.uri)
+            setQrCode(qrDataUrl)
+        }
+        setSecret(res.secret ?? null)
+        setEnrollFactorId(res.factorId ?? null)
     }
 
     const handleConfirm2FA = () => {
-        // Mock verification
-        if (twoFACode.length === 6) {
-            setIs2FAEnabled(true)
-            setIsSettingUp2FA(false)
-            setTwoFACode('')
-            toast.success('Twee-factor authenticatie ingeschakeld')
-        } else {
+        if (!enrollFactorId || twoFACode.length !== 6) {
             toast.error('Geldige 6-cijferige code vereist')
+            return
         }
+
+        const formData = new FormData()
+        formData.append('factorId', enrollFactorId)
+        formData.append('code', twoFACode)
+
+        startTransition2FA(async () => {
+            const res = await verifyTotp(formData)
+            if (res?.error) {
+                toast.error(res.error)
+                setTwoFACode('')
+            } else {
+                setIs2FAEnabled(true)
+                setFactorId(enrollFactorId)
+                setIsSettingUp2FA(false)
+                setTwoFACode('')
+                setQrCode(null)
+                setSecret(null)
+                toast.success('Twee-factor authenticatie ingeschakeld!')
+            }
+        })
     }
 
     return (
@@ -67,6 +130,7 @@ export default function SecuritySettings() {
             </div>
             <div className="flex flex-col divide-y divide-white/5">
 
+                {/* Password section */}
                 {!isChangingPassword ? (
                     <button
                         onClick={() => setIsChangingPassword(true)}
@@ -118,53 +182,79 @@ export default function SecuritySettings() {
                     </div>
                 )}
 
+                {/* 2FA toggle */}
                 <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition-colors relative">
                     <div className="flex flex-col gap-0.5 pr-4 cursor-default">
-                        <span className="text-sm font-semibold text-white">Twee-factor authenticatie <span className="ml-2 px-1.5 py-0.5 bg-[#0df2a2]/10 text-[#0df2a2] text-[10px] uppercase font-bold rounded-md tracking-wider">Bèta</span></span>
-                        <span className="text-xs text-gray-500">Activeer voor extra accountbeveiliging met Authenticator App</span>
+                        <span className="text-sm font-semibold text-white">
+                            Twee-factor authenticatie{' '}
+                            <span className="ml-2 px-1.5 py-0.5 bg-[#0df2a2]/10 text-[#0df2a2] text-[10px] uppercase font-bold rounded-md tracking-wider">Bèta</span>
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {isLoadingFactors ? 'Laden...' : is2FAEnabled ? '✓ Ingeschakeld via Authenticator App' : 'Activeer voor extra accountbeveiliging'}
+                        </span>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer select-none" onClick={handleToggle2FA}>
+                    <label
+                        className={`relative inline-flex items-center select-none ${isLoadingFactors ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}
+                        onClick={handleToggle2FA}
+                    >
                         <input type="checkbox" checked={is2FAEnabled} onChange={() => { }} className="sr-only peer" />
                         <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0df2a2]"></div>
                     </label>
                 </div>
 
-                {/* 2FA Setup Modal/Inline Flow */}
+                {/* 2FA Setup Flow */}
                 {isSettingUp2FA && (
                     <div className="p-5 flex flex-col gap-4 bg-[#0df2a2]/5 border-t border-[#0df2a2]/10 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="flex gap-4 items-start">
-                            <div className="w-24 h-24 bg-white p-1 rounded-lg shrink-0 flex items-center justify-center">
-                                {/* Dummy QR Code */}
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=otpauth://totp/VoiceRealty:Voicerealty?secret=JBSWY3DPEHPK3PXP&issuer=VoiceRealty`} alt="2FA QR Code" className="w-full h-full" />
+                        {!qrCode ? (
+                            <div className="flex items-center gap-3 text-gray-400 text-sm">
+                                <span className="w-5 h-5 border-2 border-[#0df2a2]/30 border-t-[#0df2a2] rounded-full animate-spin shrink-0"></span>
+                                QR-code wordt gegenereerd...
                             </div>
-                            <div className="flex-1">
-                                <h4 className="text-sm font-bold text-white mb-1">Scan de QR-code</h4>
-                                <p className="text-xs text-gray-400 mb-3 leading-relaxed">Scan deze code met je Google Authenticator of Authy app. Typ daarna de 6-cijferige code in om te bevestigen.</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="000 000"
-                                        maxLength={6}
-                                        value={twoFACode}
-                                        onChange={e => setTwoFACode(e.target.value.replace(/[^0-9]/g, ''))}
-                                        className="w-full max-w-[120px] bg-[#0A0A0A] border border-white/10 focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2] text-white text-sm rounded-xl py-2 px-3 outline-none transition-colors text-center tracking-widest font-mono"
-                                    />
-                                    <button
-                                        onClick={handleConfirm2FA}
-                                        disabled={twoFACode.length !== 6}
-                                        className="px-4 py-2 bg-[#0df2a2] hover:bg-[#0df2a2]/90 text-[#0A0A0A] text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                                    >
-                                        Verifiëren
-                                    </button>
-                                    <button
-                                        onClick={() => { setIsSettingUp2FA(false); setTwoFACode(''); }}
-                                        className="px-3 py-2 text-gray-500 hover:text-white text-xs font-semibold"
-                                    >
-                                        Annuleren
-                                    </button>
+                        ) : (
+                            <div className="flex gap-4 items-start">
+                                <div className="w-28 h-28 bg-white p-1.5 rounded-lg shrink-0 flex items-center justify-center">
+                                    <img src={qrCode} alt="2FA QR Code" className="w-full h-full" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-white mb-1">Scan de QR-code</h4>
+                                    <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+                                        Open je Google Authenticator of Authy app, voeg een account toe en scan deze code.
+                                    </p>
+                                    {secret && (
+                                        <p className="text-[10px] text-gray-600 mb-3 font-mono break-all">
+                                            Of handmatig: <span className="text-gray-400">{secret}</span>
+                                        </p>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="000000"
+                                            maxLength={6}
+                                            value={twoFACode}
+                                            onChange={e => setTwoFACode(e.target.value.replace(/[^0-9]/g, ''))}
+                                            className="w-full max-w-[120px] bg-[#0A0A0A] border border-white/10 focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2] text-white text-sm rounded-xl py-2 px-3 outline-none transition-colors text-center tracking-widest font-mono"
+                                            disabled={isPending2FA}
+                                        />
+                                        <button
+                                            onClick={handleConfirm2FA}
+                                            disabled={twoFACode.length !== 6 || isPending2FA}
+                                            className="px-4 py-2 bg-[#0df2a2] hover:bg-[#0df2a2]/90 text-[#0A0A0A] text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1"
+                                        >
+                                            {isPending2FA ? (
+                                                <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+                                            ) : 'Verifiëren'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setIsSettingUp2FA(false); setTwoFACode(''); setQrCode(null); }}
+                                            className="px-3 py-2 text-gray-500 hover:text-white text-xs font-semibold"
+                                            disabled={isPending2FA}
+                                        >
+                                            Annuleren
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
