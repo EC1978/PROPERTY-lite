@@ -95,8 +95,8 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
                             key={integration.provider}
                             className={`relative rounded-3xl border transition-all duration-300 p-6 flex flex-col items-start gap-4 overflow-hidden
                   ${isConnected
-                                    ? 'bg-white/5 border-[#0df2a2]/30 shadow-[0_0_20px_rgba(13,242,162,0.1)]'
-                                    : 'bg-white/5 border-white/5 hover:border-white/10'
+                                    ? 'bg-white dark:bg-white/5 border-[#0df2a2]/30 shadow-[0_0_20px_rgba(13,242,162,0.1)]'
+                                    : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 shadow-sm dark:shadow-none'
                                 }
                 `}
                         >
@@ -111,24 +111,24 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
 
                             <div className="flex-1 w-full space-y-2 z-10">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-bold text-xl tracking-tight text-white">{info.title}</h3>
+                                    <h3 className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">{info.title}</h3>
                                     {isConnected ? (
-                                        <span className="px-3 py-1 bg-[#0df2a2]/10 border border-[#0df2a2]/30 text-[#0df2a2] rounded-full text-xs font-semibold tracking-wide flex items-center gap-1.5">
+                                        <span className="px-3 py-1 bg-[#0df2a2]/10 border border-[#0df2a2]/30 text-[#0df2a2] rounded-full text-xs font-semibold tracking-wide flex items-center gap-1.5 shrink-0 ml-4">
                                             <span className="size-1.5 rounded-full bg-[#0df2a2] shadow-[0_0_5px_#0df2a2] animate-pulse"></span>
                                             Actief
                                         </span>
                                     ) : (
-                                        <span className="px-3 py-1 bg-white/5 border border-white/10 text-gray-400 rounded-full text-xs font-semibold tracking-wide">
+                                        <span className="px-3 py-1 bg-slate-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-slate-500 dark:text-gray-400 rounded-full text-xs font-semibold tracking-wide shrink-0 ml-4">
                                             Niet gekoppeld
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-gray-400 text-sm leading-relaxed">
+                                <p className="text-slate-500 dark:text-gray-400 text-sm leading-relaxed">
                                     {info.desc}
                                 </p>
                             </div>
 
-                            <div className="w-full h-px bg-white/10 my-1 z-10"></div>
+                            <div className="w-full h-px bg-gray-100 dark:bg-white/10 my-1 z-10"></div>
 
                             <button
                                 onClick={() => isConnected ? handleDisconnect(integration.provider) : handleConnect(integration.provider)}
@@ -136,7 +136,7 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
                                 className={`z-10 w-full py-3 rounded-xl font-bold tracking-wide transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
                     ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                     ${isConnected
-                                        ? 'bg-white/5 hover:bg-red-500/10 text-white hover:text-red-400 border border-white/10 hover:border-red-500/30'
+                                        ? 'bg-slate-50 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-700 dark:text-white hover:text-red-600 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
                                         : 'bg-[#0df2a2] hover:bg-[#0df2a2]/90 text-black shadow-[0_0_20px_rgba(13,242,162,0.3)] hover:shadow-[0_0_25px_rgba(13,242,162,0.5)]'
                                     }
                   `}

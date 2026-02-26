@@ -22,8 +22,8 @@ export default async function ProfileSettingsPage() {
             }} />
 
             <header className="flex flex-col gap-1 mb-8">
-                <h1 className="text-2xl font-bold tracking-tight text-white">Profiel & Accountinstellingen</h1>
-                <p className="text-sm text-gray-400">Beheer je persoonlijke gegevens, kantoor en voorkeuren.</p>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Profiel & Accountinstellingen</h1>
+                <p className="text-sm text-slate-500 dark:text-gray-400">Beheer je persoonlijke gegevens, kantoor en voorkeuren.</p>
             </header>
 
             <div className="space-y-6">
