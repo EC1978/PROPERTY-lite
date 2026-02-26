@@ -10,11 +10,14 @@ export default function ForgotPasswordPage() {
     const [isPending, startTransition] = useTransition()
 
     const handleSubmit = async (formData: FormData) => {
+        console.log('Form submission started...')
         startTransition(async () => {
             const result = await forgotPassword(formData)
             if (result?.error) {
+                console.error('Action returned error:', result.error)
                 toast.error(result.error)
             } else {
+                console.log('Action success, showing check inbox state')
                 setSent(true)
                 toast.success('Herstelmail verstuurd!')
             }

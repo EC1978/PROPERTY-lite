@@ -15,13 +15,15 @@ async function getURL() {
 
     // Try to get from headers for dynamic detection (local vs production)
     try {
-        const host = (await headers()).get('host')
+        const headerList = await headers()
+        const host = headerList.get('host')
         if (host) {
             const protocol = host.includes('localhost') ? 'http' : 'https'
             url = `${protocol}://${host}`
+            console.log('Dynamic URL detected:', url)
         }
     } catch (e) {
-        // Fallback to env var if headers are not available
+        console.warn('Could not detect dynamic URL, falling back to:', url)
     }
 
     // Make sure to remove trailing slash
@@ -164,45 +166,67 @@ export async function signOut() {
 // FORGOT PASSWORD
 // ─────────────────────────────────────────────
 export async function forgotPassword(formData: FormData) {
-    const supabase = await createClient()
-    const email = formData.get('email') as string
+    try {
+        const supabase = await createClient()
+        const email = formData.get('email') as string
 
-    if (!email) {
-        return { error: 'Voer een geldig e-mailadres in.' }
+        console.log('Forgot password request for:', email)
+
+        if (!email) {
+            return { error: 'Voer een geldig e-mailadres in.' }
+        }
+
+        const origin = await getURL()
+        const redirectTo = `${origin}/auth/callback?next=/reset-password`
+
+        console.log('Reset redirectTo:', redirectTo)
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectTo,
+        })
+
+        if (error) {
+            console.error('Supabase resetPasswordForEmail error:', error.message)
+            return { error: 'Kon herstelmail niet verzenden: ' + error.message }
+        }
+
+        console.log('Reset email sent successfully to:', email)
+        return { success: true }
+    } catch (e: any) {
+        console.error('Unexpected error in forgotPassword action:', e)
+        return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' }
     }
-
-    const origin = await getURL()
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/auth/callback?next=/reset-password`,
-    })
-
-    if (error) {
-        return { error: 'Kon herstelmail niet verzenden. Probeer het opnieuw.' }
-    }
-
-    return { success: true }
 }
 
 // ─────────────────────────────────────────────
 // RESET PASSWORD (after email callback)
 // ─────────────────────────────────────────────
 export async function resetPassword(formData: FormData) {
-    const supabase = await createClient()
-    const password = formData.get('password') as string
+    try {
+        const supabase = await createClient()
+        const password = formData.get('password') as string
 
-    if (!password || password.length < 8) {
-        return { error: 'Wachtwoord moet minimaal 8 karakters bevatten.' }
+        console.log('Resetting password...')
+
+        if (!password || password.length < 8) {
+            return { error: 'Wachtwoord moet minimaal 8 karakters bevatten.' }
+        }
+
+        const { error } = await supabase.auth.updateUser({ password })
+
+        if (error) {
+            console.error('Supabase updateUser password error:', error.message)
+            return { error: 'Kon wachtwoord niet instellen: ' + error.message }
+        }
+
+        console.log('Password reset successful!')
+        revalidatePath('/', 'layout')
+        redirect('/dashboard')
+    } catch (e: any) {
+        if (e.message === 'NEXT_REDIRECT') throw e; // Let redirect bubbles up
+        console.error('Unexpected error in resetPassword action:', e)
+        return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' }
     }
-
-    const { error } = await supabase.auth.updateUser({ password })
-
-    if (error) {
-        return { error: 'Kon wachtwoord niet instellen. Sessie mogelijk verlopen, vraag een nieuwe herstelmail aan.' }
-    }
-
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
 }
 
 // ─────────────────────────────────────────────
