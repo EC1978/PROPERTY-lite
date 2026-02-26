@@ -37,15 +37,15 @@ export default function OfficeDetails({ user }: { user?: any }) {
 
     return (
         <div className="bg-[#161616]/60 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10 shadow-lg transition-all duration-300">
-            <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px] text-[#0df2a2]">apartment</span>
+            <div className="px-4 sm:px-5 py-4 border-b border-white/5 bg-white/[0.02] flex flex-wrap sm:flex-nowrap gap-3 justify-between items-center">
+                <h3 className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
+                    <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-[#0df2a2]">apartment</span>
                     Kantoorgegevens
                 </h3>
                 {!isEditing ? (
-                    <button onClick={() => setIsEditing(true)} className="text-xs font-semibold text-[#0df2a2] hover:text-white transition-colors active:scale-95">Beheer</button>
+                    <button onClick={() => setIsEditing(true)} className="text-xs font-semibold text-[#0df2a2] hover:text-white transition-colors active:scale-95 shrink-0">Beheer</button>
                 ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                         <button onClick={() => setIsEditing(false)} disabled={isSaving} className="text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors active:scale-95">Annuleren</button>
                         <button onClick={handleSave} disabled={isSaving} className="text-xs font-semibold text-[#0df2a2] hover:text-white transition-colors active:scale-95 px-2 py-0.5 bg-[#0df2a2]/10 rounded-md">{isSaving ? 'Opslaan...' : 'Opslaan'}</button>
                     </div>
@@ -58,11 +58,11 @@ export default function OfficeDetails({ user }: { user?: any }) {
                         <span className="material-symbols-outlined text-[28px] text-gray-400 group-hover:text-[#0df2a2] transition-colors">domain</span>
                     </div>
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-bold text-white leading-tight truncate">{defaultName}</p>
-                        <p className="text-xs text-gray-400 mt-1 truncate">{defaultAddress}</p>
-                        {defaultWebsite && (
-                            <a href={`https://${defaultWebsite.replace('https://', '')}`} target="_blank" rel="noreferrer" className="text-xs text-[#0df2a2] mt-1 inline-flex items-center gap-1 hover:underline transition-all">
-                                {defaultWebsite}
+                        <p className="text-sm font-bold text-white leading-tight truncate">{name}</p>
+                        <p className="text-xs text-gray-400 mt-1 truncate">{address}</p>
+                        {website && (
+                            <a href={`https://${website.replace('https://', '')}`} target="_blank" rel="noreferrer" className="text-xs text-[#0df2a2] mt-1 inline-flex items-center gap-1 hover:underline transition-all">
+                                {website}
                                 <span className="material-symbols-outlined text-[12px]">open_in_new</span>
                             </a>
                         )}

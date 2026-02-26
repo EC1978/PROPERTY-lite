@@ -99,18 +99,18 @@ export default function SecuritySettings() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 mt-2">
+                        <div className="flex sm:flex-row flex-col-reverse justify-end gap-2 mt-4">
                             <button
                                 onClick={() => { setIsChangingPassword(false); setNewPassword(''); setShowPassword(false); }}
                                 disabled={isSaving}
-                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all active:scale-95 shrink-0 disabled:opacity-50"
+                                className="px-3 py-2 sm:py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full sm:rounded-full rounded-xl transition-all active:scale-95 shrink-0 disabled:opacity-50 text-center"
                             >
                                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Annuleren</span>
                             </button>
                             <button
                                 onClick={handleSavePassword}
                                 disabled={isSaving || newPassword.length < 6}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0df2a2]/10 hover:bg-[#0df2a2]/20 border border-[#0df2a2]/20 rounded-full transition-all active:scale-95 shrink-0 disabled:opacity-50 text-[#0df2a2]"
+                                className="flex justify-center items-center gap-1.5 px-3 py-2 sm:py-1.5 bg-[#0df2a2]/10 hover:bg-[#0df2a2]/20 border border-[#0df2a2]/20 rounded-full sm:rounded-full rounded-xl transition-all active:scale-95 shrink-0 disabled:opacity-50 text-[#0df2a2]"
                             >
                                 <span className="text-xs font-semibold uppercase tracking-wider">{isSaving ? 'Opslaan...' : 'Wachtwoord Opslaan'}</span>
                             </button>
