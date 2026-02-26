@@ -55,7 +55,9 @@ export async function updateSession(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // --- MAINTENANCE MODE CHECK ---
-    if (pathname !== '/maintenance' && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+    // Allow public routes (like /login) to be accessible even during maintenance
+    // so that admins can log in to disable it.
+    if (pathname !== '/maintenance' && !isPublicRoute(pathname) && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
         if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
             // Fetch maintenance mode state using service role client to bypass RLS
             const supabaseAdmin = createServerClient(

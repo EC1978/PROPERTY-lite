@@ -1,54 +1,9 @@
 'use server'
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createAdminClient } from '@/utils/supabase/server'
+import { isAdmin } from '@/utils/admin'
 
-// Helper to check if current user is an admin based on ADMIN_EMAILS env variable
-export async function isAdmin() {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet) {
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // ignore
-                    }
-                },
-            },
-        }
-    )
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !user.email) return false
-
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
-    const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
-
-    return adminEmails.includes(user.email.toLowerCase())
-}
-
-// Helper to get service role client
-function getServiceRoleSupabase() {
-    return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            cookies: {
-                getAll() { return [] },
-                setAll() { }
-            },
-        }
-    )
-}
+// Removed redundant isAdmin and getServiceRoleSupabase
 
 export async function logAdminAction(admin_email: string, action: string, details: Record<string, any> = {}) {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -57,7 +12,7 @@ export async function logAdminAction(admin_email: string, action: string, detail
     }
 
     try {
-        const supabase = getServiceRoleSupabase();
+        const supabase = await createAdminClient();
 
         const { error } = await supabase
             .from('audit_logs')
@@ -91,7 +46,7 @@ export async function getAuditLogs() {
     }
 
     try {
-        const supabase = getServiceRoleSupabase();
+        const supabase = await createAdminClient();
 
         const { data, error } = await supabase
             .from('audit_logs')

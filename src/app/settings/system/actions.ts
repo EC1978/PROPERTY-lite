@@ -1,60 +1,9 @@
 'use server'
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { logAdminAction } from '../audit/actions'
-
-// Helper to get service role client that bypasses RLS
-function getServiceRoleSupabase() {
-    return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return []
-                },
-                setAll() { }
-            },
-        }
-    )
-}
-
-// Helper to check if current user is an admin based on ADMIN_EMAILS env variable
-export async function isAdmin() {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet) {
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
-                    }
-                },
-            },
-        }
-    )
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !user.email) return false
-
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
-    const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
-
-    return adminEmails.includes(user.email.toLowerCase())
-}
+import { isAdmin } from '@/utils/admin'
 
 export async function getSystemSettings() {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -62,7 +11,7 @@ export async function getSystemSettings() {
         return { maintenance_mode: false, live_status_message: 'Service Role Key ontbreekt in .env.local' }
     }
 
-    const supabase = getServiceRoleSupabase()
+    const supabase = await createAdminClient()
 
     // We expect the singleton row with id = 1
     const { data, error } = await supabase
@@ -97,7 +46,7 @@ export async function updateSystemSettings(formData: FormData) {
         return { error: 'Status message is required' }
     }
 
-    const supabase = getServiceRoleSupabase()
+    const supabase = await createAdminClient()
 
     const { error } = await supabase
         .from('system_settings')
@@ -117,35 +66,7 @@ export async function updateSystemSettings(formData: FormData) {
     revalidatePath('/', 'layout')
 
     // Get current user email for logging
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
-    const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
-
-    // We already know they are admin from the isAdmin() check above, let's just use a generic 'Admin' if we can't extract email here
-    // But since server actions don't pass 'user' directly here without another fetch, let's fetch it again quickly
-    const supabaseClient = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll: () => [],
-                setAll: () => { },
-            }
-        }
-    )
-    // Wait, isAdmin() might be better if it returned the email, but for now we can just log a system action or try to fetch user
-
-    // The easiest way to get user email in an action is:
-    const cookieStore = await cookies()
-    const supabaseAuth = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll: () => cookieStore.getAll(),
-                setAll: () => { },
-            }
-        }
-    )
+    const supabaseAuth = await createClient()
     const { data: { user } } = await supabaseAuth.auth.getUser()
 
     if (user && user.email) {
