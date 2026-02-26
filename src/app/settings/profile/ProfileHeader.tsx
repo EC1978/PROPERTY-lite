@@ -56,7 +56,7 @@ export default function ProfileHeader({ user }: { user: any }) {
     }
 
     return (
-        <div className="bg-[#161616]/60 backdrop-blur-md rounded-3xl p-6 relative group border border-white/10 shadow-lg">
+        <div className="bg-[#0A0A0A] dark:bg-[#161616]/60 backdrop-blur-md rounded-3xl p-6 relative group border border-white/10 shadow-lg">
             <div className="flex justify-between items-start mb-6 w-full">
                 <div className="relative">
                     <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-[#0df2a2] to-transparent shrink-0">

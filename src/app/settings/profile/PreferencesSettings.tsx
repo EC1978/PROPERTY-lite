@@ -6,7 +6,7 @@ export default function PreferencesSettings() {
     const { theme, toggleTheme } = useTheme()
 
     return (
-        <div className="bg-[#161616]/60 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10 shadow-lg">
+        <div className="bg-[#0A0A0A] dark:bg-[#161616]/60 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10 shadow-lg">
             <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px] text-[#0df2a2]">tune</span>

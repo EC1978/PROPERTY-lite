@@ -36,7 +36,7 @@ export default function OfficeDetails({ user }: { user?: any }) {
     }
 
     return (
-        <div className="bg-[#161616]/60 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10 shadow-lg transition-all duration-300">
+        <div className="bg-[#0A0A0A] dark:bg-[#161616]/60 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10 shadow-lg transition-all duration-300">
             <div className="px-4 sm:px-5 py-4 border-b border-white/5 bg-white/[0.02] flex flex-wrap sm:flex-nowrap gap-3 justify-between items-center">
                 <h3 className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
                     <span className="material-symbols-outlined text-[16px] sm:text-[18px] text-[#0df2a2]">apartment</span>

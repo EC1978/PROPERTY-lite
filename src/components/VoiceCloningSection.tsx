@@ -281,20 +281,20 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
 
     if (!canClone) {
         return (
-            <div className="relative overflow-hidden rounded-3xl bg-[#050505] border border-white/10 p-8 text-center">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 z-10" />
+            <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-[#050505] border border-gray-200 dark:border-white/10 p-8 text-center shadow-sm">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-white/90 dark:from-transparent dark:to-black/80 z-10" />
                 <div className="relative z-20 flex flex-col items-center">
-                    <span className="material-symbols-outlined text-3xl text-gray-400 mb-4">lock</span>
-                    <h3 className="text-xl font-bold text-white mb-2">Upgrade naar Elite</h3>
-                    <p className="text-gray-400 mb-6">Ontgrendel Voice Cloning.</p>
-                    <a href="/pricing" className="bg-[#0df2a2] text-black font-bold py-3 px-8 rounded-full">Bekijk Opties</a>
+                    <span className="material-symbols-outlined text-3xl text-slate-400 dark:text-gray-400 mb-4">lock</span>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Upgrade naar Elite</h3>
+                    <p className="text-slate-500 dark:text-gray-400 mb-6">Ontgrendel Voice Cloning.</p>
+                    <a href="/pricing" className="bg-[#0df2a2] text-black font-bold py-3 px-8 rounded-full shadow-md">Bekijk Opties</a>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="space-y-8 bg-[#050505] min-h-screen md:min-h-0 md:bg-transparent -m-6 md:m-0 p-6 md:p-0">
+        <div className="space-y-8 bg-white dark:bg-[#050505] min-h-screen md:min-h-0 md:bg-transparent -m-6 md:m-0 p-6 md:p-0">
 
             {/* Navigation Tabs */}
             <div className="flex items-center justify-between overflow-x-auto">
@@ -315,21 +315,21 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             {activeTab === 'library' && (
                 <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-white">Mijn Stemmen Bibliotheek</h2>
-                        <button onClick={fetchLibrary} className="size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-white">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Mijn Stemmen Bibliotheek</h2>
+                        <button onClick={fetchLibrary} className="size-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-900 dark:text-white transition-colors">
                             <span className="material-symbols-outlined">refresh</span>
                         </button>
                     </div>
 
                     {isLoadingLibrary ? (
-                        <div className="text-center py-12 text-gray-500">Laden...</div>
+                        <div className="text-center py-12 text-slate-500 dark:text-gray-500">Laden...</div>
                     ) : library.length === 0 ? (
-                        <div className="text-center py-12 border border-white/5 rounded-3xl bg-white/[0.02]">
-                            <div className="size-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="material-symbols-outlined text-gray-500 text-3xl">graphic_eq</span>
+                        <div className="text-center py-12 border border-gray-200 dark:border-white/5 rounded-3xl bg-slate-50 dark:bg-white/[0.02]">
+                            <div className="size-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="material-symbols-outlined text-slate-400 dark:text-gray-500 text-3xl">graphic_eq</span>
                             </div>
-                            <h3 className="text-white font-bold mb-2">Nog geen stemmen</h3>
-                            <p className="text-gray-500 text-sm mb-6">Maak je eerste AI-kloon aan om te beginnen.</p>
+                            <h3 className="text-slate-900 dark:text-white font-bold mb-2">Nog geen stemmen</h3>
+                            <p className="text-slate-500 dark:text-gray-500 text-sm mb-6">Maak je eerste AI-kloon aan om te beginnen.</p>
                             <button onClick={() => setActiveTab('record')} className="text-[#0df2a2] font-bold text-sm hover:underline">
                                 Start Opname
                             </button>
@@ -339,14 +339,14 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                             {library.map((voice) => {
                                 const isActive = currentVoiceId === voice.url
                                 return (
-                                    <div key={voice.id} className={`group bg-[#111] border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all ${isActive ? 'border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/10 hover:border-white/20'}`}>
+                                    <div key={voice.id} className={`group bg-white dark:bg-[#111] border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all shadow-sm dark:shadow-none ${isActive ? 'border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'}`}>
                                         <div className="flex items-center gap-4 w-full sm:w-auto">
                                             {/* Photo or Placeholder */}
-                                            <div className="size-12 md:size-14 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 relative">
+                                            <div className="size-12 md:size-14 rounded-xl overflow-hidden bg-slate-100 dark:bg-white/5 flex-shrink-0 relative">
                                                 {voice.photoUrl ? (
                                                     <img src={voice.photoUrl} alt={voice.name} className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                                    <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-gray-600">
                                                         <span className="material-symbols-outlined text-xl">person</span>
                                                     </div>
                                                 )}
@@ -360,10 +360,10 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                                             </div>
 
                                             <div className="min-w-0">
-                                                <h4 className="text-white font-bold text-base md:text-lg leading-tight truncate">{voice.name}</h4>
-                                                <p className="text-[10px] text-gray-500 flex items-center gap-2 mt-1">
+                                                <h4 className="text-slate-900 dark:text-white font-bold text-base md:text-lg leading-tight truncate">{voice.name}</h4>
+                                                <p className="text-[10px] text-slate-500 dark:text-gray-500 flex items-center gap-2 mt-1">
                                                     {new Date(voice.createdAt).toLocaleDateString()}
-                                                    {voice.vibe && <span className="bg-white/10 px-1.5 rounded text-[8px] uppercase tracking-wider">{voice.vibe}</span>}
+                                                    {voice.vibe && <span className="bg-slate-100 dark:bg-white/10 px-1.5 rounded text-[8px] uppercase tracking-wider">{voice.vibe}</span>}
                                                 </p>
                                             </div>
                                         </div>
@@ -402,8 +402,8 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             {activeTab === 'record' && (
                 <div className="space-y-6 pb-24 md:pb-0">
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Nieuwe Stem Opnemen</h2>
-                        <p className="text-gray-400">Volg de stappen om een nieuwe stem toe te voegen aan je bibliotheek.</p>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Nieuwe Stem Opnemen</h2>
+                        <p className="text-slate-500 dark:text-gray-400">Volg de stappen om een nieuwe stem toe te voegen aan je bibliotheek.</p>
                     </div>
 
                     {/* Progress Bar */}
@@ -414,7 +414,7 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                     </div>
 
                     {/* Step 1: Record */}
-                    <div className={`p-4 md:p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                    <div className={`p-4 md:p-6 rounded-3xl border transition-all ${currentStep === 1 ? 'bg-white dark:bg-[#111] border-[#0df2a2] shadow-sm dark:shadow-none' : 'bg-slate-50 dark:bg-[#050505] border-gray-200 dark:border-white/5 opacity-50'}`}>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-[10px] font-black text-[#0df2a2] uppercase tracking-widest">Stap 01 — Opname</h3>
                         </div>
@@ -427,41 +427,41 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                                     <div className="absolute -inset-2 rounded-full border-2 border-red-500 animate-ping opacity-20" />
                                 )}
                             </div>
-                            <h4 className="text-lg md:text-xl font-bold text-white mb-1 tracking-tight">{isRecording ? formatTime(recordingDuration) : 'Tik om te Starten'}</h4>
-                            <p className="text-gray-500 text-xs text-center max-w-[200px] leading-relaxed">Lees de tekst hieronder hardop voor na het starten.</p>
+                            <h4 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">{isRecording ? formatTime(recordingDuration) : 'Tik om te Starten'}</h4>
+                            <p className="text-slate-500 dark:text-gray-500 text-xs text-center max-w-[200px] leading-relaxed">Lees de tekst hieronder hardop voor na het starten.</p>
                         </div>
                     </div>
 
                     {/* Step 2: Confirmation / Name / Photo */}
-                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 2 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                    <div className={`p-6 rounded-3xl border transition-all ${currentStep === 2 ? 'bg-white dark:bg-[#111] border-[#0df2a2] shadow-sm dark:shadow-none' : 'bg-slate-50 dark:bg-[#050505] border-gray-200 dark:border-white/5 opacity-50'}`}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 02 — Details</h3>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Naam van de stem</label>
+                                <label className="block text-slate-500 dark:text-gray-400 text-xs font-bold uppercase mb-2">Naam van de stem</label>
                                 <input
                                     type="text"
                                     value={voiceName}
                                     onChange={(e) => setVoiceName(e.target.value)}
                                     placeholder="Bijv. Zakelijk, Enthousiast, Engels..."
-                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#0df2a2]"
+                                    className="w-full bg-slate-100 dark:bg-black/50 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-[#0df2a2]"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-gray-400 text-xs font-bold uppercase mb-2">Foto (Optioneel)</label>
+                                <label className="block text-slate-500 dark:text-gray-400 text-xs font-bold uppercase mb-2">Foto (Optioneel)</label>
                                 <div className="flex items-center gap-4">
-                                    <label className="size-16 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center cursor-pointer hover:border-[#0df2a2] overflow-hidden">
+                                    <label className="size-16 bg-slate-100 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10 flex items-center justify-center cursor-pointer hover:border-[#0df2a2] overflow-hidden">
                                         {voicePhotoPreview ? (
                                             <img src={voicePhotoPreview} className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="material-symbols-outlined text-gray-500">add_photo_alternate</span>
+                                            <span className="material-symbols-outlined text-slate-400 dark:text-gray-500">add_photo_alternate</span>
                                         )}
                                         <input type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
                                     </label>
-                                    <p className="text-xs text-gray-500">Voeg een foto toe om deze stem herkenbaar te maken.</p>
+                                    <p className="text-xs text-slate-500 dark:text-gray-500">Voeg een foto toe om deze stem herkenbaar te maken.</p>
                                 </div>
                             </div>
 
@@ -475,7 +475,7 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
 
                     {/* Step 3: Training & Save */}
                     {currentStep >= 3 && (
-                        <div className={`p-6 rounded-3xl border transition-all ${currentStep === 3 ? 'bg-[#111] border-[#0df2a2]' : 'bg-[#050505] border-white/5 opacity-50'}`}>
+                        <div className={`p-6 rounded-3xl border transition-all ${currentStep === 3 ? 'bg-white dark:bg-[#111] border-[#0df2a2] shadow-sm dark:shadow-none' : 'bg-slate-50 dark:bg-[#050505] border-gray-200 dark:border-white/5 opacity-50'}`}>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xs font-bold text-[#0df2a2] uppercase tracking-widest">Stap 03 — Finaliseren</h3>
                             </div>
@@ -488,7 +488,7 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
                             )}
 
                             <div className="flex gap-2">
-                                <button onClick={playRecording} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2">
+                                <button onClick={playRecording} className="flex-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-colors">
                                     <span className="material-symbols-outlined">{isPlayingRecording ? 'pause' : 'play_arrow'}</span>
                                     Luister
                                 </button>
@@ -504,15 +504,15 @@ export default function VoiceCloningSection({ canClone, currentVoiceId }: VoiceC
             {/* === VIBE TAB === */}
             {activeTab === 'vibe' && (
                 <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-white mb-2">Vibe Informatie</h2>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Vibe Informatie</h2>
                     <div className="space-y-4">
                         {vibes.map((vibe) => (
-                            <div key={vibe.id} className="bg-[#111] border border-white/10 rounded-2xl p-6">
+                            <div key={vibe.id} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm dark:shadow-none">
                                 <div className="flex items-center gap-4 mb-2">
                                     <span className="material-symbols-outlined text-[#0df2a2] text-2xl">{vibe.icon}</span>
-                                    <h3 className="text-white font-bold text-lg">{vibe.label}</h3>
+                                    <h3 className="text-slate-900 dark:text-white font-bold text-lg">{vibe.label}</h3>
                                 </div>
-                                <p className="text-gray-400">{vibe.description}</p>
+                                <p className="text-slate-500 dark:text-gray-400">{vibe.description}</p>
                             </div>
                         ))}
                     </div>

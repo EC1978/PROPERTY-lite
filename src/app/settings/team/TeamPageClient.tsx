@@ -24,11 +24,11 @@ export default function TeamPageClient({ initialMembers, error }: { initialMembe
         <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500 pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white m-0 leading-tight flex items-center gap-3">
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white m-0 leading-tight flex items-center gap-3">
                         <Users className="w-8 h-8 text-[#0df2a2]" />
                         Teambeheer
                     </h1>
-                    <p className="text-gray-400 text-[15px] mt-2 max-w-2xl">
+                    <p className="text-slate-500 dark:text-gray-400 text-[15px] mt-2 max-w-2xl">
                         Beheer uw teamleden, wijs rollen toe en nodig nieuwe makelaars uit om samen te werken in VoiceRealty.
                     </p>
                 </div>
@@ -47,21 +47,21 @@ export default function TeamPageClient({ initialMembers, error }: { initialMembe
                     {error}
                 </div>
             ) : (
-                <div className="bg-[#1C1C1E]/50 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-xl">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                <div className="-mx-4 sm:mx-0 bg-white dark:bg-[#1C1C1E]/50 border-y sm:border border-gray-200 dark:border-white/5 sm:rounded-2xl overflow-hidden shadow-sm dark:shadow-none backdrop-blur-xl">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead>
-                                <tr className="border-b border-white/5 bg-black/20">
-                                    <th className="px-6 py-4 text-sm font-medium text-gray-400">Gebruiker</th>
-                                    <th className="px-6 py-4 text-sm font-medium text-gray-400">Rol</th>
-                                    <th className="px-6 py-4 text-sm font-medium text-gray-400">Status</th>
-                                    <th className="px-6 py-4 text-sm font-medium text-gray-400 text-right">Acties</th>
+                                <tr className="border-b border-gray-200 dark:border-white/5 bg-slate-50 dark:bg-black/20">
+                                    <th className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-gray-400">Gebruiker</th>
+                                    <th className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-gray-400">Rol</th>
+                                    <th className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-gray-400">Status</th>
+                                    <th className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-gray-400 text-right">Acties</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-gray-200 dark:divide-white/5 bg-white dark:bg-transparent">
                                 {initialMembers.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={4} className="px-6 py-12 text-center text-slate-500 dark:text-gray-500">
                                             <div className="flex flex-col items-center justify-center gap-3">
                                                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
                                                     <Users className="w-8 h-8 text-gray-600" />
@@ -78,25 +78,25 @@ export default function TeamPageClient({ initialMembers, error }: { initialMembe
                                     </tr>
                                 ) : (
                                     initialMembers.map((member) => (
-                                        <tr key={member.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-gray-400">
+                                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-white/10 flex items-center justify-center text-slate-500 dark:text-gray-400 font-bold shrink-0">
                                                         {member.email.charAt(0).toUpperCase()}
                                                     </div>
-                                                    <div>
-                                                        <div className="text-sm font-medium text-white flex items-center gap-2">
+                                                    <div className="min-w-0">
+                                                        <div className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-2 truncate">
                                                             {member.email.split('@')[0]}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                                            <Mail className="w-3 h-3" />
-                                                            {member.email}
+                                                        <div className="text-xs text-slate-500 dark:text-gray-500 flex items-center gap-1 mt-0.5 truncate">
+                                                            <Mail className="w-3 h-3 shrink-0" />
+                                                            <span className="truncate">{member.email}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 text-sm text-gray-300 border border-white/5">
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-white/5 text-sm text-slate-700 dark:text-gray-300 border border-gray-200 dark:border-white/5">
                                                     <Shield className="w-3.5 h-3.5" />
                                                     {member.role}
                                                 </div>

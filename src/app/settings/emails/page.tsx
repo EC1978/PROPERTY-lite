@@ -8,8 +8,8 @@ export default async function EmailSettingsPage() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white m-0 leading-tight">Geautomatiseerde E-mails</h1>
-                <p className="text-gray-400 text-[15px] mt-2 max-w-2xl">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white m-0 leading-tight">Geautomatiseerde E-mails</h1>
+                <p className="text-slate-500 dark:text-gray-400 text-[15px] mt-2 max-w-2xl">
                     Beheer hier de geautomatiseerde e-mails die vanuit VoiceRealty AI naar uw klanten worden verzonden. U kunt ze per stuk aan- of uitzetten.
                 </p>
             </div>

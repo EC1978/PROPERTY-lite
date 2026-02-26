@@ -27,13 +27,13 @@ export default async function IntegrationsPage() {
         <div className="flex flex-col gap-8 fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 tracking-tight flex items-center gap-3">
+                    <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-slate-900 dark:text-transparent bg-none dark:bg-gradient-to-r dark:from-white dark:to-gray-400 tracking-tight flex items-center gap-3">
                         <div className="size-10 rounded-xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 shadow-[0_0_15px_rgba(13,242,162,0.15)] flex items-center justify-center">
                             <span className="material-symbols-outlined text-[#0df2a2]">extension</span>
                         </div>
                         Integratie Center
                     </h1>
-                    <p className="text-[#a1a1aa] mt-3 max-w-2xl leading-relaxed">
+                    <p className="text-slate-500 dark:text-[#a1a1aa] mt-3 max-w-2xl leading-relaxed">
                         Koppel uw favoriete tools om uw workflow te automatiseren. Verbind uw agenda voor naadloze bezichtigingsplanning of integreer met uw CRM zoals Realworks.
                     </p>
                 </div>

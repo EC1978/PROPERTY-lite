@@ -41,27 +41,27 @@ export default function NotificationSettingsList({ initialPreferences }: Notific
     return (
         <div className="space-y-6">
             {preferences.map((pref) => (
-                <div key={pref.type} className="group bg-neutral-900 border border-neutral-800 rounded-2xl p-6 transition-all duration-300 hover:border-[#0df2a2]/30 hover:shadow-[0_0_30px_rgba(13,242,162,0.05)] relative overflow-hidden">
+                <div key={pref.type} className="group bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-2xl p-6 transition-all duration-300 hover:border-[#0df2a2]/30 hover:shadow-[0_0_30px_rgba(13,242,162,0.05)] relative overflow-hidden shadow-sm dark:shadow-none">
                     {/* Background glow effect on hover */}
                     <div className="absolute inset-0 bg-gradient-to-br from-[#0df2a2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-white mb-2">{TYPE_LABELS[pref.type].title}</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
+                            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">{TYPE_LABELS[pref.type].title}</h3>
+                            <p className="text-slate-500 dark:text-gray-400 text-sm leading-relaxed">
                                 {TYPE_LABELS[pref.type].description}
                             </p>
                         </div>
 
-                        <div className="flex flex-col gap-4 sm:flex-row sm:gap-6 shrink-0 bg-neutral-950/50 p-4 rounded-xl border border-white/5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:gap-6 shrink-0 bg-slate-50 dark:bg-neutral-950/50 p-4 rounded-xl border border-gray-200 dark:border-white/5">
                             {/* Push Toggle */}
                             <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-2 text-gray-300">
+                                <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                                     <Bell className="w-4 h-4 text-[#0df2a2]" />
                                     <span className="text-sm font-medium">Push</span>
                                 </div>
                                 <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0df2a2] focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50 ${pref.pushEnabled ? 'bg-[#0df2a2]' : 'bg-neutral-700'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0df2a2] focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50 ${pref.pushEnabled ? 'bg-[#0df2a2]' : 'bg-gray-300 dark:bg-neutral-700'}`}
                                     onClick={() => handleToggle(pref.type, 'pushEnabled', pref.pushEnabled)}
                                     disabled={loading[`${pref.type}-pushEnabled`]}
                                 >
@@ -69,16 +69,16 @@ export default function NotificationSettingsList({ initialPreferences }: Notific
                                 </button>
                             </div>
 
-                            <div className="hidden sm:block w-[1px] bg-white/10" />
+                            <div className="hidden sm:block w-[1px] bg-gray-200 dark:bg-white/10" />
 
                             {/* Email Toggle */}
                             <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-2 text-gray-300">
+                                <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                                     <Mail className="w-4 h-4 text-[#0df2a2]" />
                                     <span className="text-sm font-medium">E-mail</span>
                                 </div>
                                 <button
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0df2a2] focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50 ${pref.emailEnabled ? 'bg-[#0df2a2]' : 'bg-neutral-700'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#0df2a2] focus:ring-offset-2 focus:ring-offset-neutral-900 disabled:opacity-50 ${pref.emailEnabled ? 'bg-[#0df2a2]' : 'bg-gray-300 dark:bg-neutral-700'}`}
                                     onClick={() => handleToggle(pref.type, 'emailEnabled', pref.emailEnabled)}
                                     disabled={loading[`${pref.type}-emailEnabled`]}
                                 >
