@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
     '/review',
     '/shop',
     '/api/voice',
+    '/maintenance',
 ]
 
 function isPublicRoute(pathname: string): boolean {
@@ -52,6 +53,47 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     const { pathname } = request.nextUrl
+
+    // --- MAINTENANCE MODE CHECK ---
+    if (pathname !== '/maintenance' && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+        if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            // Fetch maintenance mode state using service role client to bypass RLS
+            const supabaseAdmin = createServerClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY,
+                {
+                    cookies: {
+                        getAll() { return request.cookies.getAll() },
+                        setAll() { }
+                    }
+                }
+            )
+
+            const { data: systemSettings } = await supabaseAdmin
+                .from('system_settings')
+                .select('maintenance_mode')
+                .eq('id', 1)
+                .single()
+
+            if (systemSettings?.maintenance_mode) {
+                let userIsAdmin = false
+                if (user && user.email) {
+                    const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
+                    const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
+                    userIsAdmin = adminEmails.includes(user.email.toLowerCase())
+                }
+
+                if (!userIsAdmin) {
+                    const url = request.nextUrl.clone()
+                    url.pathname = '/maintenance'
+                    return NextResponse.redirect(url)
+                }
+            }
+        } else {
+            console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is missing in .env.local. Maintenance mode check skipped.')
+        }
+    }
+    // ------------------------------
 
     // Redirect unauthenticated users trying to access protected routes
     if (!user && !isPublicRoute(pathname)) {
