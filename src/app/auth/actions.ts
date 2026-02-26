@@ -8,6 +8,27 @@ import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
 // ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+async function getURL() {
+    let url = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    // Try to get from headers for dynamic detection (local vs production)
+    try {
+        const host = (await headers()).get('host')
+        if (host) {
+            const protocol = host.includes('localhost') ? 'http' : 'https'
+            url = `${protocol}://${host}`
+        }
+    } catch (e) {
+        // Fallback to env var if headers are not available
+    }
+
+    // Make sure to remove trailing slash
+    return url.replace(/\/$/, '')
+}
+
+// ─────────────────────────────────────────────
 // LOGIN — MFA-aware
 // ─────────────────────────────────────────────
 export async function login(formData: FormData) {
@@ -52,7 +73,7 @@ export async function login(formData: FormData) {
     if (plan && user) {
         try {
             const { createCheckoutSession } = await import('@/utils/stripe')
-            const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+            const origin = await getURL()
             const session = await createCheckoutSession({
                 plan,
                 userId: user.id,
@@ -91,7 +112,7 @@ export async function signup(formData: FormData) {
         },
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const origin = await getURL()
     const { error, data: authData } = await supabase.auth.signUp({
         ...data,
         options: {
@@ -110,7 +131,7 @@ export async function signup(formData: FormData) {
     if (plan && user) {
         try {
             const { createCheckoutSession } = await import('@/utils/stripe')
-            const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+            const origin = await getURL()
             const session = await createCheckoutSession({
                 plan,
                 userId: user.id,
@@ -150,7 +171,7 @@ export async function forgotPassword(formData: FormData) {
         return { error: 'Voer een geldig e-mailadres in.' }
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const origin = await getURL()
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${origin}/auth/callback?next=/reset-password`,
