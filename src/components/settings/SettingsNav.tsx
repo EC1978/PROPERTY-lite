@@ -16,6 +16,7 @@ export default function SettingsNav() {
         { name: 'Geautomatiseerde E-mails', href: '/settings/emails', icon: 'mail' },
         { name: 'Notificaties', href: '/settings/notifications', icon: 'notifications' },
         { name: 'Systeemonderhoud', href: '/settings/system', icon: 'build_circle' },
+        { name: 'Audit Logboek', href: '/settings/audit', icon: 'history' },
     ]
 
     return (

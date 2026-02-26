@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { logAdminAction } from '../audit/actions'
 
 // Helper to get service role client that bypasses RLS
 function getServiceRoleSupabase() {
@@ -114,6 +115,46 @@ export async function updateSystemSettings(formData: FormData) {
 
     // Revalidate paths that might depend on these settings
     revalidatePath('/', 'layout')
+
+    // Get current user email for logging
+    const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
+    const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
+
+    // We already know they are admin from the isAdmin() check above, let's just use a generic 'Admin' if we can't extract email here
+    // But since server actions don't pass 'user' directly here without another fetch, let's fetch it again quickly
+    const supabaseClient = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll: () => [],
+                setAll: () => { },
+            }
+        }
+    )
+    // Wait, isAdmin() might be better if it returned the email, but for now we can just log a system action or try to fetch user
+
+    // The easiest way to get user email in an action is:
+    const cookieStore = await cookies()
+    const supabaseAuth = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll: () => cookieStore.getAll(),
+                setAll: () => { },
+            }
+        }
+    )
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+
+    if (user && user.email) {
+        await logAdminAction(
+            user.email,
+            'MAINTENANCE_TOGGLED',
+            { maintenance_mode, live_status_message }
+        );
+    }
 
     return { success: true }
 }
