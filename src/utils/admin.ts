@@ -9,26 +9,36 @@ export async function isAdmin() {
         const { data: { user }, error } = await supabase.auth.getUser()
 
         if (error || !user || !user.email) {
-            console.error('isAdmin check failed: No user or email found', error)
+            console.error('[ADMIN_CHECK] No authenticated user or email found.', error)
             return false
         }
 
-        const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
-        // Remove quotes if present and split by comma
-        const adminEmails = adminEmailsConfig
-            .replace(/^["']|["']$/g, '')
-            .split(',')
-            .map(e => e.trim().toLowerCase())
+        const rawAdminEmails = process.env.ADMIN_EMAILS
 
-        const isUserAdmin = adminEmails.includes(user.email.toLowerCase())
+        if (!rawAdminEmails) {
+            console.error('[ADMIN_CHECK] CRITICAL: process.env.ADMIN_EMAILS is undefined or empty in this environment.')
+            return false
+        }
+
+        // Robust parsing: remove outer quotes, trim, split by comma, and lowercase everything
+        const adminEmails = rawAdminEmails
+            .replace(/^["']|["']$/g, '') // Remove start/end quotes
+            .split(',')
+            .map(email => email.trim().toLowerCase())
+            .filter(email => email.length > 0)
+
+        const userEmail = user.email.toLowerCase()
+        const isUserAdmin = adminEmails.includes(userEmail)
 
         if (!isUserAdmin) {
-            console.warn(`Access denied for user ${user.email}. Admin list:`, adminEmails)
+            console.warn(`[ADMIN_CHECK] Denied: ${userEmail} is not in:`, adminEmails)
+        } else {
+            console.log(`[ADMIN_CHECK] Authorized: ${userEmail}`)
         }
 
         return isUserAdmin
     } catch (e) {
-        console.error('Exception in isAdmin check:', e)
+        console.error('[ADMIN_CHECK] Fatal exception:', e)
         return false
     }
 }
