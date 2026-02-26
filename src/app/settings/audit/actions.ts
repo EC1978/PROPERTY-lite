@@ -2,8 +2,10 @@
 
 import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { isAdmin } from '@/utils/admin'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export async function logAdminAction(admin_email: string, action: string, details: Record<string, any> = {}) {
+    noStore();
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
         console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is missing. Audit log will not be saved.');
         return { error: 'Service role key missing' };
@@ -33,16 +35,21 @@ export async function logAdminAction(admin_email: string, action: string, detail
 }
 
 export async function getAuditLogs() {
+    noStore();
     try {
         const supabaseAuth = await createClient()
         const { data: { user } } = await supabaseAuth.auth.getUser()
         const userEmail = user?.email || 'geen_email_gevonden'
 
         const adminCheck = await isAdmin();
+
         if (!adminCheck) {
-            const adminEmails = process.env.ADMIN_EMAILS || 'NIET_GECONFIGUREERD'
+            const adminEmails = process.env.ADMIN_EMAILS || 'NIET_GECONFIGUREERD_IN_PROC_ENV'
+            const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+            const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+
             return {
-                error: `Unauthorized (Systeem ziet jou als: ${userEmail}. Toegestane admins: ${adminEmails})`,
+                error: `Unauthorized (Systeem ziet jou als: ${userEmail}. Toegestane admins in config: ${adminEmails}. Debug: URL=${hasUrl}, ServiceKey=${hasServiceKey})`,
                 logs: []
             };
         }
