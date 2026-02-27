@@ -6,10 +6,12 @@ interface SubmitButtonProps {
     text: string
     loadingText?: string
     className?: string
+    isLoading?: boolean
 }
 
-export default function SubmitButton({ text, loadingText = 'Laden...', className = '' }: SubmitButtonProps) {
-    const { pending } = useFormStatus()
+export default function SubmitButton({ text, loadingText = 'Laden...', className = '', isLoading }: SubmitButtonProps) {
+    const { pending: statusPending } = useFormStatus()
+    const pending = isLoading !== undefined ? isLoading : statusPending
 
     return (
         <button

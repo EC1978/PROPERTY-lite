@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { updateSystemSettings } from './actions'
 import { toast, Toaster } from 'react-hot-toast'
 import SubmitButton from '@/components/SubmitButton'
@@ -17,7 +17,20 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
     const [maintenanceMode, setMaintenanceMode] = useState(initialMaintenanceMode)
     const [statusMessage, setStatusMessage] = useState(initialStatusMessage)
 
-    const handleSubmit = async (formData: FormData) => {
+    useEffect(() => {
+        setMaintenanceMode(initialMaintenanceMode)
+    }, [initialMaintenanceMode])
+
+    useEffect(() => {
+        setStatusMessage(initialStatusMessage)
+    }, [initialStatusMessage])
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const formData = new FormData(e.currentTarget)
+        // Ensure the correct state is sent
+        formData.set('maintenance_mode', maintenanceMode ? 'on' : 'off')
+
         startTransition(async () => {
             const result = await updateSystemSettings(formData)
 
@@ -52,7 +65,7 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
                 </p>
             </header>
 
-            <form action={handleSubmit} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-sm space-y-8 relative overflow-hidden">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-sm space-y-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[50px] -translate-y-1/2 translate-x-1/2 rounded-full pointer-events-none" />
 
                 <div className="flex items-center justify-between z-10 relative">
@@ -88,7 +101,7 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
                 </div>
 
                 <div className="flex justify-end pt-4 z-10 relative">
-                    <SubmitButton text="Wijzigingen Opslaan" loadingText="Opslaan..." />
+                    <SubmitButton text="Wijzigingen Opslaan" loadingText="Opslaan..." isLoading={isPending} />
                 </div>
             </form>
         </div>
