@@ -57,7 +57,7 @@ export async function getAuditLogs() {
 
         if (error) {
             console.error('Error fetching audit logs:', error);
-            return { error: 'Tabel audit_logs niet gevonden in database. Voer de migratie uit (011_audit_logs.sql).', logs: [] };
+            return { error: `Supabase Error: ${error.message || JSON.stringify(error)} (Code: ${error.code || 'unknown'})`, logs: [] };
         }
 
         return { logs: data || [] };
