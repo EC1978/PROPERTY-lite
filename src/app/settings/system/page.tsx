@@ -39,6 +39,10 @@ export default function SystemSettingsPage() {
                 toast.error(result.error)
             } else {
                 toast.success('Systeem instellingen opgeslagen!')
+                if (result.settings) {
+                    setMaintenanceMode(result.settings.maintenance_mode)
+                    setStatusMessage(result.settings.live_status_message)
+                }
                 router.refresh()
             }
         })

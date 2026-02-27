@@ -1,11 +1,12 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/utils/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache'
 import { logAdminAction } from '../audit/actions'
 import { isAdmin } from '@/utils/admin'
 
 export async function getSystemSettings() {
+    noStore();
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
         console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is missing. Returning default settings.')
         return { maintenance_mode: false, live_status_message: 'Service Role Key ontbreekt in .env.local' }
@@ -29,6 +30,7 @@ export async function getSystemSettings() {
 }
 
 export async function updateSystemSettings(formData: FormData) {
+    noStore();
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
         return { error: 'Configuratiefout: Voeg SUPABASE_SERVICE_ROLE_KEY toe aan je .env.local om instellingen te wijzigen.' }
     }
@@ -48,7 +50,7 @@ export async function updateSystemSettings(formData: FormData) {
 
     const supabase = await createAdminClient()
 
-    const { error } = await supabase
+    const { data: updatedData, error } = await supabase
         .from('system_settings')
         .upsert({
             id: 1,
@@ -56,6 +58,8 @@ export async function updateSystemSettings(formData: FormData) {
             live_status_message,
             updated_at: new Date().toISOString()
         })
+        .select()
+        .single()
 
     if (error) {
         console.error('Error updating system settings:', error)
@@ -77,5 +81,5 @@ export async function updateSystemSettings(formData: FormData) {
         );
     }
 
-    return { success: true }
+    return { success: true, settings: updatedData }
 }
