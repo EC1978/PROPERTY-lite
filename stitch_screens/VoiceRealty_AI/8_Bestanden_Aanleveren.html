@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2a2",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#0A0A0A",
+                        "slate-custom": "#1A1D1C",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .frosted-glass {
+            background: rgba(26, 29, 28, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(13, 242, 162, 0.1);
+        }
+        .glow-button {
+            box-shadow: 0 0 15px rgba(13, 242, 162, 0.3);
+            transition: all 0.3s ease;
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 25px rgba(13, 242, 162, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header / Nav -->
+<header class="flex items-center justify-between p-6 max-w-7xl mx-auto w-full">
+<div class="flex items-center gap-2">
+<div class="bg-primary size-8 rounded-lg flex items-center justify-center text-background-dark">
+<span class="material-symbols-outlined text-xl font-bold">parking_sign</span>
+</div>
+<span class="text-xl font-bold tracking-tight">SIGN<span class="text-primary">SHOP</span></span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="size-10 rounded-full bg-slate-custom border border-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+<!-- Success Hero -->
+<div class="text-center mb-12">
+<div class="inline-flex items-center justify-center size-16 rounded-full bg-primary/10 mb-6">
+<span class="material-symbols-outlined text-primary text-4xl">check_circle</span>
+</div>
+<h1 class="text-4xl font-extrabold mb-2 tracking-tight">Bedankt voor je bestelling!</h1>
+<p class="text-slate-400">Ordernummer: <span class="text-primary font-mono">#RS-2024-8912</span></p>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Section 1: Next Steps -->
+<div class="md:col-span-2 frosted-glass rounded-xl p-8 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">mark_email_read</span>
+<h2 class="text-xl font-bold">Volgende stappen</h2>
+</div>
+<p class="text-slate-400 leading-relaxed max-w-md">
+                        We hebben een orderbevestiging gestuurd naar je e-mailadres. Hierin vind je een overzicht van je bestelling en de factuur. 
+                        <br/><br/>
+                        Geen mail ontvangen? Controleer ook even je spam-folder.
+                    </p>
+</div>
+<div class="mt-8 flex items-center gap-2 text-sm text-slate-500">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>Gemiddelde levertijd: 3-5 werkdagen na goedkeuring bestanden.</span>
+</div>
+</div>
+<!-- Section 2: Files Upload -->
+<div class="md:col-span-1 frosted-glass rounded-xl p-8 border-l-4 border-l-primary flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -top-10 -right-10 size-32 bg-primary/5 rounded-full blur-3xl"></div>
+<div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+<h2 class="text-xl font-bold">Bestanden</h2>
+</div>
+<p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                        Upload nu je ontwerpen voor de makelaarsborden. Je kunt dit ook later doen via je account-dashboard.
+                    </p>
+</div>
+<button class="glow-button bg-primary text-background-dark font-bold py-4 rounded-lg flex items-center justify-center gap-2 group">
+                    Bestanden aanleveren
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">double_arrow</span>
+</button>
+</div>
+<!-- Section 3: Payment Status -->
+<div class="md:col-span-1 frosted-glass rounded-xl p-8 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">payments</span>
+<h2 class="text-xl font-bold">Betalen</h2>
+</div>
+<div class="bg-primary/5 rounded-lg p-4 border border-primary/10 mb-4">
+<div class="flex justify-between items-center text-sm mb-1">
+<span class="text-slate-400">Status</span>
+<span class="text-orange-400 font-medium">Wacht op betaling</span>
+</div>
+<div class="text-2xl font-bold">€ 284,50</div>
+</div>
+<p class="text-slate-500 text-xs leading-relaxed">
+                        Je hebt gekozen voor vooruitbetaling. We starten de productie zodra de betaling is verwerkt.
+                    </p>
+</div>
+<button class="mt-6 border border-primary/30 hover:bg-primary/10 text-primary font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    Direct betalen
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Section 4: Shop More -->
+<div class="md:col-span-2 frosted-glass rounded-xl p-8 relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+<div class="flex-1">
+<h2 class="text-xl font-bold mb-3">Plaats nog een bestelling</h2>
+<p class="text-slate-400 text-sm mb-6 max-w-sm leading-relaxed">
+                        Nog andere promotieborden of raamstickers nodig? Voeg ze toe aan een nieuwe order en profiteer van onze combi-kortingen.
+                    </p>
+<button class="bg-white/5 hover:bg-white/10 text-slate-100 font-semibold py-3 px-8 rounded-lg flex items-center justify-center gap-2 transition-all">
+                        Verder winkelen
+                        <span class="material-symbols-outlined">shopping_cart</span>
+</button>
+</div>
+<div class="hidden md:block w-48 h-32 rounded-lg bg-cover bg-center opacity-50 border border-white/10" data-alt="Real estate sign boards stacked in a professional workshop" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJIKEn1zkYrlCzy-_RUb_AkP0epPqalRvFxKlWNO0qCfcEiYBjhtB_U5Eh6tpMJeuoNJO8A1Hq2raNptG1Y4XlgWE2-LvemTlYptVi9xJkBIW4FERSnVV59hQUa1HlSmqNwNefFx2H_WHITqzzExXsOfPZwzgpF4wTgX_k8Azp6ENotzV0wn-umo8DGO1O0RMgPce-KRcuw4yX-uJtkY_bTtnjFfBI5RY08IQxJJt8pGyNeSo1PuP_027cODec96Mnpg_qBbHrPf4')">
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="sticky bottom-0 w-full border-t border-primary/10 bg-background-dark/80 backdrop-blur-lg px-4 pb-6 pt-3 flex justify-around items-center max-w-7xl mx-auto rounded-t-2xl">
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-xs font-medium">Home</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<p class="text-xs font-medium">Orders</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<p class="text-xs font-medium">Bestanden</p>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<p class="text-xs font-medium">Account</p>
+</a>
+</nav>
+</body></html>

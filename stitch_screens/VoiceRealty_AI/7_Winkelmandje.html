@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2a2",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#10221c",
+                        "emerald-deep": "#064e3b",
+                        "surface-dark": "#162e26",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(22, 46, 38, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(13, 242, 162, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #0df2a2;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-50 glass-card px-4 py-4 flex items-center justify-between border-b border-primary/10">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Winkelmand</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-slate-400">delete</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto custom-scrollbar pb-32">
+<!-- Progress Stepper -->
+<div class="p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-primary text-sm font-semibold uppercase tracking-wider">Stap 1 van 3</span>
+<h2 class="text-xl font-bold">Winkelmand</h2>
+</div>
+<div class="flex gap-1.5">
+<div class="h-1.5 w-8 rounded-full bg-primary"></div>
+<div class="h-1.5 w-4 rounded-full bg-primary/20"></div>
+<div class="h-1.5 w-4 rounded-full bg-primary/20"></div>
+</div>
+</div>
+<div class="w-full bg-primary/10 h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-1/3 rounded-full"></div>
+</div>
+<p class="text-slate-400 text-xs mt-3">Bijna klaar met uw bestelling. Configureer uw details hieronder.</p>
+</div>
+<!-- Cart Items Section -->
+<div class="px-4 space-y-4">
+<h3 class="text-primary font-bold px-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">view_quilt</span>
+                Jouw Raamborden
+            </h3>
+<!-- Item Card 1 -->
+<div class="glass-card rounded-xl p-4 flex gap-4">
+<div class="w-24 h-24 rounded-lg bg-emerald-900/40 flex-shrink-0 flex items-center justify-center overflow-hidden border border-primary/20">
+<img alt="Real estate window sign preview" class="w-full h-full object-cover" data-alt="Real estate window sign board with custom layout" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmbT9Cd8Tr9oTe0Gt772aGATcb8vsyFu2SlHU1xhoyyLtFM0PfMoHiWwV-qe8q4TVPwbmIVCBYCIUFwcN1yBZJPGvHuylILs5iIPIOT8psKh1mRqGVqD2fmk_DyuT1QudbTDTDKlRgcvkgDD8bFdyAXTUA3I9Sj7ZDy5Xw_n6sCb9RrDfZ_1ucnEmZTK9BvOqYVrUh-lZtPb8AuIBL2eUlEbB0CGP7Z0IDBn8BZvYyF3OxAo16GByiyzFZMvVEf8KUCM-FBPpPWek"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-bold text-base">V-Bord 'Te Koop'</h4>
+<span class="text-primary font-bold">€45,00</span>
+</div>
+<p class="text-slate-400 text-xs mt-1">70x100cm • Dubbelzijdig • Inclusief tape</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-3 bg-background-dark/50 rounded-lg px-2 py-1 border border-primary/10">
+<button class="material-symbols-outlined text-primary text-sm">remove</button>
+<span class="text-sm font-bold">1</span>
+<button class="material-symbols-outlined text-primary text-sm">add</button>
+</div>
+<button class="text-xs text-red-400 font-medium">Verwijderen</button>
+</div>
+</div>
+</div>
+<!-- Item Card 2 -->
+<div class="glass-card rounded-xl p-4 flex gap-4">
+<div class="w-24 h-24 rounded-lg bg-emerald-900/40 flex-shrink-0 flex items-center justify-center overflow-hidden border border-primary/20">
+<img alt="Real estate house sign" class="w-full h-full object-cover opacity-80" data-alt="Modern house sign with green accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXoV3hI4z7QNParTql6yNoa6SC_TtWTSlN3Y9JG8tBvzArr-VjlLijKWY9fAOz5Sm1uoLxRbycoR7wtHL1bP9VmQH_XWStwriKU9Ld3RtnbDekFkY1oH-eYRFezFs8FLOVw8zXw4YX72TnooTKlKA5jYBPdUL_B9g9YAbLaXUr5Yjf4uhqKW23905gyghMlXDybykTlxmw7KHCntMdsxFCNTwU5HTweiJOsCm81EiBHQOCv7lrQtS3Oi3p9tgHg4ZxekLKSy-D2EU"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-bold text-base">H-Bord 'Verkocht'</h4>
+<span class="text-primary font-bold">€32,50</span>
+</div>
+<p class="text-slate-400 text-xs mt-1">50x70cm • Enkelzijdig • Neon Green</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-3 bg-background-dark/50 rounded-lg px-2 py-1 border border-primary/10">
+<button class="material-symbols-outlined text-primary text-sm">remove</button>
+<span class="text-sm font-bold">2</span>
+<button class="material-symbols-outlined text-primary text-sm">add</button>
+</div>
+<button class="text-xs text-red-400 font-medium">Verwijderen</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary Section -->
+<div class="p-6 mt-8">
+<div class="glass-card rounded-2xl p-6 border-t-2 border-t-primary/30">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">receipt_long</span>
+                    Overzicht
+                </h3>
+<div class="space-y-3">
+<div class="flex justify-between text-slate-400 text-sm">
+<span>Subtotaal</span>
+<span>€110,00</span>
+</div>
+<div class="flex justify-between text-slate-400 text-sm">
+<span>Verzendkosten</span>
+<span class="text-primary">Gratis</span>
+</div>
+<div class="flex justify-between text-slate-400 text-sm">
+<span>BTW (21%)</span>
+<span>€23,10</span>
+</div>
+<div class="pt-3 mt-3 border-t border-primary/10 flex justify-between items-end">
+<span class="font-bold text-lg">Totaal</span>
+<div class="text-right">
+<span class="block text-primary text-2xl font-black">€133,10</span>
+<span class="text-[10px] text-slate-500 uppercase tracking-tighter italic">Inclusief BTW</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<footer class="fixed bottom-0 left-0 right-0 p-4 glass-card border-t border-primary/20">
+<div class="max-w-md mx-auto">
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-4 rounded-xl shadow-[0_0_20px_rgba(13,242,162,0.3)] flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]">
+                Doorgaan naar afrekenen
+                <span class="material-symbols-outlined font-bold">chevron_right</span>
+</button>
+</div>
+</footer>
+<!-- Bottom Navigation Component Replacement -->
+<nav class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] glass-card rounded-full py-2 px-6 flex justify-between items-center z-40 border border-primary/20 shadow-2xl">
+<a class="flex flex-col items-center text-primary" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_bag</span>
+<span class="text-[10px] font-bold">Shop</span>
+</a>
+<a class="flex flex-col items-center text-slate-400" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-[10px] font-bold">Borden</span>
+</a>
+<a class="flex flex-col items-center text-slate-400 relative" href="#">
+<span class="material-symbols-outlined text-[24px] fill-1">shopping_basket</span>
+<span class="text-[10px] font-bold">Mand</span>
+<div class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-background-dark text-[10px] font-black rounded-full flex items-center justify-center">3</div>
+</a>
+<a class="flex flex-col items-center text-slate-400" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="text-[10px] font-bold">Profiel</span>
+</a>
+</nav>
+</body></html>

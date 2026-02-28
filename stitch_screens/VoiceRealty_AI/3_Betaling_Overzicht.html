@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2a2",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#0A0A0A",
+                        "surface-dark": "#161616",
+                        "border-dark": "#262626",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .selected-method {
+            border-color: #0df2a2;
+            background-color: rgba(13, 242, 162, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-32">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-border-dark px-4 py-4 flex items-center justify-between">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-slate-100">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-100">Betaling</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="max-w-md mx-auto p-4 space-y-6">
+<!-- Section 1: Factuuradres (Bento Card) -->
+<section>
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-sm font-semibold uppercase tracking-wider text-primary">Factuuradres</h2>
+<button class="text-xs font-medium text-primary hover:underline">Wijzig</button>
+</div>
+<div class="bg-surface-dark border border-border-dark rounded-xl p-4 flex gap-4 items-center">
+<div class="flex-1">
+<p class="font-bold text-slate-100">Prestige Design</p>
+<p class="text-sm text-slate-400 mt-1">Kerkstraat 123<br/>1011 AB Amsterdam, NL</p>
+</div>
+<div class="w-20 h-20 rounded-lg bg-cover bg-center border border-border-dark" data-alt="Abstract minimalist map pattern for location" data-location="Amsterdam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBjulycpi-Qq-_tFdo0m26dlzT1FDj2LFbg6y-GWKfWzShafffBtZ_yjiHdKV5-C9N__blHuBuyroTFnZGjubKEVr7FJoVccGcrYjc38qRsYEOOcmdoDOlaQwwLle9A2bUxs7feCWSkcKWKECuDpUdxCBUWqp7WvRin1GdShOj9LFYwjb5f2cAslwmuBUGwoFS_r91qwgW-gdbKOTgiEaEsEL4Q7L8WT0dVNO4ZNJPbeI8Py2coFjF_bmYr8hB2_ybEhGvR5wl-NS4')">
+</div>
+</div>
+</section>
+<!-- Section 2: Betaalmethode -->
+<section>
+<h2 class="text-sm font-semibold uppercase tracking-wider text-primary mb-3">Betaalmethode</h2>
+<div class="grid grid-cols-1 gap-3">
+<!-- iDeal Selected -->
+<label class="relative flex items-center p-4 bg-surface-dark border-2 border-primary rounded-xl cursor-pointer">
+<input checked="" class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-primary mr-3">account_balance</span>
+<span class="flex-1 font-medium">iDEAL</span>
+<span class="material-symbols-outlined text-primary">check_circle</span>
+</label>
+<!-- Creditcard -->
+<label class="relative flex items-center p-4 bg-surface-dark border border-border-dark rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 mr-3">credit_card</span>
+<span class="flex-1 font-medium">Creditcard</span>
+</label>
+<!-- Bankoverschrijving -->
+<label class="relative flex items-center p-4 bg-surface-dark border border-border-dark rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 mr-3">payments</span>
+<span class="flex-1 font-medium">Bankoverschrijving</span>
+</label>
+<!-- PayPal -->
+<label class="relative flex items-center p-4 bg-surface-dark border border-border-dark rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 mr-3">account_balance_wallet</span>
+<span class="flex-1 font-medium">PayPal</span>
+</label>
+<!-- Achteraf betalen -->
+<label class="relative flex items-center p-4 bg-surface-dark border border-border-dark rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+<input class="hidden" name="payment" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 mr-3">history</span>
+<span class="flex-1 font-medium">Achteraf betalen</span>
+</label>
+</div>
+</section>
+<!-- Section 3: Overzicht bestelling -->
+<section class="bg-surface-dark border border-border-dark rounded-xl p-5 space-y-3">
+<h2 class="text-sm font-semibold uppercase tracking-wider text-primary mb-2">Overzicht bestelling</h2>
+<div class="flex justify-between text-sm text-slate-400">
+<span>Subtotaal</span>
+<span>€19,95</span>
+</div>
+<div class="flex justify-between text-sm text-slate-400">
+<span>Verzending</span>
+<span class="text-primary font-medium">Gratis</span>
+</div>
+<div class="flex justify-between text-sm text-slate-400 border-t border-border-dark pt-2">
+<span>Totaal excl. BTW</span>
+<span>€19,95</span>
+</div>
+<div class="flex justify-between text-xl font-bold text-slate-100 pt-1">
+<span>Totaal incl. BTW</span>
+<span class="text-primary">€24,14</span>
+</div>
+</section>
+<!-- Section 4: Newsletter -->
+<section class="flex items-start gap-3 px-1">
+<input class="mt-1 w-5 h-5 rounded border-border-dark bg-surface-dark text-primary focus:ring-primary focus:ring-offset-background-dark" id="newsletter" type="checkbox"/>
+<label class="text-sm text-slate-400 leading-tight" for="newsletter">
+                Houd me op de hoogte van exclusieve aanbiedingen en nieuwe producten voor vastgoedmarketing.
+            </label>
+</section>
+</main>
+<!-- Fixed Bottom Action Area -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-background-dark/95 backdrop-blur-lg border-t border-border-dark z-50 max-w-md mx-auto">
+<button class="w-full bg-primary text-background-dark font-black text-lg py-4 rounded-xl shadow-[0_0_20px_rgba(13,242,162,0.3)] active:scale-[0.98] transition-transform">
+            Bestelling plaatsen
+        </button>
+<!-- Navigation Bar integrated at the very bottom -->
+<nav class="flex justify-around items-center pt-4 mt-2">
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="text-[10px]">Shop</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">shopping_cart</span>
+<span class="text-[10px]">Wagen</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px]">Profiel</span>
+</a>
+</nav>
+</div>
+</body></html>

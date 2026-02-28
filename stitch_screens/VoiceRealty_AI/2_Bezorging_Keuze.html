@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2a2",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#0A0A0A",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0A0A0A;
+        }
+        .radio-custom:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%230df2a2' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-slate-100 min-h-screen font-display">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-white/10">
+<div class="flex items-center p-4 max-w-lg mx-auto">
+<button class="text-slate-100 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="flex-1 text-center text-lg font-bold tracking-tight pr-6">Bezorging</h1>
+</div>
+<!-- Stepper Component -->
+<div class="flex items-center justify-center gap-2 pb-6 pt-2">
+<div class="flex flex-col items-center gap-1">
+<div class="h-2 w-12 rounded-full bg-primary"></div>
+<span class="text-[10px] font-bold text-primary uppercase tracking-wider">Bezorging</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="h-2 w-12 rounded-full bg-slate-800"></div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Betaling</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="h-2 w-12 rounded-full bg-slate-800"></div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Klaar</span>
+</div>
+</div>
+</header>
+<main class="max-w-lg mx-auto p-4 pb-32 space-y-8">
+<!-- Section 1: Bezorgadres -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xl font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">location_on</span>
+                    Bezorgadres
+                </h3>
+</div>
+<div class="space-y-3">
+<!-- Selected Option -->
+<label class="group relative flex cursor-pointer rounded-xl border-2 border-primary bg-primary/5 p-4 transition-all">
+<input checked="" class="radio-custom mt-1 h-5 w-5 border-2 border-slate-700 bg-transparent text-transparent checked:border-primary focus:ring-0" name="address" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-100">Prestige Design <span class="ml-2 text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded uppercase">Geselecteerd</span></span>
+<span class="block text-xs text-slate-400 mt-1">Willem Fenengastraat 2, 1096 BN Amsterdam</span>
+</div>
+</label>
+<label class="group relative flex cursor-pointer rounded-xl border border-white/10 bg-white/5 p-4 transition-all hover:bg-white/10">
+<input class="radio-custom mt-1 h-5 w-5 border-2 border-slate-700 bg-transparent text-transparent checked:border-primary focus:ring-0" name="address" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-100">Afhalen bij Baxxshop</span>
+<span class="block text-xs text-slate-400 mt-1">Industrieweg 12, Goes</span>
+</div>
+</label>
+<label class="group relative flex cursor-pointer rounded-xl border border-white/10 bg-white/5 p-4 transition-all hover:bg-white/10">
+<input class="radio-custom mt-1 h-5 w-5 border-2 border-slate-700 bg-transparent text-transparent checked:border-primary focus:ring-0" name="address" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-100">Afhalen bij Reclameland</span>
+<span class="block text-xs text-slate-400 mt-1">Paltrokstraat 20, Zaandam</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Section 2: Bezorgmoment -->
+<section>
+<h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+                Bezorgmoment
+            </h3>
+<div class="grid grid-cols-2 gap-3">
+<label class="flex flex-col cursor-pointer rounded-xl border border-white/10 bg-white/5 p-4 hover:border-primary/50 transition-colors">
+<input checked="" class="radio-custom mb-3 h-5 w-5 border-2 border-slate-700 bg-transparent text-transparent checked:border-primary focus:ring-0" name="timing" type="radio"/>
+<span class="text-sm font-bold text-slate-100">Standaard</span>
+<span class="text-xs text-primary font-medium mt-1">Gratis</span>
+</label>
+<label class="flex flex-col cursor-pointer rounded-xl border border-white/10 bg-white/5 p-4 hover:border-primary/50 transition-colors">
+<input class="radio-custom mb-3 h-5 w-5 border-2 border-slate-700 bg-transparent text-transparent checked:border-primary focus:ring-0" name="timing" type="radio"/>
+<span class="text-sm font-bold text-slate-100">Ochtend</span>
+<span class="text-xs text-slate-400 mt-1">€ 10,00</span>
+</label>
+</div>
+</section>
+<!-- Section 3: Afzenderadres -->
+<section class="rounded-xl bg-white/5 border border-white/10 p-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">person_pin</span>
+<div>
+<p class="text-sm font-bold text-slate-100">Afzenderadres</p>
+<p class="text-xs text-slate-500">Zelfde als bezorgadres</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Sticky Summary & Action -->
+<footer class="fixed bottom-0 left-0 right-0 bg-background-dark/95 border-t border-white/10 p-4 pb-8 backdrop-blur-md">
+<div class="max-w-lg mx-auto">
+<div class="flex items-center justify-between mb-4 px-2">
+<div class="flex flex-col">
+<span class="text-xs text-slate-500 uppercase font-bold tracking-widest">Totaaloverzicht</span>
+<span class="text-2xl font-black text-slate-100">€ 24,14</span>
+</div>
+<div class="text-right">
+<span class="text-xs text-slate-500 block">Incl. BTW</span>
+<button class="text-primary text-xs font-bold underline">Details bekijken</button>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-black py-4 rounded-xl shadow-[0_0_20px_rgba(13,242,162,0.3)] transition-all flex items-center justify-center gap-2 uppercase tracking-tighter text-lg">
+                Naar betaalmethode
+                <span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</footer>
+</body></html>
