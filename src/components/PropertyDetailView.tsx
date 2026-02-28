@@ -100,6 +100,90 @@ function EditableField({
     )
 }
 
+interface BrandedModalProps {
+    isOpen: boolean
+    onClose: () => void
+    onConfirm: (val?: string) => void
+    title: string
+    message: string
+    type?: 'confirm' | 'alert' | 'prompt'
+    isDanger?: boolean
+    confirmLabel?: string
+    cancelLabel?: string
+    defaultValue?: string
+}
+
+function BrandedModal({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+    type = 'confirm',
+    isDanger = false,
+    confirmLabel,
+    cancelLabel = 'Annuleren',
+    defaultValue = ''
+}: BrandedModalProps) {
+    const [promptValue, setPromptValue] = useState(defaultValue)
+
+    useEffect(() => {
+        if (isOpen) setPromptValue(defaultValue)
+    }, [isOpen, defaultValue])
+
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+            <div className="relative bg-[#111] border border-white/5 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 fade-in duration-300">
+                <div className="flex flex-col items-center text-center">
+                    <div className={`size-16 rounded-2xl flex items-center justify-center mb-6 ${isDanger ? 'bg-red-500/10' : 'bg-[#0df2a2]/10'}`}>
+                        <span className={`material-symbols-outlined text-[32px] ${isDanger ? 'text-red-500' : 'text-[#0df2a2]'}`}>
+                            {isDanger ? 'report' : (type === 'prompt' ? 'edit_note' : 'info')}
+                        </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-8">{message}</p>
+
+                    {type === 'prompt' && (
+                        <div className="w-full mb-8">
+                            <input
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 focus:border-[#0df2a2]/50 rounded-2xl px-5 py-4 text-white font-bold transition-all outline-none"
+                                value={promptValue}
+                                onChange={(e) => setPromptValue(e.target.value)}
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && onConfirm(promptValue)}
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex flex-col w-full gap-3">
+                        <button
+                            onClick={() => onConfirm(type === 'prompt' ? promptValue : undefined)}
+                            className={`w-full py-4 rounded-2xl font-black transition-all active:scale-[0.98] ${isDanger
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
+                                : 'bg-[#0df2a2] hover:bg-emerald-400 text-black'
+                                }`}
+                        >
+                            {confirmLabel || (type === 'alert' ? 'Begrepen' : (isDanger ? 'Verwijderen' : 'Bevestigen'))}
+                        </button>
+                        {type !== 'alert' && (
+                            <button
+                                onClick={onClose}
+                                className="w-full py-2 text-gray-500 hover:text-white font-bold text-sm transition-colors"
+                            >
+                                {cancelLabel}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function PropertyDetailView({ property: initialProperty, userEmail }: PropertyDetailViewProps) {
     const router = useRouter()
     const isAdmin = !!userEmail
@@ -111,6 +195,22 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
     const [isSaving, setIsSaving] = useState(false)
     const [newFeature, setNewFeature] = useState({ label: '', value: '' })
     const [isAddingFeature, setIsAddingFeature] = useState(false)
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean
+        title: string
+        message: string
+        onConfirm: (val?: string) => void
+        type: 'confirm' | 'alert' | 'prompt'
+        isDanger?: boolean
+        confirmLabel?: string
+        defaultValue?: string
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'confirm'
+    })
 
     const allImages: string[] = property.images?.length
         ? property.images
@@ -189,11 +289,20 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
         surroundings: 'Omgeving',
     }
 
+    const extractEnergyLabel = (text: string | null): string => {
+        if (!text) return '?'
+        const match = text.match(/(?:label|energielabel)?\s?([A-G](\+{1,3})?)/i)
+        if (match) return match[1].toUpperCase()
+        const firstChar = text.trim().charAt(0).toUpperCase()
+        if (['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(firstChar)) return firstChar
+        return '?'
+    }
+
     const statCards = [
         { key: 'surface_area', label: 'Woonoppervlak', value: property.surface_area ? `${property.surface_area} m²` : 'Onbekend' },
         { key: 'bedrooms', label: 'Slaapkamers', value: property.bedrooms || 'Onbekend' },
         { key: 'bathrooms', label: 'Badkamers', value: property.bathrooms || 'Onbekend' },
-        { key: 'energy', label: 'Energielabel', value: features.energy ? (features.energy.length <= 6 ? features.energy : features.energy.charAt(0)) : 'Onbekend' },
+        { key: 'energy_label', label: 'Energielabel', value: features.energy_label || extractEnergyLabel(features.energy) },
         { key: 'constructionYear', label: 'Bouwjaar', value: features.constructionYear || 'Onbekend' },
         { key: 'type', label: 'Woningtype', value: features.type || 'Onbekend' },
     ]
@@ -229,7 +338,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
             let updateData: any = {}
 
             // Handle nested features
-            if (['energy', 'constructionYear', 'type', 'layout', 'maintenance', 'surroundings'].includes(fieldToSave) || (customField && (customField === 'features' || !property.hasOwnProperty(customField)))) {
+            if (['energy', 'energy_label', 'constructionYear', 'type', 'layout', 'maintenance', 'surroundings'].includes(fieldToSave) || (customField && (customField === 'features' || !property.hasOwnProperty(customField)))) {
                 if (customField === 'features') {
                     updateData = { features: valueToSave }
                 } else {
@@ -256,70 +365,121 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
             setEditValue(null)
         } catch (error) {
             console.error('Error saving field:', error)
-            alert('Fout bij het opslaan. Probeer het opnieuw.')
+            setModalConfig({
+                isOpen: true,
+                title: 'Fout bij opslaan',
+                message: 'Er is iets misgegaan bij het opslaan van de gegevens. Probeer het opnieuw.',
+                type: 'alert',
+                onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+            })
         } finally {
             setIsSaving(false)
         }
     }
 
     const deleteProperty = async () => {
-        if (!confirm('Weet je zeker dat je deze woning definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return
-        setIsSaving(true)
-        try {
-            const { error } = await supabase
-                .from('properties')
-                .delete()
-                .eq('id', property.id)
+        setModalConfig({
+            isOpen: true,
+            title: 'Woning verwijderen',
+            message: 'Weet je zeker dat je deze woning definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+            type: 'confirm',
+            isDanger: true,
+            confirmLabel: 'Definitief verwijderen',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, isOpen: false }))
+                setIsSaving(true)
+                try {
+                    const { error } = await supabase
+                        .from('properties')
+                        .delete()
+                        .eq('id', property.id)
 
-            if (error) throw error
-            router.push('/properties')
-        } catch (error) {
-            console.error('Error deleting property:', error)
-            alert('Fout bij het verwijderen.')
-        } finally {
-            setIsSaving(false)
-        }
+                    if (error) throw error
+                    router.push('/properties')
+                } catch (error) {
+                    console.error('Error deleting property:', error)
+                    setModalConfig({
+                        isOpen: true,
+                        title: 'Fout bij verwijderen',
+                        message: 'Er is een fout opgetreden bij het verwijderen van de woning.',
+                        type: 'alert',
+                        onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+                    })
+                } finally {
+                    setIsSaving(false)
+                }
+            }
+        })
     }
 
     const toggleArchive = async () => {
         const newStatus = property.status === 'archived' ? 'active' : 'archived'
         const label = newStatus === 'archived' ? 'archiveren' : 'activeren'
 
-        if (!confirm(`Weet je zeker dat je deze woning wilt ${label}?`)) return
+        setModalConfig({
+            isOpen: true,
+            title: `Woning ${label}`,
+            message: `Weet je zeker dat je deze woning wilt ${label}?`,
+            type: 'confirm',
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, isOpen: false }))
+                setIsSaving(true)
+                try {
+                    const { error } = await supabase
+                        .from('properties')
+                        .update({ status: newStatus })
+                        .eq('id', property.id)
 
-        setIsSaving(true)
-        try {
-            const { error } = await supabase
-                .from('properties')
-                .update({ status: newStatus })
-                .eq('id', property.id)
-
-            if (error) throw error
-            setProperty({ ...property, status: newStatus })
-        } catch (error) {
-            console.error('Error updating status:', error)
-            alert('Fout bij het bijwerken van de status.')
-        } finally {
-            setIsSaving(false)
-        }
+                    if (error) throw error
+                    setProperty({ ...property, status: newStatus })
+                } catch (error) {
+                    console.error('Error updating status:', error)
+                    setModalConfig({
+                        isOpen: true,
+                        title: 'Fout bij bijwerken',
+                        message: 'Er is een fout opgetreden bij het bijwerken van de status.',
+                        type: 'alert',
+                        onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false }))
+                    })
+                } finally {
+                    setIsSaving(false)
+                }
+            }
+        })
     }
 
     const addImage = async () => {
-        const url = prompt('Voer de URL van de nieuwe foto in:')
-        if (!url) return
-
-        const newImages = [...allImages, url]
-        await saveField(newImages, 'images')
+        setModalConfig({
+            isOpen: true,
+            title: 'Foto toevoegen',
+            message: 'Voer de URL van de nieuwe foto in:',
+            type: 'prompt',
+            defaultValue: '',
+            onConfirm: async (url) => {
+                setModalConfig(prev => ({ ...prev, isOpen: false }))
+                if (!url) return
+                const newImages = [...allImages, url]
+                await saveField(newImages, 'images')
+            }
+        })
     }
 
     const removeImage = async (index: number) => {
-        if (!confirm('Weet je zeker dat je deze foto wilt verwijderen?')) return
-
-        const newImages = allImages.filter((_, i) => i !== index)
-        if (activeIndex >= newImages.length && newImages.length > 0) {
-            setActiveIndex(newImages.length - 1)
-        }
-        await saveField(newImages, 'images')
+        setModalConfig({
+            isOpen: true,
+            title: 'Foto verwijderen',
+            message: 'Weet je zeker dat je deze foto wilt verwijderen?',
+            type: 'confirm',
+            isDanger: true,
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, isOpen: false }))
+                const newImages = allImages.filter((_, i) => i !== index)
+                if (activeIndex >= newImages.length && newImages.length > 0) {
+                    setActiveIndex(newImages.length - 1)
+                }
+                await saveField(newImages, 'images')
+            }
+        })
     }
 
     const addFeature = async () => {
@@ -572,9 +732,12 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                         onCancel={cancelEditing}
                                         onSave={saveField}
                                     >
-                                        <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 flex flex-col gap-1 w-full text-left">
+                                        <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 flex flex-col gap-1 w-full text-left h-full min-h-[90px] justify-between">
                                             <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-widest leading-tight">{stat.label}</span>
-                                            <span className="text-xl font-bold text-white mt-1">{stat.value}</span>
+                                            <span className={`font-bold text-white mt-1 break-words leading-tight ${stat.value.toString().length > 20 ? 'text-sm' : 'text-xl'
+                                                }`}>
+                                                {stat.value}
+                                            </span>
                                         </div>
                                     </EditableField>
                                 ))}
@@ -732,7 +895,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                         />
                                                         <div className="flex items-center gap-2">
                                                             <button onClick={cancelEditing} className="p-2 text-gray-400 hover:text-white"><span className="material-symbols-outlined text-[20px]">close</span></button>
-                                                            <button onClick={saveField} className="p-2 text-[#0df2a2] hover:text-emerald-400" disabled={isSaving}><span className="material-symbols-outlined text-[20px]">check</span></button>
+                                                            <button onClick={() => saveField()} className="p-2 text-[#0df2a2] hover:text-emerald-400" disabled={isSaving}><span className="material-symbols-outlined text-[20px]">check</span></button>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -931,6 +1094,19 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
             )}
 
             <MobileNav />
+
+            {/* Branded Modal Manager */}
+            <BrandedModal
+                isOpen={modalConfig.isOpen}
+                onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={modalConfig.onConfirm}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                type={modalConfig.type}
+                isDanger={modalConfig.isDanger}
+                confirmLabel={modalConfig.confirmLabel}
+                defaultValue={modalConfig.defaultValue}
+            />
         </div>
     )
 }

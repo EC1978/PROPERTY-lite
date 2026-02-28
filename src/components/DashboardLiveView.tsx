@@ -174,9 +174,15 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
     }
 
     // --- Greeting based on time ---
-    const hour = new Date().getHours()
-    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond'
-    const userName = userEmail?.split('@')[0] || 'Makelaar'
+    const [greeting, setGreeting] = useState('Goedendag')
+    const [userName, setUserName] = useState('Makelaar')
+
+    useEffect(() => {
+        const hour = new Date().getHours()
+        const newGreeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond'
+        setGreeting(newGreeting)
+        setUserName(userEmail?.split('@')[0] || 'Makelaar')
+    }, [userEmail])
 
     return (
         <div className="flex min-h-screen bg-[#f5f8f7] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-[Inter,sans-serif] relative overflow-x-hidden">
@@ -278,6 +284,7 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                                                 value={urlInput}
                                                 onChange={(e) => setUrlInput(e.target.value)}
                                                 onKeyDown={(e) => { if (e.key === 'Enter' && urlInput) handleUrlScrape() }}
+                                                suppressHydrationWarning
                                                 className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2]/30 transition-colors cursor-text"
                                             />
                                         </div>

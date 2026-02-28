@@ -147,60 +147,66 @@ export default function MaterialsPage() {
             </div>
 
             {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 ml-0 md:ml-72 p-6 pt-28 md:p-10 md:pt-10 pb-32 md:pb-10 w-full">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                        <div>
-                            <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-3">Mijn Materialen</h1>
-                            <p className="text-gray-500 dark:text-gray-400 font-bold text-sm uppercase tracking-wider">Beheer je fysieke makelaarsborden en QR-codes.</p>
+            <main className="flex-1 ml-0 md:ml-72 p-4 pt-24 md:p-10 md:pt-12 pb-32 md:pb-12 w-full transition-all duration-300">
+                <div className="max-w-[1400px] mx-auto">
+                    {/* Header Section */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-16">
+                        <div className="space-y-2">
+                            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">Mijn <span className="text-[#0df2a2]">Materialen</span></h1>
+                            <p className="text-gray-500 dark:text-gray-400 font-bold text-xs md:text-sm uppercase tracking-[0.2em] opacity-80">Beheer je fysieke makelaarsborden en QR-codes.</p>
                         </div>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-[#0df2a2] text-black hover:bg-emerald-400 px-8 py-4 rounded-2xl font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-3 shrink-0"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">add</span>
-                            Materiaal Toevoegen
-                        </button>
-                    </div>
 
-                    <div className="flex flex-nowrap items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2 md:pb-0">
-                        <button
-                            onClick={() => setFilter('all')}
-                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'all'
-                                ? 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-lg shadow-black/10'
-                                : 'bg-white dark:bg-white/5 text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-100 dark:border-white/5'
-                                }`}
-                        >
-                            Alles ({materials.length})
-                        </button>
-                        <button
-                            onClick={() => setFilter('linked')}
-                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'linked'
-                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                                : 'bg-white dark:bg-white/5 text-gray-400 hover:text-emerald-500 border border-gray-100 dark:border-white/5'
-                                }`}
-                        >
-                            Op Locatie ({materials.filter(m => !!m.active_property_id).length})
-                        </button>
-                        <button
-                            onClick={() => setFilter('storage')}
-                            className={`whitespace-nowrap px-6 py-3 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-[0.1em] transition-all flex items-center gap-2 ${filter === 'storage'
-                                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                : 'bg-white dark:bg-white/5 text-gray-400 hover:text-amber-500 border border-gray-100 dark:border-white/5'
-                                }`}
-                        >
-                            In Opslag ({materials.filter(m => !m.active_property_id).length})
-                        </button>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                            {/* Filter Pills */}
+                            <div className="flex p-1.5 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/5">
+                                <button
+                                    onClick={() => setFilter('all')}
+                                    className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${filter === 'all'
+                                        ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                                        }`}
+                                >
+                                    Alles ({materials.length})
+                                </button>
+                                <button
+                                    onClick={() => setFilter('linked')}
+                                    className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${filter === 'linked'
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                        : 'text-gray-400 hover:text-emerald-500'
+                                        }`}
+                                >
+                                    Locatie
+                                </button>
+                                <button
+                                    onClick={() => setFilter('storage')}
+                                    className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${filter === 'storage'
+                                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                        : 'text-gray-400 hover:text-amber-500'
+                                        }`}
+                                >
+                                    Opslag
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="bg-[#0df2a2] text-black hover:bg-emerald-400 px-8 py-4 rounded-2xl font-black shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 shrink-0"
+                            >
+                                <span className="material-symbols-outlined text-[22px]">add_circle</span>
+                                <span className="hidden sm:inline">Materiaal Toevoegen</span>
+                                <span className="sm:hidden">Toevoegen</span>
+                            </button>
+                        </div>
                     </div>
 
                     {isLoading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="h-80 bg-gray-100 dark:bg-white/5 rounded-3xl" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="h-96 bg-gray-200 dark:bg-white/5 rounded-[2.5rem]" />
                             ))}
                         </div>
                     ) : filteredMaterials.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 transition-all">
                             {filteredMaterials.map(material => (
                                 <MaterialCard
                                     key={material.id}
@@ -211,28 +217,33 @@ export default function MaterialsPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-32 bg-white dark:bg-[#111] rounded-[3rem] border border-gray-200 dark:border-white/5 shadow-sm border-dashed">
-                            <div className="size-24 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 ring-1 ring-gray-100 dark:ring-white/10">
-                                <span className="material-symbols-outlined text-gray-400 text-[48px]">
+                        <div className="text-center py-24 md:py-40 bg-white dark:bg-[#111] rounded-[3.5rem] border border-gray-200 dark:border-white/5 shadow-2xl relative overflow-hidden group">
+                            {/* Decorative Background Icon */}
+                            <span className="absolute -bottom-10 -right-10 material-symbols-outlined text-[300px] text-emerald-500/5 rotate-12 -z-10 select-none">
+                                {filter === 'all' ? 'inventory' : filter === 'linked' ? 'home_work' : 'inventory_2'}
+                            </span>
+
+                            <div className="size-24 bg-[#0df2a2]/10 dark:bg-[#0df2a2]/5 rounded-[2rem] flex items-center justify-center mx-auto mb-8 transition-transform group-hover:scale-110 duration-500">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[48px]">
                                     {filter === 'all' ? 'inventory' : filter === 'linked' ? 'home_work' : 'inventory_2'}
                                 </span>
                             </div>
-                            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3">
-                                {filter === 'linked' ? 'Geen gekoppelde materialen' : filter === 'storage' ? 'Geen materialen in opslag' : 'Inventaris is leeg'}
+                            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
+                                {filter === 'linked' ? 'Niets gekoppeld' : filter === 'storage' ? 'Opslag is leeg' : 'Geen materialen'}
                             </h2>
-                            <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-10 font-bold">
+                            <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-10 font-medium px-6">
                                 {filter === 'linked'
-                                    ? 'Er zijn momenteel geen materialen gekoppeld aan een actieve woning.'
+                                    ? 'Je hebt momenteel geen materialen op locatie staan.'
                                     : filter === 'storage'
-                                        ? 'Alle materialen zijn momenteel gekoppeld aan actieve woningen.'
-                                        : 'Je hebt momenteel geen fysieke materialen geregistreerd. Voeg je eerste bord toe om te beginnen.'}
+                                        ? 'Al je materialen zijn momenteel in gebruik op locatie.'
+                                        : 'Voeg je eerste bord of QR-code toe om te beginnen met meten.'}
                             </p>
                             {filter === 'all' && (
                                 <button
                                     onClick={() => setIsAddModalOpen(true)}
-                                    className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white px-10 py-4 rounded-2xl font-black hover:bg-gray-50 dark:hover:bg-white/10 transition-all active:scale-95"
+                                    className="bg-gray-900 dark:bg-[#0df2a2] text-white dark:text-black px-12 py-5 rounded-2xl font-black hover:scale-105 transition-all active:scale-95 shadow-2xl shadow-emerald-500/10"
                                 >
-                                    Eerste materiaal toevoegen
+                                    Start je inventaris
                                 </button>
                             )}
                         </div>

@@ -18,6 +18,7 @@ export default async function PropertiesIndexPage() {
         .from('properties')
         .select('*')
         .eq('user_id', user.id)
+        .neq('status', 'archived')
         .order('created_at', { ascending: false })
 
     return (

@@ -71,13 +71,13 @@ export async function scrapeProperty(url: string) {
         const truncatedText = textContent.slice(0, 40000)
 
         // 3. AI Extraction via Google Gemini
-        const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY
+        const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY
         if (!GEMINI_API_KEY) {
-            throw new Error('Google API key niet geconfigureerd in GOOGLE_AI_API_KEY')
+            throw new Error('Google AI API key niet geconfigureerd in GOOGLE_AI_API_KEY of NEXT_PUBLIC_GOOGLE_AI_API_KEY')
         }
 
         const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -86,7 +86,7 @@ export async function scrapeProperty(url: string) {
                         parts: [{
                             text: `Je bent een expert vastgoed makelaar. Haal gestructureerde data uit de tekst.
                      
-Retourneer ALLEEN geldige JSON (geen markdown, geen backticks):
+Retourneer ALLEEN de gevraagde JSON structuur. Geen tekst ervoor of erna.
 {
     "address": "Straat Huisnummer, Stad",
     "city": "Stad",
@@ -95,12 +95,12 @@ Retourneer ALLEEN geldige JSON (geen markdown, geen backticks):
     "bedrooms": 0,
     "bathrooms": 0,
     "description": "Samenvatting (max 100 woorden)",
-    "label": "Energielabel",
     "features": {
         "constructionYear": "Bouwjaar",
         "type": "Woningtype",
         "layout": "Indeling",
-        "energy": "Energie details",
+        "energy": "Volledige energie details en omschrijving",
+        "energy_label": "Alleen de letter van het energielabel (bijv. A, B, C, A+++)",
         "maintenance": "Onderhoud",
         "surroundings": "Omgeving"
     },
@@ -114,10 +114,7 @@ URL: ${url}
 CONTENT:
 ${truncatedText}`
                         }]
-                    }],
-                    generationConfig: {
-                        responseMimeType: "application/json"
-                    }
+                    }]
                 })
             }
         )
@@ -128,7 +125,13 @@ ${truncatedText}`
         }
 
         const geminiData = await geminiResponse.json()
-        const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+        let aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+
+        // Failsafe: Clean markdown backticks if Gemini adds them
+        if (aiText.includes('```')) {
+            aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim()
+        }
+
         const aiResult = JSON.parse(aiText)
 
         // Merge AI results with DOM scraping results
