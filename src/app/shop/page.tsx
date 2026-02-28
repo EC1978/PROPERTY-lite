@@ -27,6 +27,7 @@ export default function ShopCategoryPage() {
                 const formattedProducts = data.map(p => ({
                     id: p.slug,
                     name: p.name,
+                    price: p.base_price,
                     image: p.images && p.images.length > 0 ? p.images[0] : ''
                 }));
                 setProducts(formattedProducts);
@@ -53,7 +54,10 @@ export default function ShopCategoryPage() {
                     <p className="text-sm text-gray-400">Toont alle {products.length} resultaten</p>
 
                     <div className="relative" data-purpose="sorting-filter">
-                        <select className="bg-transparent border-none text-xs font-semibold text-[#0df2a2] focus:ring-0 cursor-pointer pr-8 py-0 outline-none">
+                        <select
+                            className="bg-transparent border-none text-xs font-semibold text-[#0df2a2] focus:ring-0 cursor-pointer pr-8 py-0 outline-none"
+                            suppressHydrationWarning
+                        >
                             <option className="bg-[#0A0A0A]">Standaard sortering</option>
                             <option className="bg-[#0A0A0A]">Nieuwste eerst</option>
                             <option className="bg-[#0A0A0A]">Prijs: laag naar hoog</option>
@@ -76,7 +80,8 @@ export default function ShopCategoryPage() {
                                     sizes="(max-width: 768px) 50vw, 33vw"
                                 />
                             </div>
-                            <h3 className="text-sm md:text-base font-semibold mb-3 text-white truncate w-full">{product.name}</h3>
+                            <h3 className="text-sm md:text-base font-semibold mb-1 text-white truncate w-full">{product.name}</h3>
+                            <p className="text-xs text-[#0df2a2] font-mono mb-3">Vanaf €{product.price.toFixed(2)}</p>
                             <div className="mt-auto w-full pt-2">
                                 <button className="w-full py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest rounded-lg border border-[#0df2a2] text-[#0df2a2] group-hover:bg-[#0df2a2] group-hover:text-[#0A0A0A] group-hover:shadow-[0_0_10px_rgba(13,242,162,0.5)] transition-all">
                                     Bekijk Opties

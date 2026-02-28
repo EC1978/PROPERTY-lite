@@ -27,12 +27,20 @@ export default function CheckoutUploadPage() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         if (file.type !== 'application/pdf') {
             setError('Alleen PDF bestanden zijn toegestaan. Upload a.u.b. een PDF ontwerp.');
+            e.target.value = ''; // Reset input
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            setError('Het bestand is te groot. De maximale grootte is 50MB.');
             e.target.value = ''; // Reset input
             return;
         }
@@ -86,6 +94,10 @@ export default function CheckoutUploadPage() {
         if (file) {
             if (file.type !== 'application/pdf') {
                 setError('Alleen PDF bestanden zijn toegestaan.');
+                return;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                setError('Het bestand is te groot. De maximale grootte is 50MB.');
                 return;
             }
             await uploadFile(file);

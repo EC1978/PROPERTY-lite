@@ -266,6 +266,21 @@ export function AddressForm({ onClose, onSave }: AddressFormProps) {
                                     />
                                 </div>
                             </div>
+
+                            {/* Default Address Checkbox */}
+                            <div className="flex items-center gap-3 pt-2">
+                                <label className="relative flex items-center cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        name="is_default"
+                                        checked={(formData as any).is_default || false}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, is_default: e.target.checked }))}
+                                    />
+                                    <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:left-[3px] after:bg-white/40 after:rounded-full after:h-[15px] after:w-[15px] after:transition-all peer-checked:bg-[#0df2a2] peer-checked:after:bg-[#0A0A0A] peer-checked:after:opacity-100"></div>
+                                    <span className="ml-3 text-[11px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">Instellen als standaard adres</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

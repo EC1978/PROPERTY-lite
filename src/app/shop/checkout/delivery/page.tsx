@@ -3,34 +3,85 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckoutStepper } from '@/components/shop/CheckoutStepper';
 import { AddressForm } from '@/components/shop/AddressForm';
+import { createClient } from '@/utils/supabase/client';
 
 export default function CheckoutDeliveryPage() {
     const router = useRouter();
     const { total } = useCart();
-    const [selectedAddress, setSelectedAddress] = useState('prestige');
+    const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
     const [selectedTiming, setSelectedTiming] = useState('standaard');
     const [showAddressForm, setShowAddressForm] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [addresses, setAddresses] = useState<any[]>([]);
 
-    const [addresses, setAddresses] = useState([
-        { id: 'prestige', name: 'Prestige Design', address: 'Willem Fenengastraat 2, 1096 BN Amsterdam', label: 'Hoofdkantoor' },
-        { id: 'baxx', name: 'Afhalen bij Baxxshop', address: 'Industrieweg 12, Goes', label: 'Afhaalpunt' },
-        { id: 'reclame', name: 'Afhalen bij Reclameland', address: 'Paltrokstraat 20, Zaandam', label: 'Afhaalpunt' }
-    ]);
+    useEffect(() => {
+        const fetchAddresses = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
 
-    const handleSaveAddress = (newAddr: any) => {
-        const id = `custom-${Date.now()}`;
-        const formattedAddr = {
-            id,
-            name: newAddr.bedrijf || `${newAddr.voornaam} ${newAddr.achternaam}`,
-            address: `${newAddr.straat} ${newAddr.nummer}, ${newAddr.postcode} ${newAddr.plaats}`,
-            label: 'Bezorgadres'
+            const { data, error } = await supabase
+                .from('user_addresses')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('is_default', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (data) {
+                setAddresses(data);
+                // Select default address if it exists, otherwise the first one
+                const defaultAddr = data.find(a => a.is_default);
+                if (defaultAddr) {
+                    setSelectedAddress(defaultAddr.id);
+                } else if (data.length > 0) {
+                    setSelectedAddress(data[0].id);
+                }
+            }
+            setIsLoading(false);
         };
-        setAddresses(prev => [...prev, formattedAddr]);
-        setSelectedAddress(id);
-        setShowAddressForm(false);
+
+        fetchAddresses();
+    }, []);
+
+    const handleSaveAddress = async (newAddr: any) => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // If this is set as default, we need to unset other defaults first
+        if (newAddr.is_default) {
+            await supabase
+                .from('user_addresses')
+                .update({ is_default: false })
+                .eq('user_id', user.id);
+        }
+
+        const { data, error } = await supabase
+            .from('user_addresses')
+            .insert({
+                user_id: user.id,
+                name: newAddr.bedrijf || `${newAddr.voornaam} ${newAddr.achternaam}`,
+                contact: `${newAddr.voornaam} ${newAddr.achternaam}`,
+                street: `${newAddr.straat} ${newAddr.nummer}`,
+                postcode: newAddr.postcode, // Note: I should use the correct column name from DB
+                zipcode: newAddr.postcode,
+                city: newAddr.plaats,
+                is_default: newAddr.is_default || false
+            })
+            .select()
+            .single();
+
+        if (data) {
+            setAddresses(prev => [data, ...prev.map(a => newAddr.is_default ? { ...a, is_default: false } : a)]);
+            setSelectedAddress(data.id);
+            setShowAddressForm(false);
+        }
     };
 
     return (
@@ -56,41 +107,52 @@ export default function CheckoutDeliveryPage() {
                                 </div>
                                 <h3 className="text-xl font-extrabold tracking-tight">Kies uw <span className="text-[#0df2a2]">bezorgadres</span></h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {addresses.map((addr) => (
-                                    <label key={addr.id} className={`group relative flex cursor-pointer rounded-2xl border-2 p-5 transition-all hover:scale-[1.01] ${selectedAddress === addr.id ? 'border-[#0df2a2] bg-[#0df2a2]/5 shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/5 bg-[#1A1D1C]/60 hover:border-white/20'}`}>
-                                        <input
-                                            type="radio"
-                                            name="address"
-                                            checked={selectedAddress === addr.id}
-                                            onChange={() => setSelectedAddress(addr.id)}
-                                            className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-slate-600 bg-transparent checked:border-[#0df2a2] checked:bg-[#0df2a2] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3.5px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
-                                        />
-                                        <div className="ml-4 flex flex-col">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="block text-sm font-extrabold text-[#F8FAFC] tracking-tight">{addr.name}</span>
-                                                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest ${selectedAddress === addr.id ? 'bg-[#0df2a2] text-[#0A0A0A]' : 'bg-white/10 text-white/40'}`}>{addr.label}</span>
+
+                            {isLoading ? (
+                                <div className="p-8 text-center bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="size-8 border-2 border-[#0df2a2]/20 border-t-[#0df2a2] rounded-full animate-spin mx-auto mb-3"></div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Adressen laden...</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {addresses.map((addr) => (
+                                        <label key={addr.id} className={`group relative flex cursor-pointer rounded-2xl border-2 p-5 transition-all hover:scale-[1.01] ${selectedAddress === addr.id ? 'border-[#0df2a2] bg-[#0df2a2]/5 shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/5 bg-[#1A1D1C]/60 hover:border-white/20'}`}>
+                                            <input
+                                                type="radio"
+                                                name="address"
+                                                checked={selectedAddress === addr.id}
+                                                onChange={() => setSelectedAddress(addr.id)}
+                                                className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-slate-600 bg-transparent checked:border-[#0df2a2] checked:bg-[#0df2a2] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3.5px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
+                                            />
+                                            <div className="ml-4 flex flex-1 flex-col">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="block text-sm font-extrabold text-[#F8FAFC] tracking-tight truncate max-w-[150px]">{addr.name}</span>
+                                                    {addr.is_default && (
+                                                        <span className="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest bg-[#0df2a2] text-[#0A0A0A]">Standaard</span>
+                                                    )}
+                                                </div>
+                                                <span className="block text-xs text-gray-500 leading-relaxed truncate">{addr.street}, {addr.city}</span>
+                                                <span className="block text-[10px] text-gray-400 mt-1">{addr.contact}</span>
                                             </div>
-                                            <span className="block text-xs text-gray-500 leading-relaxed">{addr.address}</span>
+                                            {selectedAddress === addr.id && (
+                                                <div className="absolute top-4 right-4 text-[#0df2a2]">
+                                                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                                </div>
+                                            )}
+                                        </label>
+                                    ))}
+                                    {/* New Address Card */}
+                                    <button
+                                        onClick={() => setShowAddressForm(true)}
+                                        className="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-[#0df2a2]/30 transition-all group min-h-[110px]"
+                                    >
+                                        <div className="size-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#0df2a2]/10 transition-colors">
+                                            <span className="material-symbols-outlined text-gray-500 group-hover:text-[#0df2a2]">add_location_alt</span>
                                         </div>
-                                        {selectedAddress === addr.id && (
-                                            <div className="absolute top-4 right-4 text-[#0df2a2]">
-                                                <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                                            </div>
-                                        )}
-                                    </label>
-                                ))}
-                                {/* New Address Card */}
-                                <button
-                                    onClick={() => setShowAddressForm(true)}
-                                    className="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-[#0df2a2]/30 transition-all group"
-                                >
-                                    <div className="size-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#0df2a2]/10 transition-colors">
-                                        <span className="material-symbols-outlined text-gray-500 group-hover:text-[#0df2a2]">add_location_alt</span>
-                                    </div>
-                                    <span className="text-xs font-bold text-gray-500 group-hover:text-white uppercase tracking-widest">Nieuw adres toevoegen</span>
-                                </button>
-                            </div>
+                                        <span className="text-xs font-bold text-gray-500 group-hover:text-white uppercase tracking-widest">Nieuw adres toevoegen</span>
+                                    </button>
+                                </div>
+                            )}
                         </section>
 
                         {/* Section 2: Bezorgmoment */}

@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function CheckoutSuccessPage() {
+    const searchParams = useSearchParams();
+    const orderId = searchParams.get('order_id');
     const { total, clearCart } = useCart();
     const [orderTotal, setOrderTotal] = useState(0);
 
@@ -44,7 +47,7 @@ export default function CheckoutSuccessPage() {
                         <span className="material-symbols-outlined text-[#0df2a2] text-4xl">check_circle</span>
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold mb-2 tracking-tight">Bedankt voor je bestelling!</h1>
-                    <p className="text-gray-400">Ordernummer: <span className="text-[#0df2a2] font-mono font-bold">#RS-2024-{Math.floor(1000 + Math.random() * 9000)}</span></p>
+                    <p className="text-gray-400">Ordernummer: <span className="text-[#0df2a2] font-mono font-bold">#{orderId ? `RS-2024-${orderId.slice(0, 4).toUpperCase()}` : 'Wordt verwerkt...'}</span></p>
                 </div>
 
                 {/* Bento Grid */}
@@ -68,22 +71,22 @@ export default function CheckoutSuccessPage() {
                         </div>
                     </div>
 
-                    {/* Section 2: Files Upload */}
+                    {/* Section 2: View Order */}
                     <div className="md:col-span-1 bg-[#1A1D1C]/60 backdrop-blur-md rounded-xl p-8 border border-[#0df2a2]/10 border-l-4 border-l-[#0df2a2] flex flex-col justify-between relative overflow-hidden">
                         <div className="absolute -top-10 -right-10 size-32 bg-[#0df2a2]/5 rounded-full blur-3xl"></div>
                         <div>
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="material-symbols-outlined text-[#0df2a2]">upload_file</span>
-                                <h2 className="text-xl font-bold">Bestanden</h2>
+                                <span className="material-symbols-outlined text-[#0df2a2]">inventory_2</span>
+                                <h2 className="text-xl font-bold">Mijn Bestelling</h2>
                             </div>
                             <p className="text-gray-400 text-sm mb-6 leading-relaxed relative z-10">
-                                Upload nu je ontwerpen voor de makelaarsborden. Je kunt dit ook later doen via je account-dashboard.
+                                Bekijk direct de status en details van je bestelling in je persoonlijke account-dashboard.
                             </p>
                         </div>
-                        <button className="bg-[#0df2a2] text-[#0A0A0A] font-extrabold py-4 rounded-xl flex items-center justify-center gap-2 group shadow-[0_0_15px_rgba(13,242,162,0.3)] hover:shadow-[0_0_25px_rgba(13,242,162,0.5)] transition-all active:scale-[0.98] relative z-10">
-                            Bestanden aanleveren
+                        <Link href={orderId ? `/shop/account/orders/${orderId}` : '/shop/account/orders'} className="bg-[#0df2a2] text-[#0A0A0A] font-extrabold py-4 rounded-xl flex items-center justify-center gap-2 group shadow-[0_0_15px_rgba(13,242,162,0.3)] hover:shadow-[0_0_25px_rgba(13,242,162,0.5)] transition-all active:scale-[0.98] relative z-10">
+                            Bestelling inzien
                             <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">double_arrow</span>
-                        </button>
+                        </Link>
                     </div>
 
                     {/* Section 3: Payment Status */}

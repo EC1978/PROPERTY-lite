@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckoutStepper } from '@/components/shop/CheckoutStepper';
 import { createClient } from '@/utils/supabase/client';
 
@@ -12,6 +12,24 @@ export default function CheckoutPaymentPage() {
     const { items, total, clearCart, designUrl, setDesignUrl } = useCart();
     const [selectedPayment, setSelectedPayment] = useState('ideal');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+    const [userData, setUserData] = useState<any>(null);
+
+    // Fetch user details on mount
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('full_name, email')
+                    .eq('id', user.id)
+                    .single();
+                setUserData({ ...user, ...profile });
+            }
+        };
+        fetchUserData();
+    }, []);
 
     // Assume standard 21% VAT and arbitrary shipping rules defined in previous steps
     const tax = (total * 0.21);
@@ -30,17 +48,23 @@ export default function CheckoutPaymentPage() {
             }
 
             // Create order
+            const billingName = userData?.full_name || user.email || 'Klant';
+
+            // Determine status based on simulated choice
+            // iDEAL = Paid (Demo), Bank = Pending (Later)
+            const finalStatus = selectedPayment === 'ideal' ? 'paid' : 'pending';
+
             const { data: order, error: orderError } = await supabase
                 .from('shop_orders')
                 .insert({
                     user_id: user.id,
-                    status: 'pending',
+                    status: finalStatus,
                     total_amount: finalTotal,
                     tax_amount: tax,
                     shipping_cost: 0,
                     payment_method: selectedPayment,
-                    billing_address: { name: 'Prestige Design', city: 'Amsterdam' },
-                    shipping_address: { name: 'Prestige Design', city: 'Amsterdam' },
+                    billing_address: { name: billingName, city: 'Online Bestelling' },
+                    shipping_address: { name: billingName, city: 'Online Bestelling' },
                     design_url: designUrl
                 })
                 .select()
@@ -70,7 +94,7 @@ export default function CheckoutPaymentPage() {
 
             clearCart();
             setDesignUrl(null);
-            router.push('/shop/checkout/success');
+            router.push(`/shop/checkout/success?order_id=${order.id}`);
 
         } catch (error) {
             console.error('Error placing order:', error);
@@ -101,11 +125,10 @@ export default function CheckoutPaymentPage() {
 
                             <div className="bg-[#1A1D1C]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-center group hover:border-[#0df2a2]/30 transition-all">
                                 <div className="flex-1">
-                                    <p className="font-extrabold text-white text-lg tracking-tight mb-1">Prestige Design</p>
-                                    <p className="text-sm text-gray-500 leading-relaxed italic">Kerkstraat 123, 1011 AB Amsterdam, Nederland</p>
+                                    <p className="font-extrabold text-white text-lg tracking-tight mb-1">{userData?.full_name || 'Uw Naam'}</p>
+                                    <p className="text-sm text-gray-500 leading-relaxed italic">{userData?.email || 'uw-email@adres.nl'}</p>
                                     <div className="mt-4 flex gap-4">
-                                        <div className="text-[10px] font-black text-white/40 uppercase tracking-widest px-2 py-1 bg-white/5 rounded">BTW: NL123456789B01</div>
-                                        <div className="text-[10px] font-black text-white/40 uppercase tracking-widest px-2 py-1 bg-white/5 rounded">KVK: 12345678</div>
+                                        <div className="text-[10px] font-black text-white/40 uppercase tracking-widest px-2 py-1 bg-white/5 rounded">Gegevens uit profiel</div>
                                     </div>
                                 </div>
                                 <div className="w-full md:w-32 h-32 rounded-xl bg-cover bg-center border border-white/10 shadow-xl opacity-60 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBjulycpi-Qq-_tFdo0m26dlzT1FDj2LFbg6y-GWKfWzShafffBtZ_yjiHdKV5-C9N__blHuBuyroTFnZGjubKEVr7FJoVccGcrYjc38qRsYEOOcmdoDOlaQwwLle9A2bUxs7feCWSkcKWKECuDpUdxCBUWqp7WvRin1GdShOj9LFYwjb5f2cAslwmuBUGwoFS_r91qwgW-gdbKOTgiEaEsEL4Q7L8WT0dVNO4ZNJPbeI8Py2coFjF_bmYr8hB2_ybEhGvR5wl-NS4')" }}>
@@ -124,11 +147,8 @@ export default function CheckoutPaymentPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[
-                                    { id: 'ideal', name: 'iDEAL', icon: 'account_balance', desc: 'Direct betalen via uw bank' },
-                                    { id: 'creditcard', name: 'Creditcard', icon: 'credit_card', desc: 'Visa, Mastercard of Amex' },
-                                    { id: 'bank', name: 'Overschrijving', icon: 'payments', desc: 'Handmatige bankoverschrijving' },
-                                    { id: 'paypal', name: 'PayPal', icon: 'account_balance_wallet', desc: 'Snel en veilig online betalen' },
-                                    { id: 'klarna', name: 'Achteraf betalen', icon: 'history', desc: 'Betalen binnen 30 dagen' }
+                                    { id: 'ideal', name: 'iDEAL (Simulation)', icon: 'account_balance', desc: 'Demo: Bestelling direct op "Betaald"' },
+                                    { id: 'bank', name: 'Bankoverschrijving', icon: 'payments', desc: 'Demo: Bestelling op "Openstaand"' },
                                 ].map((method) => (
                                     <label key={method.id} className={`relative flex items-center p-5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] border-2 ${selectedPayment === method.id ? 'bg-[#0df2a2]/5 border-[#0df2a2] shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'bg-[#1A1D1C]/60 border-white/5 hover:border-white/20'}`}>
                                         <input type="radio" name="payment" className="hidden" checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} />
