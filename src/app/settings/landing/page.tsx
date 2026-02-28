@@ -35,9 +35,6 @@ export default async function LandingSettingsPage({
         const imageUrl = formData.get('image_url') as string
         const supabase = await createClient()
 
-        console.log('--- Landingspagina Update ---')
-        console.log('Target URL:', imageUrl)
-
         // Attempt upsert
         const { error } = await supabase.from('app_settings').upsert({
             key: 'hero_image',

@@ -24,7 +24,6 @@ export default async function Home() {
     }
   }
 
-  console.log('Landing Page - Hero Image:', heroImage);
 
   return (
     <div className="relative min-h-screen flex flex-col w-full max-w-7xl mx-auto bg-[#f6f8f7] dark:bg-[#0A0A0A] shadow-2xl overflow-hidden font-sans">

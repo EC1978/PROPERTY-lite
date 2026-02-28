@@ -55,8 +55,6 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
         const imagesRaw = formData.get('all_images') as string
         const images = imagesRaw ? JSON.parse(imagesRaw) : []
-        console.log('[updateProperty] all_images raw:', imagesRaw)
-        console.log('[updateProperty] images parsed:', images)
 
         const customLinksRaw = formData.get('custom_links') as string
         const custom_links = customLinksRaw ? JSON.parse(customLinksRaw) : []

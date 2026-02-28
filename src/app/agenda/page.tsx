@@ -2,6 +2,7 @@ import { getAppointments } from "./actions";
 import AgendaClient from "./AgendaClient";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import Link from 'next/link';
 
 export const metadata = {
     title: "Agenda | VoiceRealty AI",
@@ -37,6 +38,10 @@ export default async function AgendaPage() {
         <div className="min-h-screen bg-[#121212] text-white p-6 md:p-10">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-8">
+                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors group">
+                        <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                        Terug naar Dashboard
+                    </Link>
                     <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                         Mijn Agenda
                     </h1>

@@ -87,44 +87,72 @@ export default function AuditLogsPage() {
                         <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">Er zijn nog geen beheerderacties geregistreerd in het systeem.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
-                        <table className="w-full text-sm text-left border-collapse min-w-[700px]">
-                            <thead className="text-[10px] text-slate-500 dark:text-gray-400 bg-gray-100/50 dark:bg-white/[0.03] uppercase tracking-widest font-bold">
-                                <tr>
-                                    <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Tijdstip</th>
-                                    <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Beheerder</th>
-                                    <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Actie</th>
-                                    <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Details</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
-                                {logs.map((log) => (
-                                    <tr key={log.id} className="hover:bg-white dark:hover:bg-white/[0.02] transition-colors group">
-                                        <td className="px-5 py-4 whitespace-nowrap text-slate-600 dark:text-gray-300">
-                                            <div className="flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-[16px] text-emerald-500/50">schedule</span>
-                                                <span className="text-[12px]">{format(new Date(log.created_at), "d MMM yyyy, HH:mm", { locale: nl })}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4 whitespace-nowrap">
-                                            <div className="px-2 py-0.5 inline-flex rounded-lg text-xs font-semibold bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
-                                                {log.admin_email}
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4 whitespace-nowrap">
-                                            <span className="font-bold text-[12px] text-slate-900 dark:text-white uppercase">
-                                                {log.action}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4 min-w-[200px]">
-                                            <div className="font-mono text-[10px] text-slate-500 dark:text-gray-500 break-all bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200/50 dark:border-white/5 line-clamp-2 hover:line-clamp-none transition-all cursor-default">
-                                                {JSON.stringify(log.details)}
-                                            </div>
-                                        </td>
+                    <div className="w-full">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto w-full scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
+                            <table className="w-full text-sm text-left border-collapse min-w-[700px]">
+                                <thead className="text-[10px] text-slate-500 dark:text-gray-400 bg-gray-100/50 dark:bg-white/[0.03] uppercase tracking-widest font-bold">
+                                    <tr>
+                                        <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Tijdstip</th>
+                                        <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Beheerder</th>
+                                        <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Actie</th>
+                                        <th scope="col" className="px-5 py-3 border-b border-gray-100 dark:border-white/5">Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/5 shadow-sm">
+                                    {logs.map((log) => (
+                                        <tr key={log.id} className="hover:bg-white dark:hover:bg-white/[0.02] transition-colors group">
+                                            <td className="px-5 py-4 whitespace-nowrap text-slate-600 dark:text-gray-300">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-[16px] text-emerald-500/50">schedule</span>
+                                                    <span className="text-[12px]">{format(new Date(log.created_at), "d MMM yyyy, HH:mm", { locale: nl })}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <div className="px-2 py-0.5 inline-flex rounded-lg text-xs font-semibold bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                                                    {log.admin_email}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <span className="font-bold text-[12px] text-slate-900 dark:text-white uppercase">
+                                                    {log.action}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4 min-w-[200px]">
+                                                <div className="font-mono text-[10px] text-slate-500 dark:text-gray-500 break-all bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200/50 dark:border-white/5 line-clamp-2 hover:line-clamp-none transition-all cursor-default">
+                                                    {JSON.stringify(log.details)}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Stacked Cards View */}
+                        <div className="grid gap-4 p-4 md:hidden">
+                            {logs.map((log) => (
+                                <div key={log.id} className="flex flex-col gap-3 p-4 bg-white dark:bg-white/[0.02] rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="flex items-center gap-2 text-slate-600 dark:text-gray-300">
+                                            <span className="material-symbols-outlined text-[16px] text-emerald-500/50">schedule</span>
+                                            <span className="text-[12px]">{format(new Date(log.created_at), "d MMM yyyy, HH:mm", { locale: nl })}</span>
+                                        </div>
+                                        <span className="font-bold text-[12px] text-slate-900 dark:text-white uppercase">
+                                            {log.action}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="px-2 py-0.5 inline-flex rounded-lg text-xs font-semibold bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/10">
+                                            {log.admin_email}
+                                        </div>
+                                    </div>
+                                    <div className="font-mono text-[10px] text-slate-500 dark:text-gray-500 break-all bg-gray-100 dark:bg-black/20 p-2 rounded-lg border border-gray-200/50 dark:border-white/5">
+                                        {JSON.stringify(log.details)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

@@ -471,115 +471,117 @@ export default function AgendaClient({ initialAppointments, properties }: Agenda
                     </div>
                 </div>
             ) : (
-                /* ----------------- PREMIUM TIMELINE VIEW ----------------- */
                 <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[500px]">
+                    <div className="flex-1 overflow-x-auto w-full scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
+                        <div className="min-w-[800px] h-full flex flex-col">
+                            {/* Calendar Header */}
+                            <div className="flex border-b border-gray-800 bg-[#161616] sticky top-0 z-20">
+                                {/* Time Column Placeholder Top Left */}
+                                <div className="w-16 shrink-0 border-r border-gray-800 bg-[#121212]"></div>
 
-                    {/* Calendar Header */}
-                    <div className="flex border-b border-gray-800 bg-[#161616]">
-                        {/* Time Column Placeholder Top Left */}
-                        <div className="w-16 shrink-0 border-r border-gray-800 bg-[#121212]"></div>
-
-                        {/* Days Headers */}
-                        <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(0, 1fr))` }}>
-                            {weekDays.map((day) => {
-                                const isToday = isSameDay(day, today);
-                                return (
-                                    <div key={`header-${day.toISOString()}`} className={`py-3 px-2 text-center border-l border-gray-800/50 first:border-l-0 relative group transition-colors ${isToday ? 'bg-[#242424]/50' : ''}`}>
-                                        {isToday && <div className="absolute top-0 left-0 w-full h-1 bg-[#0df2a2]" />}
-                                        <div className={`text-xs sm:text-sm font-medium uppercase tracking-wider ${isToday ? 'text-[#0df2a2]' : 'text-gray-400'}`}>
-                                            {format(day, "EEE", { locale: nl })}
-                                        </div>
-                                        <div className={`text-xl sm:text-2xl font-light mt-0.5 ${isToday ? 'text-white' : 'text-gray-300'}`}>
-                                            {format(day, "d MMM", { locale: nl })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Scrollable Timeline Area */}
-                    <div className="flex-1 overflow-y-auto relative flex">
-
-                        {/* Time Grid (Left Column) */}
-                        <div className="w-16 shrink-0 border-r border-gray-800 bg-[#121212] relative z-10">
-                            {timeSlots.map(hour => (
-                                <div key={`time-${hour}`} className="text-right pr-2 text-xs text-gray-500 font-medium" style={{ height: `${HOUR_HEIGHT}px` }}>
-                                    <span className="-mt-2.5 block">{hour}:00</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Days Columns Body */}
-                        <div className="flex-1 relative grid" style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(0, 1fr))` }}>
-
-                            {/* Horizontal Grid lines underneath cards */}
-                            <div className="absolute inset-0 z-0 pointer-events-none w-full">
-                                {timeSlots.map(hour => (
-                                    <div key={`line-${hour}`} className="border-t border-gray-800/70 w-full" style={{ height: `${HOUR_HEIGHT}px` }}></div>
-                                ))}
-                            </div>
-
-                            {/* Verticial Day Columns interacting */}
-                            {weekDays.map((day) => {
-                                const dayAppointments = appointments.filter(app => isSameDay(new Date(app.appointment_date), day));
-                                const isToday = isSameDay(day, today);
-
-                                return (
-                                    <div
-                                        key={`col-${day.toISOString()}`}
-                                        className={`relative border-l border-gray-800/50 first:border-l-0 ${isToday ? 'bg-[#242424]/20' : ''}`}
-                                        onDragOver={handleDragOver}
-                                        onDrop={(e) => handleDrop(e, day)}
-                                        style={{ height: `${HOURS_COUNT * HOUR_HEIGHT}px` }}
-                                    >
-                                        {/* Current Time Indicator for Today */}
-                                        {isToday && (() => {
-                                            const now = new Date();
-                                            const nowHour = now.getHours();
-                                            if (nowHour >= START_HOUR && nowHour <= END_HOUR) {
-                                                const frac = (nowHour - START_HOUR) + (now.getMinutes() / 60);
-                                                return <div className="absolute w-full border-t border-[#0df2a2] z-20 pointer-events-none" style={{ top: `${frac * HOUR_HEIGHT}px` }}>
-                                                    <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-[#0df2a2] shadow-[0_0_10px_#0df2a2]"></div>
+                                {/* Days Headers */}
+                                <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(0, 1fr))` }}>
+                                    {weekDays.map((day) => {
+                                        const isToday = isSameDay(day, today);
+                                        return (
+                                            <div key={`header-${day.toISOString()}`} className={`py-3 px-2 text-center border-l border-gray-800/50 first:border-l-0 relative group transition-colors ${isToday ? 'bg-[#242424]/50' : ''}`}>
+                                                {isToday && <div className="absolute top-0 left-0 w-full h-1 bg-[#0df2a2]" />}
+                                                <div className={`text-xs sm:text-sm font-medium uppercase tracking-wider ${isToday ? 'text-[#0df2a2]' : 'text-gray-400'}`}>
+                                                    {format(day, "EEE", { locale: nl })}
                                                 </div>
-                                            }
-                                            return null;
-                                        })()}
-
-                                        {/* Appointments */}
-                                        {dayAppointments.map(app => (
-                                            <div
-                                                key={app.id}
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, app.id)}
-                                                onDragEnd={handleDragEnd}
-                                                onDoubleClick={() => handleOpenModal(app)}
-                                                style={{ ...getPositionStyle(app.appointment_date) }}
-                                                className={`absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg p-2 sm:p-3 overflow-hidden border cursor-grab active:cursor-grabbing hover:brightness-110 hover:z-30 transition-all shadow-md group ${statusColors[app.status]}`}
-                                                title={`${format(new Date(app.appointment_date), "HH:mm")} - ${app.client_name}\n${app.property_address}\n(Dubbelklik om te bewerken)`}
-                                            >
-                                                {/* Card Content Header */}
-                                                <div className="flex justify-between items-start mb-0.5">
-                                                    <span className="text-[10px] sm:text-xs font-bold leading-none tracking-wide text-white drop-shadow-sm">
-                                                        {format(new Date(app.appointment_date), "HH:mm")}
-                                                    </span>
-                                                    {app.status === 'voltooid' && <CheckCircle size={12} className="text-[#0df2a2] shrink-0 drop-shadow-sm" />}
-                                                </div>
-
-                                                {/* Text Content */}
-                                                <p className="font-semibold text-xs sm:text-sm text-white truncate leading-tight drop-shadow-sm">
-                                                    {app.client_name}
-                                                </p>
-                                                <div className="flex items-center gap-1 mt-0.5 opacity-90 truncate">
-                                                    <MapPin size={10} className="shrink-0" />
-                                                    <span className="text-[10px] sm:text-[11px] truncate leading-tight">{app.property_address}</span>
+                                                <div className={`text-xl sm:text-2xl font-light mt-0.5 ${isToday ? 'text-white' : 'text-gray-300'}`}>
+                                                    {format(day, "d MMM", { locale: nl })}
                                                 </div>
                                             </div>
-                                        ))}
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
+                            {/* Scrollable Timeline Area */}
+                            <div className="flex-1 overflow-y-auto relative flex">
+
+                                {/* Time Grid (Left Column) */}
+                                <div className="w-16 shrink-0 border-r border-gray-800 bg-[#121212] relative z-10 sticky left-0">
+                                    {timeSlots.map(hour => (
+                                        <div key={`time-${hour}`} className="text-right pr-2 text-xs text-gray-500 font-medium" style={{ height: `${HOUR_HEIGHT}px` }}>
+                                            <span className="-mt-2.5 block">{hour}:00</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Days Columns Body */}
+                                <div className="flex-1 relative grid" style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(0, 1fr))` }}>
+
+                                    {/* Horizontal Grid lines underneath cards */}
+                                    <div className="absolute inset-0 z-0 pointer-events-none w-full">
+                                        {timeSlots.map(hour => (
+                                            <div key={`line-${hour}`} className="border-t border-gray-800/70 w-full" style={{ height: `${HOUR_HEIGHT}px` }}></div>
+                                        ))}
                                     </div>
-                                );
-                            })}
+
+                                    {/* Verticial Day Columns interacting */}
+                                    {weekDays.map((day) => {
+                                        const dayAppointments = appointments.filter(app => isSameDay(new Date(app.appointment_date), day));
+                                        const isToday = isSameDay(day, today);
+
+                                        return (
+                                            <div
+                                                key={`col-${day.toISOString()}`}
+                                                className={`relative border-l border-gray-800/50 first:border-l-0 ${isToday ? 'bg-[#242424]/20' : ''}`}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, day)}
+                                                style={{ height: `${HOURS_COUNT * HOUR_HEIGHT}px` }}
+                                            >
+                                                {/* Current Time Indicator for Today */}
+                                                {isToday && (() => {
+                                                    const now = new Date();
+                                                    const nowHour = now.getHours();
+                                                    if (nowHour >= START_HOUR && nowHour <= END_HOUR) {
+                                                        const frac = (nowHour - START_HOUR) + (now.getMinutes() / 60);
+                                                        return <div className="absolute w-full border-t border-[#0df2a2] z-20 pointer-events-none" style={{ top: `${frac * HOUR_HEIGHT}px` }}>
+                                                            <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-[#0df2a2] shadow-[0_0_10px_#0df2a2]"></div>
+                                                        </div>
+                                                    }
+                                                    return null;
+                                                })()}
+
+                                                {/* Appointments */}
+                                                {dayAppointments.map(app => (
+                                                    <div
+                                                        key={app.id}
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, app.id)}
+                                                        onDragEnd={handleDragEnd}
+                                                        onDoubleClick={() => handleOpenModal(app)}
+                                                        style={{ ...getPositionStyle(app.appointment_date) }}
+                                                        className={`absolute left-1 right-1 sm:left-2 sm:right-2 rounded-lg p-2 sm:p-3 overflow-hidden border cursor-grab active:cursor-grabbing hover:brightness-110 hover:z-30 transition-all shadow-md group ${statusColors[app.status]}`}
+                                                        title={`${format(new Date(app.appointment_date), "HH:mm")} - ${app.client_name}\n${app.property_address}\n(Dubbelklik om te bewerken)`}
+                                                    >
+                                                        {/* Card Content Header */}
+                                                        <div className="flex justify-between items-start mb-0.5">
+                                                            <span className="text-[10px] sm:text-xs font-bold leading-none tracking-wide text-white drop-shadow-sm">
+                                                                {format(new Date(app.appointment_date), "HH:mm")}
+                                                            </span>
+                                                            {app.status === 'voltooid' && <CheckCircle size={12} className="text-[#0df2a2] shrink-0 drop-shadow-sm" />}
+                                                        </div>
+
+                                                        {/* Text Content */}
+                                                        <p className="font-semibold text-xs sm:text-sm text-white truncate leading-tight drop-shadow-sm">
+                                                            {app.client_name}
+                                                        </p>
+                                                        <div className="flex items-center gap-1 mt-0.5 opacity-90 truncate">
+                                                            <MapPin size={10} className="shrink-0" />
+                                                            <span className="text-[10px] sm:text-[11px] truncate leading-tight">{app.property_address}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
