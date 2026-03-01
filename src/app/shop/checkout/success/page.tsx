@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function CheckoutSuccessPage() {
+function SuccessContent() {
     const searchParams = useSearchParams();
     const orderId = searchParams.get('order_id');
     const { total, clearCart } = useCart();
@@ -129,5 +129,20 @@ export default function CheckoutSuccessPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function CheckoutSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="size-10 border-4 border-[#0df2a2]/20 border-t-[#0df2a2] rounded-full animate-spin"></div>
+                    <p className="text-gray-400 text-sm">Bestelling laden...</p>
+                </div>
+            </div>
+        }>
+            <SuccessContent />
+        </Suspense>
     );
 }
