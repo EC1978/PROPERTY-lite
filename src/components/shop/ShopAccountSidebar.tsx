@@ -15,7 +15,6 @@ export default function ShopAccountSidebar() {
         { href: '/shop/account/open', icon: 'calendar_today', label: 'Openstaand' },
         { href: '/shop/account/quotes', icon: 'description', label: 'Offertes' },
         { href: '/shop/account/favorites', icon: 'favorite', label: 'Favorieten' },
-        { href: '/shop/account/designs', icon: 'brush', label: 'Ontwerpen' },
         { href: '/shop/account/claims', icon: 'report', label: 'Reclamaties' },
     ]
 
