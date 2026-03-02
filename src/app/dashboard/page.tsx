@@ -27,12 +27,20 @@ export default async function DashboardPage() {
         .order('created_at', { ascending: false })
         .limit(3) // Only show recent 3
 
+    // Fetch tenant features
+    const { data: features } = await supabase
+        .from('tenant_features')
+        .select('has_agenda, has_leads, has_webshop')
+        .eq('user_id', user.id)
+        .single()
+
     return (
         <DashboardLiveView
             userEmail={user.email || ''}
             userId={user.id}
             initialProperties={properties || []}
             initialActiveCount={activeCount || 0}
+            initialFeatures={features || { has_agenda: false, has_leads: false, has_webshop: false }}
         />
     )
 }

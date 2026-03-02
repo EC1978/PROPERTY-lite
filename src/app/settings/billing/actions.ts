@@ -85,7 +85,7 @@ export async function handlePaymentMethod(formData?: FormData) {
     }
 }
 
-export async function createCheckoutSession(planName: string) {
+export async function createCheckoutSession(planId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -98,7 +98,7 @@ export async function createCheckoutSession(planName: string) {
         const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
 
         const payment = await createMolliePayment({
-            plan: planName,
+            plan: planId,
             userId: user.id,
             origin: origin
         })

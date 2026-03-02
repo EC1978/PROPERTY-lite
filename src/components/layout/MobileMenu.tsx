@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/auth/actions'
 import ThemeToggle from '../ThemeToggle'
 import { createPortal } from 'react-dom'
+import { createClient } from '@/utils/supabase/client'
 
 interface MobileMenuProps {
     userEmail?: string
@@ -16,9 +17,46 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
     const [mounted, setMounted] = useState(false)
     const pathname = usePathname()
 
+    const [features, setFeatures] = useState({
+        has_properties: true,
+        has_agenda: true,
+        has_leads: true,
+        has_materials: true,
+        has_archive: true,
+        has_statistics: true,
+        has_reviews: true,
+        has_webshop: true,
+    })
+
+    const supabase = createClient()
+
     useEffect(() => {
         setMounted(true)
-    }, [])
+        async function loadFeatures() {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase
+                    .from('tenant_features')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (data) {
+                    setFeatures({
+                        has_properties: data.has_properties ?? true,
+                        has_agenda: data.has_agenda,
+                        has_leads: data.has_leads,
+                        has_materials: data.has_materials ?? true,
+                        has_archive: data.has_archive ?? true,
+                        has_statistics: data.has_statistics ?? true,
+                        has_reviews: data.has_reviews ?? true,
+                        has_webshop: data.has_webshop,
+                    })
+                }
+            }
+        }
+        loadFeatures()
+    }, [supabase])
 
     // Close menu when pathname changes
     useEffect(() => {
@@ -38,17 +76,18 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
     }, [isOpen])
 
     const navigation = [
-        { href: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { href: '/properties', icon: 'real_estate_agent', label: 'Woningen' },
-        { href: '/agenda', icon: 'calendar_month', label: 'Agenda' },
-        { href: '/dashboard/materialen', icon: 'inventory', label: 'Materialen' },
-        { href: '/archive', icon: 'archive', label: 'Archief' },
-        { href: '/leads', icon: 'groups', label: 'Leads' },
-        { href: '/analytics', icon: 'monitoring', label: 'Statistieken' },
-        { href: '/shop', icon: 'shopping_bag', label: 'Shop' },
-        { href: '/settings', icon: 'settings', label: 'Instellingen' },
-        { href: '/support', icon: 'help', label: 'Ondersteuning' },
-    ]
+        { href: '/dashboard', icon: 'dashboard', label: 'Dashboard', show: true },
+        { href: '/properties', icon: 'real_estate_agent', label: 'Woningen', show: features.has_properties },
+        { href: '/agenda', icon: 'calendar_month', label: 'Agenda', show: features.has_agenda },
+        { href: '/dashboard/reviews', icon: 'star', label: 'Klantbeoordelingen', show: features.has_reviews },
+        { href: '/dashboard/materialen', icon: 'inventory', label: 'Materialen', show: features.has_materials },
+        { href: '/archive', icon: 'archive', label: 'Archief', show: features.has_archive },
+        { href: '/leads', icon: 'groups', label: 'Leads', show: features.has_leads },
+        { href: '/analytics', icon: 'monitoring', label: 'Statistieken', show: features.has_statistics },
+        { href: '/shop', icon: 'shopping_bag', label: 'Shop', show: features.has_webshop },
+        { href: '/settings', icon: 'settings', label: 'Instellingen', show: true },
+        { href: '/support', icon: 'help', label: 'Ondersteuning', show: true },
+    ].filter(item => item.show)
 
     const menuContent = (
         <>

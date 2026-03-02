@@ -1,9 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/auth/actions'
 import ThemeToggle from '../ThemeToggle'
+import { createClient } from '@/utils/supabase/client'
 
 interface SidebarProps {
     userEmail?: string
@@ -11,8 +13,48 @@ interface SidebarProps {
 
 export default function Sidebar({ userEmail }: SidebarProps) {
     const pathname = usePathname()
+    const supabase = createClient()
 
-    const NavLink = ({ href, icon, label }: { href: string, icon: string, label: string }) => {
+    const [features, setFeatures] = useState({
+        has_properties: true,
+        has_agenda: true,
+        has_leads: true,
+        has_materials: true,
+        has_archive: true,
+        has_statistics: true,
+        has_reviews: true,
+        has_webshop: true,
+    })
+
+    useEffect(() => {
+        async function loadFeatures() {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase
+                    .from('tenant_features')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (data) {
+                    setFeatures({
+                        has_properties: data.has_properties ?? true,
+                        has_agenda: data.has_agenda,
+                        has_leads: data.has_leads,
+                        has_materials: data.has_materials ?? true,
+                        has_archive: data.has_archive ?? true,
+                        has_statistics: data.has_statistics ?? true,
+                        has_reviews: data.has_reviews ?? true,
+                        has_webshop: data.has_webshop,
+                    })
+                }
+            }
+        }
+        loadFeatures()
+    }, [supabase])
+
+    const NavLink = ({ href, icon, label, show = true }: { href: string, icon: string, label: string, show?: boolean }) => {
+        if (!show) return null;
         const active = pathname === href
         return (
             <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-emerald-500/10 text-emerald-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}>
@@ -34,14 +76,14 @@ export default function Sidebar({ userEmail }: SidebarProps) {
 
                 <div className="space-y-1">
                     <NavLink href="/dashboard" icon="dashboard" label="Dashboard" />
-                    <NavLink href="/properties" icon="real_estate_agent" label="Woningen" />
-                    <NavLink href="/agenda" icon="calendar_month" label="Agenda" />
-                    <NavLink href="/dashboard/reviews" icon="star" label="Klantbeoordelingen" />
-                    <NavLink href="/dashboard/materialen" icon="inventory" label="Materialen" />
-                    <NavLink href="/archive" icon="archive" label="Archief" />
-                    <NavLink href="/leads" icon="groups" label="Leads" />
-                    <NavLink href="/analytics" icon="monitoring" label="Statistieken" />
-                    <NavLink href="/shop" icon="shopping_bag" label="Shop" />
+                    <NavLink href="/properties" icon="real_estate_agent" label="Woningen" show={features.has_properties} />
+                    <NavLink href="/agenda" icon="calendar_month" label="Agenda" show={features.has_agenda} />
+                    <NavLink href="/dashboard/reviews" icon="star" label="Klantbeoordelingen" show={features.has_reviews} />
+                    <NavLink href="/dashboard/materialen" icon="inventory" label="Materialen" show={features.has_materials} />
+                    <NavLink href="/archive" icon="archive" label="Archief" show={features.has_archive} />
+                    <NavLink href="/leads" icon="groups" label="Leads" show={features.has_leads} />
+                    <NavLink href="/analytics" icon="monitoring" label="Statistieken" show={features.has_statistics} />
+                    <NavLink href="/shop" icon="shopping_bag" label="Shop" show={features.has_webshop} />
                     <NavLink href="/settings" icon="settings" label="Instellingen" />
                     <NavLink href="/support" icon="help" label="Ondersteuning" />
                 </div>

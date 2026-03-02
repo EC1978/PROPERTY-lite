@@ -104,6 +104,57 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
     }
 
+    // --- ADMIN ROUTE SECURITY ---
+    if (pathname.startsWith('/admin')) {
+        if (!user) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/login'
+            return NextResponse.redirect(url)
+        }
+
+        // Fetch user role
+        const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (userData?.role !== 'superadmin') {
+            const url = request.nextUrl.clone()
+            url.pathname = '/dashboard'
+            return NextResponse.redirect(url)
+        }
+    }
+    // ----------------------------
+
+    // --- MODULE SECURITY ---
+    if (user && !pathname.startsWith('/admin') && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/') && !isPublicRoute(pathname)) {
+        // Fetch tenant features to enforce module access
+        const { data: features } = await supabase
+            .from('tenant_features')
+            .select('*')
+            .eq('user_id', user.id)
+            .single()
+
+        if (features) {
+            const redirect = (path: string) => {
+                const url = request.nextUrl.clone()
+                url.pathname = path
+                return NextResponse.redirect(url)
+            }
+
+            if (pathname.startsWith('/shop') && !features.has_webshop) return redirect('/dashboard')
+            if (pathname.startsWith('/agenda') && !features.has_agenda) return redirect('/dashboard')
+            if (pathname.startsWith('/leads') && !features.has_leads) return redirect('/dashboard')
+            if (pathname.startsWith('/properties') && features.has_properties === false) return redirect('/dashboard')
+            if (pathname.startsWith('/dashboard/reviews') && features.has_reviews === false) return redirect('/dashboard')
+            if (pathname.startsWith('/dashboard/materialen') && features.has_materials === false) return redirect('/dashboard')
+            if (pathname.startsWith('/archive') && features.has_archive === false) return redirect('/dashboard')
+            if (pathname.startsWith('/analytics') && features.has_statistics === false) return redirect('/dashboard')
+        }
+    }
+    // -----------------------
+
     // Redirect authenticated users away from auth pages (but NOT from reset-password or verify-2fa)
     if (
         user &&

@@ -18,25 +18,22 @@ export async function createCheckoutSession({
     userEmail?: string;
     origin: string;
 }) {
-    let priceAmount = 0;
-    let priceName = '';
+    const { createClient } = await import('@/utils/supabase/server');
+    const supabase = await createClient();
 
-    switch (plan) {
-        case 'Essential':
-            priceAmount = 4900;
-            priceName = 'Essential Plan';
-            break;
-        case 'Professional':
-            priceAmount = 12900;
-            priceName = 'Professional Plan';
-            break;
-        case 'Elite':
-            priceAmount = 29900;
-            priceName = 'Elite Plan';
-            break;
-        default:
-            throw new Error('Invalid plan');
+    const { data: pkg, error: pkgErr } = await supabase
+        .from('packages')
+        .select('name, monthly_price')
+        .eq('id', plan)
+        .single();
+
+    if (pkgErr || !pkg) {
+        console.error('Stripe checkout error: Package not found', plan, pkgErr);
+        throw new Error('Invalid plan');
     }
+
+    const priceAmount = (pkg.monthly_price || 0) * 100; // Cents
+    const priceName = `${pkg.name} Plan`;
 
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card', 'ideal'],

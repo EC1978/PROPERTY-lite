@@ -4,18 +4,18 @@ import { useState } from 'react'
 import { createCheckoutSession } from '../../actions'
 
 type CheckoutButtonProps = {
-    planName: string
+    planId: string
     cta: string
     className: string
 }
 
-export default function CheckoutButton({ planName, cta, className }: CheckoutButtonProps) {
+export default function CheckoutButton({ planId, cta, className }: CheckoutButtonProps) {
     const [isLoading, setIsLoading] = useState(false)
 
     const handleCheckout = async () => {
         setIsLoading(true)
         try {
-            const result = await createCheckoutSession(planName)
+            const result = await createCheckoutSession(planId)
             if (result.success && result.url) {
                 window.location.href = result.url
             } else {

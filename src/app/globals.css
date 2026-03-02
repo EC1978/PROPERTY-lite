@@ -58,3 +58,14 @@
 .orb-gradient {
   background: radial-gradient(circle at 30% 30%, #34d399 0%, #10b77f 40%, #064e3b 100%);
 }
+
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

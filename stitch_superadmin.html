@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-[#0A0A0A]" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Superadmin Client Detail | Real Estate SaaS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#0A0A0A',
+            card: '#1A1A1A',
+            accent: '#0df2a2',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-glassmorphism">
+    .glass-card {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .neon-glow:hover {
+      box-shadow: 0 0 15px rgba(13, 242, 162, 0.3);
+    }
+
+    /* Custom Switch Styling */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #333;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #0df2a2; }
+    input:checked + .slider:before { transform: translateX(20px); }
+  </style>
+</head>
+<body class="text-white font-sans antialiased pb-10">
+<!-- BEGIN: MainHeader -->
+<header class="p-6 sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-lg" data-purpose="header-section">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-emerald-900 flex items-center justify-center text-obsidian font-bold text-xl">
+          EC
+        </div>
+<div>
+<h1 class="text-xl font-extrabold tracking-tight">Erdem Celik</h1>
+<p class="text-xs text-zinc-500 uppercase tracking-widest font-semibold">Prestige Design</p>
+</div>
+</div>
+<!-- Ghost Login Button -->
+<button class="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-accent text-obsidian font-bold rounded-xl neon-glow transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">person_search</span>
+<span class="text-sm">Inloggen als klant</span>
+</button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<main class="px-5 space-y-5">
+<!-- BEGIN: PackageManagement -->
+<section class="glass-card rounded-3xl p-6" data-purpose="package-settings">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold">Pakket Beheer</h2>
+<span class="material-symbols-outlined text-zinc-500">inventory_2</span>
+</div>
+<div class="space-y-4">
+<div class="relative">
+<label class="text-[10px] uppercase font-bold text-zinc-500 ml-1 mb-1 block">Actief Pakket</label>
+<select class="w-full bg-[#252525] border-none text-white rounded-xl py-3.5 px-4 appearance-none focus:ring-1 focus:ring-accent transition-all">
+<option>Basic</option>
+<option>Pro</option>
+<option selected="">Premium</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 bottom-3 text-zinc-400 pointer-events-none">expand_more</span>
+</div>
+<button class="w-full border border-zinc-800 bg-transparent text-accent text-sm font-semibold py-3 rounded-xl hover:bg-accent/5 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+          Nieuw pakket samenstellen
+        </button>
+</div>
+</section>
+<!-- END: PackageManagement -->
+<!-- BEGIN: ModuleToggles -->
+<section class="glass-card rounded-3xl p-6" data-purpose="module-permissions">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold">Module Licenties</h2>
+<span class="material-symbols-outlined text-zinc-500">extension</span>
+</div>
+<div class="space-y-1">
+<!-- Module Item -->
+<div class="flex items-center justify-between py-4 border-b border-zinc-800/50 last:border-0">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-zinc-800/50 rounded-lg">
+<span class="material-symbols-outlined text-accent text-[20px]">calendar_today</span>
+</div>
+<span class="font-semibold text-zinc-200">Agenda</span>
+</div>
+<label class="switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Module Item -->
+<div class="flex items-center justify-between py-4 border-b border-zinc-800/50 last:border-0">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-zinc-800/50 rounded-lg">
+<span class="material-symbols-outlined text-accent text-[20px]">hub</span>
+</div>
+<span class="font-semibold text-zinc-200">Leads Management</span>
+</div>
+<label class="switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Module Item -->
+<div class="flex items-center justify-between py-4 border-b border-zinc-800/50 last:border-0">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-zinc-800/50 rounded-lg">
+<span class="material-symbols-outlined text-accent text-[20px]">shopping_cart</span>
+</div>
+<span class="font-semibold text-zinc-200">Webshop</span>
+</div>
+<label class="switch">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Module Item -->
+<div class="flex items-center justify-between py-4 border-b border-zinc-800/50 last:border-0">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-zinc-800/50 rounded-lg">
+<span class="material-symbols-outlined text-accent text-[20px]">receipt_long</span>
+</div>
+<span class="font-semibold text-zinc-200">Facturatie</span>
+</div>
+<label class="switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+<!-- Module Item -->
+<div class="flex items-center justify-between py-4 last:border-0">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-zinc-800/50 rounded-lg">
+<span class="material-symbols-outlined text-accent text-[20px]">graphic_eq</span>
+</div>
+<span class="font-semibold text-zinc-200">Voice AI Assist</span>
+</div>
+<label class="switch">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+</section>
+<!-- END: ModuleToggles -->
+<!-- BEGIN: MenuBuilder -->
+<section class="glass-card rounded-3xl p-6" data-purpose="sidebar-config">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-lg font-bold">Menu Structuur</h2>
+<span class="material-symbols-outlined text-zinc-500">drag_handle</span>
+</div>
+<div class="space-y-3">
+<!-- Draggable Menu Item -->
+<div class="flex items-center justify-between p-4 bg-[#222] rounded-2xl border border-zinc-800/50 shadow-lg">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-600 cursor-grab">drag_indicator</span>
+<span class="font-semibold">Dashboard</span>
+</div>
+<button class="text-zinc-500 hover:text-accent transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Draggable Menu Item -->
+<div class="flex items-center justify-between p-4 bg-[#222] rounded-2xl border border-zinc-800/50 shadow-lg">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-600 cursor-grab">drag_indicator</span>
+<span class="font-semibold">Woningen</span>
+</div>
+<button class="text-zinc-500 hover:text-accent transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Draggable Menu Item -->
+<div class="flex items-center justify-between p-4 bg-[#222] rounded-2xl border border-zinc-800/50 shadow-lg">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-600 cursor-grab">drag_indicator</span>
+<span class="font-semibold">Leads</span>
+</div>
+<button class="text-zinc-500 hover:text-accent transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Draggable Menu Item Hidden State -->
+<div class="flex items-center justify-between p-4 bg-[#111] rounded-2xl border border-dashed border-zinc-800 opacity-60">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-800">drag_indicator</span>
+<span class="font-semibold italic text-zinc-500">Instellingen</span>
+</div>
+<button class="text-zinc-600">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+<p class="text-center text-[10px] text-zinc-600 mt-6 uppercase tracking-widest font-bold">Drag &amp; drop om volgorde te wijzigen</p>
+</section>
+<!-- END: MenuBuilder -->
+</main>
+<script data-purpose="drag-and-drop-mock">
+    // Minimal mock for visual feedback on drag (no external libraries as per instructions)
+    const items = document.querySelectorAll('.cursor-grab');
+    items.forEach(item => {
+      item.addEventListener('mousedown', () => {
+        item.parentElement.parentElement.classList.add('border-accent/40');
+      });
+      item.addEventListener('mouseup', () => {
+        item.parentElement.parentElement.classList.remove('border-accent/40');
+      });
+    });
+  </script>
+</body></html>

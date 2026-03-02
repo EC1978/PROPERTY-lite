@@ -17,6 +17,14 @@ export default async function SettingsLayout({
         redirect('/login')
     }
 
+    const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    const isSuperadmin = userData?.role === 'superadmin'
+
     return (
         <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-sans overflow-x-hidden">
 
@@ -37,7 +45,7 @@ export default async function SettingsLayout({
             <main className="flex-1 ml-0 md:ml-72 p-6 pt-28 md:p-10 md:pt-10 pb-32 md:pb-10 w-full">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row gap-8">
-                        <SettingsNav />
+                        <SettingsNav isSuperadmin={isSuperadmin} />
 
                         <div className="flex-1 min-w-0">
                             <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-200 dark:border-white/5 p-6 md:p-8 shadow-sm">

@@ -22,11 +22,17 @@ interface DashboardLiveViewProps {
     userId: string
     initialProperties: Property[]
     initialActiveCount: number
+    initialFeatures: {
+        has_agenda: boolean
+        has_leads: boolean
+        has_webshop: boolean
+    }
 }
 
-export default function DashboardLiveView({ userEmail, userId, initialProperties, initialActiveCount }: DashboardLiveViewProps) {
+export default function DashboardLiveView({ userEmail, userId, initialProperties, initialActiveCount, initialFeatures }: DashboardLiveViewProps) {
     const [properties, setProperties] = useState<Property[]>(initialProperties)
     const [activeCount, setActiveCount] = useState(initialActiveCount)
+    const [features] = useState(initialFeatures)
     const [interactions] = useState(52)
 
     const supabase = createClient()
@@ -232,13 +238,15 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                                 Je AI-agenten beheren momenteel {activeCount} actieve gesprekken.
                             </p>
                         </div>
-                        <Link href="/shop" className="flex items-center gap-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/10 transition-all group shrink-0 self-start">
-                            <span className="material-symbols-outlined text-[#0df2a2] group-hover:scale-110 transition-transform">shopping_bag</span>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-gray-900 dark:text-white">VoiceRealty Shop</span>
-                                <span className="text-[10px] text-gray-500">Upgrade je account</span>
-                            </div>
-                        </Link>
+                        {features.has_webshop && (
+                            <Link href="/shop" className="flex items-center gap-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/10 transition-all group shrink-0 self-start">
+                                <span className="material-symbols-outlined text-[#0df2a2] group-hover:scale-110 transition-transform">shopping_bag</span>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white">VoiceRealty Shop</span>
+                                    <span className="text-[10px] text-gray-500">Upgrade je account</span>
+                                </div>
+                            </Link>
+                        )}
                     </div>
 
                     {/* ===== GRID LAYOUT ===== */}
