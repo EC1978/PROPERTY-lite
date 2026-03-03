@@ -1,8 +1,8 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { cookies, headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 
 // This uses the service role to generate a session for another user
 export async function impersonateUser(targetUserId: string) {
@@ -49,16 +49,7 @@ export async function impersonateUser(targetUserId: string) {
     // as a custom header, which is then picked up by RLS... but that's complex.
 
     // Another approach: Using `generateLink` type: 'magiclink'
-    const supabaseAdmin = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            cookies: {
-                getAll() { return cookieStore.getAll() },
-                setAll() { }
-            }
-        }
-    )
+    const supabaseAdmin = await createAdminClient()
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
@@ -112,16 +103,7 @@ export async function updateTenantFeature(userId: string, featureKey: string, ne
 
     // 2. We use the service role client to bypass any potential RLS restrictions 
     // for updating another user's features, making it robust.
-    const supabaseAdmin = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            cookies: {
-                getAll() { return [] },
-                setAll() { }
-            }
-        }
-    )
+    const supabaseAdmin = await createAdminClient()
 
     // 3. Upsert the feature
     const { error } = await supabaseAdmin
@@ -137,5 +119,165 @@ export async function updateTenantFeature(userId: string, featureKey: string, ne
         return { error: 'Fout bij opslaan van module' }
     }
 
+    console.log('SERVER [updateTenantFeature]: Success for user', userId, 'feature', featureKey)
+    revalidatePath(`/admin/users/${userId}`)
     return { success: true }
+}
+
+export async function updateTenantPackage(userId: string, pkgId: string) {
+    const supabase = await createClient()
+
+    // 1. Verify caller is superadmin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Niet ingelogd' }
+
+    const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (userData?.role !== 'superadmin') {
+        return { error: 'Geen toegang' }
+    }
+
+    const supabaseAdmin = await createAdminClient()
+
+    // 2. Fetch package details
+    const { data: pkg, error: pkgError } = await supabaseAdmin
+        .from('packages')
+        .select('*')
+        .eq('id', pkgId)
+        .single()
+
+    if (pkgError || !pkg) return { error: 'Pakket niet gevonden' }
+
+    // 3. Update features
+    const { error: featError } = await supabaseAdmin
+        .from('tenant_features')
+        .upsert({
+            user_id: userId,
+            has_properties: pkg.has_properties,
+            has_agenda: pkg.has_agenda,
+            has_materials: pkg.has_materials,
+            has_archive: pkg.has_archive,
+            has_leads: pkg.has_leads,
+            has_statistics: pkg.has_statistics,
+            has_reviews: pkg.has_reviews,
+            has_webshop: pkg.has_webshop,
+            has_billing: pkg.has_billing,
+            has_voice: pkg.has_voice,
+            property_limit: pkg.property_limit,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+
+    if (featError) return { error: 'Fout bij bijwerken modules' }
+
+    // 4. Aggressive subscription reset
+    await supabaseAdmin.from('subscriptions').delete().eq('user_id', userId)
+
+    const { error: subError } = await supabaseAdmin
+        .from('subscriptions')
+        .insert({
+            user_id: userId,
+            plan: pkg.id,
+            status: 'active',
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        })
+
+    if (subError) {
+        console.error('Subscription update error:', subError)
+        return { error: 'Fout bij bijwerken abonnement' }
+    }
+
+    console.log('SERVER [updateTenantPackage]: Success for user', userId)
+    revalidatePath(`/admin/users/${userId}`)
+    revalidatePath('/')
+
+    return { success: true }
+}
+
+export async function getAdminUserDetail(userId: string) {
+    const supabase = await createClient()
+
+    // 1. Verify caller is superadmin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Niet ingelogd' }
+
+    const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (userData?.role !== 'superadmin') {
+        return { error: 'Geen toegang' }
+    }
+
+    const supabaseAdmin = await createAdminClient()
+
+    // 2. Fetch all data in parallel
+    const [
+        { data: targetUser, error: uErr },
+        { data: packages, error: pErr },
+        { data: featureData, error: fErr },
+        { data: subData, error: sErr },
+        { data: orders, error: oErr }
+    ] = await Promise.all([
+        supabaseAdmin.from('users').select('*').eq('id', userId).single(),
+        supabaseAdmin.from('packages').select('*').order('sort_order'),
+        supabaseAdmin.from('tenant_features').select('*').eq('user_id', userId).maybeSingle(),
+        supabaseAdmin.from('subscriptions').select('plan').eq('user_id', userId).maybeSingle(),
+        supabaseAdmin.from('shop_orders').select(`*, shop_order_items (*, shop_products (*))`).eq('user_id', userId).order('created_at', { ascending: false })
+    ])
+
+    if (uErr || pErr || fErr || sErr || oErr) {
+        console.error('SERVER [getAdminUserDetail]: One or more fetch errors occurred', { uErr, pErr, fErr, sErr, oErr })
+    }
+
+    // 3. Match package
+    const planValue = subData?.plan
+    console.log('SERVER [getAdminUserDetail]: Subscribed Plan Value:', planValue)
+    const matchedPkg = packages?.find(p => p.id === planValue || p.name === planValue)
+    let activePlanId = matchedPkg?.id || null
+
+    // Fallback feature matching
+    if (!activePlanId && featureData) {
+        const fmPkg = packages?.find(p =>
+            p.has_agenda === featureData.has_agenda &&
+            p.has_leads === featureData.has_leads &&
+            p.has_voice === featureData.has_voice
+        )
+        activePlanId = fmPkg?.id || null
+        console.log('SERVER [getAdminUserDetail]: Fallback Feature Match ID:', activePlanId)
+    }
+
+    console.log('SERVER [getAdminUserDetail]: Returning data summary:', {
+        userFound: !!targetUser,
+        packageCount: packages?.length || 0,
+        featurePlanId: activePlanId
+    })
+
+    return {
+        success: true,
+        data: {
+            user: targetUser,
+            packages: packages || [],
+            features: {
+                has_properties: featureData?.has_properties ?? true,
+                has_agenda: featureData?.has_agenda ?? false,
+                has_materials: featureData?.has_materials ?? false,
+                has_archive: featureData?.has_archive ?? false,
+                has_leads: featureData?.has_leads ?? false,
+                has_statistics: featureData?.has_statistics ?? false,
+                has_reviews: featureData?.has_reviews ?? false,
+                has_webshop: featureData?.has_webshop ?? false,
+                has_billing: featureData?.has_billing ?? false,
+                has_voice: featureData?.has_voice ?? false,
+                planId: activePlanId,
+            },
+            orders: orders || []
+        }
+    }
 }

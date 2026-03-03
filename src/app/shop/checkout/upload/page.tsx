@@ -114,22 +114,24 @@ export default function CheckoutUploadPage() {
 
             {/* Preview Modal (Desktop) */}
             {showPreview && designUrl && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
-                    <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setShowPreview(false)}></div>
-                    <div className="relative w-full h-full max-w-6xl bg-[#1A1D1C] border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
-                        <div className="flex items-center justify-between p-4 border-b border-white/5">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-[#0df2a2]">visibility</span>
-                                <span className="text-sm font-black uppercase tracking-widest">{designFileName}</span>
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-500">
+                    <div className="absolute inset-0 bg-black/98 backdrop-blur-2xl" onClick={() => setShowPreview(false)}></div>
+                    <div className="relative w-full h-full max-w-6xl glass-panel border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col">
+                        <div className="flex items-center justify-between p-6 border-b border-white/5 bg-zinc-900/40">
+                            <div className="flex items-center gap-4">
+                                <div className="size-10 rounded-xl bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[#10b77f] font-black">visibility</span>
+                                </div>
+                                <span className="text-xs font-black uppercase tracking-[0.2em] italic text-white">{designFileName}</span>
                             </div>
                             <button
                                 onClick={() => setShowPreview(false)}
-                                className="size-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
+                                className="size-12 rounded-2xl flex items-center justify-center bg-white/5 hover:bg-white/10 transition-all border border-white/10 group"
                             >
-                                <span className="material-symbols-outlined">close</span>
+                                <span className="material-symbols-outlined font-black group-hover:rotate-90 transition-transform">close</span>
                             </button>
                         </div>
-                        <div className="flex-1 bg-black">
+                        <div className="flex-1 bg-black/40">
                             <iframe
                                 src={`${designUrl}#toolbar=0`}
                                 className="w-full h-full border-none"
@@ -145,20 +147,21 @@ export default function CheckoutUploadPage() {
                     {/* Left Column: Upload Area */}
                     <div className="lg:col-span-8 space-y-8">
                         <section>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="size-10 rounded-xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[#0df2a2]">upload_file</span>
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="size-12 rounded-2xl bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center shadow-[0_0_20px_rgba(16,183,127,0.1)]">
+                                    <span className="material-symbols-outlined text-[#10b77f] font-black">upload_file</span>
                                 </div>
-                                <h3 className="text-xl font-extrabold tracking-tight">Bestanden <span className="text-[#0df2a2]">aanleveren</span></h3>
+                                <h3 className="text-2xl font-black tracking-tighter uppercase italic">Bestanden <span className="text-[#10b77f]">aanleveren</span></h3>
                             </div>
 
                             {!designUrl ? (
                                 <div
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
-                                    className={`relative border-2 border-dashed rounded-3xl p-12 lg:p-20 flex flex-col items-center justify-center transition-all ${isUploading ? 'border-[#0df2a2] bg-[#0df2a2]/5' : 'border-white/10 bg-[#1A1D1C]/40 hover:border-[#0df2a2]/30 hover:bg-[#1A1D1C]/60'
+                                    className={`relative border-2 border-dashed rounded-[3rem] p-12 lg:p-24 flex flex-col items-center justify-center transition-all duration-700 overflow-hidden ${isUploading ? 'border-[#10b77f] bg-[#10b77f]/5' : 'border-white/10 glass-panel hover:border-[#10b77f]/40 hover:bg-[#10b77f]/2'
                                         }`}
                                 >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                                     <input
                                         type="file"
                                         accept=".pdf"
@@ -168,35 +171,35 @@ export default function CheckoutUploadPage() {
                                     />
 
                                     {isUploading ? (
-                                        <div className="text-center py-10">
-                                            <div className="w-16 h-16 border-4 border-[#0df2a2]/20 border-t-[#0df2a2] rounded-full animate-spin mx-auto mb-6"></div>
-                                            <p className="text-lg font-bold text-white uppercase tracking-widest">Bestand uploaden...</p>
-                                            <p className="text-xs text-gray-500 mt-2 italic">Bezig met verwerken in Supabase Storage</p>
+                                        <div className="text-center py-10 relative z-10">
+                                            <div className="w-20 h-20 border-4 border-[#10b77f]/20 border-t-[#10b77f] rounded-full animate-spin mx-auto mb-8 shadow-[0_0_30px_rgba(16,183,127,0.2)]"></div>
+                                            <p className="text-xl font-black text-white uppercase tracking-widest italic">Bestand uploaden...</p>
+                                            <p className="text-[10px] text-zinc-500 mt-3 font-black uppercase tracking-widest opacity-50 italic">Bezig met verwerken in onze cloud</p>
                                         </div>
                                     ) : (
-                                        <div className="text-center">
-                                            <div className="size-20 rounded-2xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(13,242,162,0.1)]">
-                                                <span className="material-symbols-outlined text-[#0df2a2] text-[40px]">picture_as_pdf</span>
+                                        <div className="text-center relative z-10 group/drop">
+                                            <div className="size-24 rounded-[2rem] bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(16,183,127,0.1)] group-hover/drop:scale-110 transition-transform duration-700">
+                                                <span className="material-symbols-outlined text-[#10b77f] text-[48px] font-black">picture_as_pdf</span>
                                             </div>
-                                            <h4 className="text-xl font-extrabold mb-2 tracking-tight">Kies uw ontwerp</h4>
-                                            <p className="text-gray-500 text-sm mb-10 max-w-xs mx-auto leading-relaxed font-medium">Sleep uw PDF hiernaartoe of klik op de button om een bestand te uploaden.</p>
+                                            <h4 className="text-3xl font-black mb-4 tracking-tighter uppercase italic">Kies uw ontwerp</h4>
+                                            <p className="text-zinc-500 text-[11px] mb-12 max-w-xs mx-auto leading-relaxed font-black uppercase tracking-widest italic opacity-60">Sleep uw PDF hiernaartoe of klik op de button om een bestand te uploaden.</p>
 
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="px-10 py-5 bg-[#0df2a2] text-[#0A0A0A] rounded-2xl font-black hover:scale-105 transition-all shadow-[0_10px_30px_rgba(13,242,162,0.2)] uppercase tracking-widest text-xs flex items-center gap-3 mx-auto"
+                                                className="px-12 py-6 bg-[#10b77f] text-[#0A0A0A] rounded-2xl font-black hover:bg-[#10b77f]/90 transition-all shadow-[0_20px_50px_rgba(16,183,127,0.2)] uppercase tracking-widest text-[10px] flex items-center gap-4 mx-auto group/btn italic"
                                             >
-                                                <span className="material-symbols-outlined font-black">add_circle</span>
+                                                <span className="material-symbols-outlined font-black group-hover/btn:rotate-90 transition-transform">add_circle</span>
                                                 PDF Uploaden
                                             </button>
 
-                                            <div className="mt-12 flex items-center justify-center gap-8 opacity-40">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Vector PDF</span>
+                                            <div className="mt-16 flex items-center justify-center gap-10 opacity-30">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="material-symbols-outlined text-[20px] text-[#10b77f] font-black">verified</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">Vector PDF</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Max 50MB</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="material-symbols-outlined text-[20px] text-[#10b77f] font-black">inventory</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] italic">Max 50MB</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -212,28 +215,28 @@ export default function CheckoutUploadPage() {
                             ) : (
                                 <div className="space-y-6">
                                     {/* Premium File Card */}
-                                    <div className="bg-[#1A1D1C]/60 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 group hover:border-[#0df2a2]/30 transition-all shadow-2xl relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0df2a2]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                    <div className="glass-panel border-white/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 group hover:border-[#10b77f]/40 transition-all duration-700 shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-48 h-48 bg-[#10b77f]/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:bg-[#10b77f]/10 transition-all duration-1000"></div>
 
-                                        <div className="size-20 rounded-2xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(13,242,162,0.1)] group-hover:bg-[#0df2a2]/20 transition-all">
-                                            <span className="material-symbols-outlined text-[#0df2a2] text-[40px]">picture_as_pdf</span>
+                                        <div className="size-24 rounded-[2rem] bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(16,183,127,0.1)] group-hover:bg-[#10b77f]/20 transition-all duration-700 relative z-10">
+                                            <span className="material-symbols-outlined text-[#10b77f] text-[48px] font-black">picture_as_pdf</span>
                                         </div>
 
-                                        <div className="flex-1 text-center md:text-left min-w-0">
-                                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-                                                <h4 className="font-extrabold text-white text-lg truncate tracking-tight">{designFileName || 'mijn-ontwerp.pdf'}</h4>
-                                                <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-[8px] font-black text-white/40 uppercase tracking-widest">DESIGN</span>
+                                        <div className="flex-1 text-center md:text-left min-w-0 relative z-10">
+                                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-2">
+                                                <h4 className="font-black text-white text-xl uppercase tracking-tighter italic">{designFileName || 'mijn-ontwerp.pdf'}</h4>
+                                                <span className="px-3 py-1 rounded-lg bg-[#10b77f]/10 border border-[#10b77f]/20 text-[8px] font-black text-[#10b77f] uppercase tracking-[0.2em] italic">ONTWERP BESTAND</span>
                                             </div>
-                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{formatFileSize(designFileSize)} • PDF Document</p>
+                                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] italic opacity-60">{formatFileSize(designFileSize)} • PDF Document</p>
                                         </div>
 
-                                        <div className="flex items-center gap-3 w-full md:w-auto">
+                                        <div className="flex items-center gap-4 w-full md:w-auto relative z-10">
                                             {/* Desktop Preview Trigger */}
                                             <button
                                                 onClick={() => setShowPreview(true)}
-                                                className="hidden md:flex flex-1 md:flex-none items-center justify-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all"
+                                                className="hidden md:flex flex-1 md:flex-none items-center justify-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[9px] font-black tracking-[0.2em] uppercase transition-all italic"
                                             >
-                                                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                <span className="material-symbols-outlined text-[20px] font-black">visibility</span>
                                                 Voorbeeld
                                             </button>
 
@@ -242,36 +245,36 @@ export default function CheckoutUploadPage() {
                                                 href={designUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="md:hidden flex-1 items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black tracking-widest uppercase flex"
+                                                className="md:hidden flex-1 items-center justify-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[9px] font-black tracking-[0.2em] uppercase flex italic"
                                             >
-                                                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                                                <span className="material-symbols-outlined text-[20px] font-black">open_in_new</span>
                                                 Bekijk PDF
                                             </a>
 
                                             <button
                                                 onClick={() => setDesignUrl(null)}
-                                                className="size-12 rounded-xl flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-all"
+                                                className="size-14 rounded-2xl flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-all group/del"
                                                 title="Bestand verwijderen"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                <span className="material-symbols-outlined text-[24px] font-black group-hover:rotate-12 transition-transform">delete_sweep</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div className="bg-[#0df2a2]/5 border border-[#0df2a2]/20 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
-                                        <div className="size-16 rounded-xl bg-[#0df2a2]/10 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(13,242,162,0.1)]">
-                                            <span className="material-symbols-outlined text-[#0df2a2] text-[32px]">task_alt</span>
+                                    <div className="glass-panel border-[#10b77f]/20 bg-[#10b77f]/2 rounded-[2rem] p-8 flex flex-col md:flex-row items-center gap-8 shadow-[0_20px_50px_rgba(16,183,127,0.05)]">
+                                        <div className="size-16 rounded-2xl bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(16,183,127,0.1)]">
+                                            <span className="material-symbols-outlined text-[#10b77f] text-[32px] font-black">verified</span>
                                         </div>
                                         <div className="flex-1 text-center md:text-left">
-                                            <h4 className="font-extrabold text-white mb-1 uppercase tracking-tight">Bestand succesvol gekoppeld!</h4>
-                                            <p className="text-xs text-gray-500 italic">Uw ontwerp PDF is veilig klaargezet voor de drukkerij. Klik op 'Ga door' om uw bestelling af te ronden.</p>
+                                            <h4 className="font-black text-white mb-2 uppercase tracking-tight italic">Bestand succesvol gekoppeld!</h4>
+                                            <p className="text-[11px] text-zinc-500 font-medium italic leading-relaxed">Uw ontwerp is veilig klaargezet voor de drukkerij. We controleren de technische specificaties handmatig voor productie.</p>
                                         </div>
                                         <Link
                                             href="/shop/checkout/delivery"
-                                            className="w-full md:w-auto px-10 py-4 bg-[#0df2a2] text-[#0A0A0A] font-black rounded-xl hover:scale-105 transition-all shadow-xl uppercase tracking-widest text-[12px] flex items-center justify-center gap-3"
+                                            className="w-full md:w-auto px-12 py-5 bg-[#10b77f] text-[#0A0A0A] font-black rounded-2xl hover:bg-[#10b77f]/90 transition-all shadow-[0_20px_40px_rgba(16,183,127,0.2)] uppercase tracking-widest text-[10px] flex items-center justify-center gap-4 italic group/next"
                                         >
                                             Ga Door
-                                            <span className="material-symbols-outlined font-black">arrow_forward</span>
+                                            <span className="material-symbols-outlined font-black transition-transform group-hover/next:translate-x-3">east</span>
                                         </Link>
                                     </div>
                                 </div>
@@ -279,23 +282,24 @@ export default function CheckoutUploadPage() {
                         </section>
 
                         {/* Extra info/guidelines */}
-                        <section className="bg-white/[0.03] border border-white/5 rounded-2xl p-8">
-                            <h4 className="text-xs font-black text-white/60 mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[16px]">info</span>
+                        <section className="glass-panel border-white/5 rounded-[2rem] p-10 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#10b77f]/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <h4 className="text-[10px] font-black text-zinc-500 mb-8 uppercase tracking-[0.2em] flex items-center gap-3 italic">
+                                <span className="material-symbols-outlined text-[20px] text-[#10b77f] font-black">info</span>
                                 Aanleverspecificaties
                             </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.1em]">Kleurprofiel</p>
-                                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed">Gebruik CMYK (FOGRA39) voor de beste kleurweergave op fysiek materiaal.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                <div className="space-y-3">
+                                    <p className="text-[9px] font-black text-[#10b77f] uppercase tracking-[0.1em] italic">Kleurprofiel</p>
+                                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed italic opacity-80">Gebruik CMYK (FOGRA39) voor de beste kleurweergave op fysiek materiaal.</p>
                                 </div>
-                                <div className="space-y-2 border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0 md:pl-8">
-                                    <p className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.1em]">Afloop & Marges</p>
-                                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed">Zorg voor minimal 3mm afloop rondom en houd teksten 5mm van de rand.</p>
+                                <div className="space-y-3 border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-10">
+                                    <p className="text-[9px] font-black text-[#10b77f] uppercase tracking-[0.1em] italic">Afloop & Marges</p>
+                                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed italic opacity-80">Zorg voor minimal 3mm afloop rondom en houd teksten 5mm van de rand.</p>
                                 </div>
-                                <div className="space-y-2 border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0 md:pl-8">
-                                    <p className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.1em]">Bestandstype</p>
-                                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed">Sla uw vector bestand op als PDF/X-1a:2001 voor gegarandeerde kwaliteit.</p>
+                                <div className="space-y-3 border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-10">
+                                    <p className="text-[9px] font-black text-[#10b77f] uppercase tracking-[0.1em] italic">Bestandstype</p>
+                                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed italic opacity-80">Sla uw vector bestand op als PDF/X-1a:2001 voor gegarandeerde kwaliteit.</p>
                                 </div>
                             </div>
                         </section>
@@ -303,53 +307,54 @@ export default function CheckoutUploadPage() {
 
                     {/* Right Column: Sticky Summary */}
                     <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-                        <div className="bg-[#1A1D1C]/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#0df2a2]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                            <h3 className="text-xl font-extrabold mb-8 flex items-center gap-3 tracking-tight">
-                                <span className="material-symbols-outlined text-[#0df2a2]">receipt_long</span>
-                                Besteloverzicht
+                        <div className="glass-panel border-white/10 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-[#10b77f]/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:bg-[#10b77f]/10 transition-all duration-1000"></div>
+                            <h3 className="text-2xl font-black mb-10 flex items-center gap-4 tracking-tighter uppercase italic relative z-10">
+                                <span className="material-symbols-outlined text-[#10b77f] font-black">receipt_long</span>
+                                Bestelling
                             </h3>
 
-                            <div className="space-y-4 mb-8">
-                                <div className="flex justify-between text-gray-400 font-medium text-sm">
-                                    <span>Producten (totaal)</span>
-                                    <span className="text-white font-bold">€ {total.toFixed(2)}</span>
+                            <div className="space-y-6 mb-10 relative z-10">
+                                <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
+                                    <span>Producten</span>
+                                    <span className="text-white not-italic font-black">€ {total.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-400 font-medium text-sm">
+                                <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>Verzending</span>
-                                    <span className="text-[#0df2a2] font-bold uppercase transition-all group-hover:tracking-widest">Gratis</span>
+                                    <span className="text-[#10b77f] not-italic font-black uppercase tracking-widest">Gratis</span>
                                 </div>
-                                <div className="flex justify-between text-gray-400 font-medium text-sm">
+                                <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>BTW (21%)</span>
-                                    <span className="text-white font-bold">€ {tax.toFixed(2)}</span>
+                                    <span className="text-white not-italic font-black">€ {tax.toFixed(2)}</span>
                                 </div>
-                                <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                                <div className="pt-8 mt-4 border-t border-white/5 flex justify-between items-end">
                                     <div className="flex flex-col">
-                                        <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">Te betalen</span>
-                                        <span className="text-[9px] text-white/30 font-medium italic">Inclusief 21% BTW</span>
+                                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2 italic">Te betalen</span>
+                                        <span className="text-[8px] text-[#10b77f] font-black uppercase tracking-widest italic opacity-40">Inclusief BTW</span>
                                     </div>
-                                    <span className="text-3xl font-black text-[#0df2a2] tracking-tighter drop-shadow-[0_0_15px_rgba(13,242,162,0.3)]">
+                                    <span className="text-4xl font-black text-[#10b77f] tracking-tighter italic drop-shadow-[0_0_30px_rgba(16,183,127,0.2)]">
                                         € {finalTotal.toFixed(2)}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-white/5">
-                                <Link href="/shop/cart" className="flex items-center gap-2 text-xs font-bold text-[#0df2a2]/60 hover:text-[#0df2a2] transition-colors uppercase tracking-widest text-[10px]">
-                                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                            <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
+                                <Link href="/shop/cart" className="flex items-center gap-3 text-[10px] font-black text-[#10b77f] hover:text-[#10b77f]/80 transition-all uppercase tracking-[0.2em] italic group/back">
+                                    <span className="material-symbols-outlined text-[18px] font-black transition-transform group-hover/back:-translate-x-2">west</span>
                                     Terug naar winkelmand
                                 </Link>
                             </div>
                         </div>
 
                         {/* Help Box */}
-                        <div className="bg-[#1A1D1C]/40 border border-white/5 rounded-2xl p-5 flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-[#0df2a2]/5 flex items-center justify-center shrink-0">
-                                <span className="material-symbols-outlined text-[#0df2a2] text-[20px]">help_center</span>
+                        <div className="glass-panel border-white/5 rounded-[2rem] p-6 flex items-center gap-5 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="size-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center flex-shrink-0 shadow-inner group-hover:border-[#10b77f]/30 transition-all">
+                                <span className="material-symbols-outlined text-zinc-500 group-hover:text-[#10b77f] transition-all font-black">support_agent</span>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Problemen met uploaden?</p>
-                                <p className="text-[9px] text-gray-500 font-medium leading-relaxed">Mail uw ontwerp naar studio@voicerealty.ai onder vermelding van uw email.</p>
+                            <div className="relative z-10 flex-1">
+                                <p className="text-[10px] font-black text-white mb-1 uppercase tracking-widest italic">Hulp nodig?</p>
+                                <p className="text-[9px] text-zinc-500 font-bold uppercase italic opacity-60">studio@voicerealty.ai</p>
                             </div>
                         </div>
                     </div>

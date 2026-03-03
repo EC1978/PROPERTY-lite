@@ -18,6 +18,8 @@ export interface CartItem {
     quantity: number;
     image: string;
     speed?: string;
+    customImages?: string[];
+    notes?: string;
 }
 
 interface CartContextType {
@@ -81,10 +83,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const addItem = React.useCallback((newItem: Omit<CartItem, 'id'>) => {
         setItems(prev => {
-            // Very basic distinct hash for item + selected options
+            // Very basic distinct hash for item + selected options + notes to ensure unique entries
             const optionsHash = newItem.options.map(o => `${o.name}:${o.value}`).sort().join('|');
             const speedSuffix = newItem.speed ? `-${newItem.speed}` : '';
-            const newId = `${newItem.productId}-${optionsHash}${speedSuffix}`;
+            const notesSuffix = newItem.notes ? `-${newItem.notes.substring(0, 10)}` : '';
+            const newId = `${newItem.productId}-${optionsHash}${speedSuffix}${notesSuffix}`;
 
             const existing = prev.find(i => i.id === newId);
             if (existing) {

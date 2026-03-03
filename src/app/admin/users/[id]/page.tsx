@@ -1,9 +1,10 @@
 'use client'
 
+
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { impersonateUser, updateTenantFeature } from '@/app/admin/actions'
+import { impersonateUser, updateTenantFeature, updateTenantPackage, getAdminUserDetail } from '@/app/admin/actions'
 import toast from 'react-hot-toast'
 import {
     UserSearch, Package, Puzzle, Eye, EyeOff, GripVertical,
@@ -85,64 +86,25 @@ export default function AdminUserDetailPage() {
     useEffect(() => {
         async function loadData() {
             setLoading(true)
+            const result = await getAdminUserDetail(userId)
 
-            // Load user profile
-            const { data: userData } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', userId)
-                .single()
-            setUser(userData)
-
-            // Load packages
-            const { data: pkgData } = await supabase
-                .from('packages')
-                .select('*')
-                .order('sort_order')
-            if (pkgData) setPackages(pkgData)
-
-            // Load tenant features
-            const { data: featureData } = await supabase
-                .from('tenant_features')
-                .select('*')
-                .eq('user_id', userId)
-                .single()
-
-            if (featureData) {
-                // Try to find matching package
-                const matchingPkg = pkgData?.find(p =>
-                    p.has_agenda === featureData.has_agenda &&
-                    p.has_leads === featureData.has_leads &&
-                    p.has_voice === featureData.has_voice
-                )
-
-                setFeatures({
-                    has_properties: featureData.has_properties ?? true,
-                    has_agenda: featureData.has_agenda ?? false,
-                    has_materials: featureData.has_materials ?? false,
-                    has_archive: featureData.has_archive ?? false,
-                    has_leads: featureData.has_leads ?? false,
-                    has_statistics: featureData.has_statistics ?? false,
-                    has_reviews: featureData.has_reviews ?? false,
-                    has_webshop: featureData.has_webshop ?? false,
-                    has_billing: featureData.has_billing ?? false,
-                    has_voice: featureData.has_voice ?? false,
-                    planId: matchingPkg?.id || null,
-                })
+            if (result.error) {
+                toast.error(result.error)
+                setLoading(false)
+                return
             }
 
-            // Load orders
-            const { data: ordersData } = await supabase
-                .from('shop_orders')
-                .select(`*, shop_order_items (*, shop_products (*))`)
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-
-            if (ordersData) setOrders(ordersData)
+            if (result.success && result.data) {
+                const { user: u, packages: p, features: f, orders: o } = result.data
+                setUser(u)
+                setPackages(p)
+                setFeatures(f)
+                setOrders(o)
+            }
             setLoading(false)
         }
         loadData()
-    }, [userId, supabase])
+    }, [userId])
 
     async function handleImpersonate() {
         const loadingToast = toast.loading('Ghost login voorbereiden...')
@@ -171,33 +133,27 @@ export default function AdminUserDetailPage() {
     async function handlePackageChange(pkg: DbPackage) {
         const loadingToast = toast.loading('Pakket bijwerken...')
 
-        const newFeatures = {
-            has_properties: pkg.has_properties,
-            has_agenda: pkg.has_agenda,
-            has_materials: pkg.has_materials,
-            has_archive: pkg.has_archive,
-            has_leads: pkg.has_leads,
-            has_statistics: pkg.has_statistics,
-            has_reviews: pkg.has_reviews,
-            has_webshop: pkg.has_webshop,
-            has_billing: pkg.has_billing,
-            has_voice: pkg.has_voice,
+        const result = await updateTenantPackage(userId, pkg.id)
+
+        if (result.error) {
+            toast.error(result.error, { id: loadingToast })
+        } else {
+            setFeatures(prev => ({
+                ...prev,
+                has_properties: pkg.has_properties,
+                has_agenda: pkg.has_agenda,
+                has_materials: pkg.has_materials,
+                has_archive: pkg.has_archive,
+                has_leads: pkg.has_leads,
+                has_statistics: pkg.has_statistics,
+                has_reviews: pkg.has_reviews,
+                has_webshop: pkg.has_webshop,
+                has_billing: pkg.has_billing,
+                has_voice: pkg.has_voice,
+                planId: pkg.id
+            }))
+            toast.success(`Pakket gewijzigd naar ${pkg.name}`, { id: loadingToast })
         }
-
-        setFeatures({ ...newFeatures, planId: pkg.id })
-
-        // Persist all features in one sweep
-        const updates = Object.entries(newFeatures).map(([key, value]) =>
-            updateTenantFeature(userId, key as keyof TenantFeatures, value as boolean)
-        )
-
-        // Also update property_limit in tenant_features
-        updates.push(
-            supabase.from('tenant_features').update({ property_limit: pkg.property_limit }).eq('user_id', userId) as any
-        )
-
-        await Promise.all(updates)
-        toast.success(`Pakket gewijzigd naar ${pkg.name}`, { id: loadingToast })
     }
 
     if (loading) return <div className="flex items-center justify-center h-96 text-zinc-500 text-sm">Laden...</div>

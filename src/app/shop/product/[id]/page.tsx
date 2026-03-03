@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, use, useMemo, useEffect } from 'react';
+import { useState, use, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+import ImageUpload from '@/components/ImageUpload';
 
 export default function ProductConfigurator({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -14,19 +15,45 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
 
     const [productDef, setProductDef] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-    const [step, setStep] = useState(1); // 1: Config, 2: Pricing Table
-    const [selections, setSelections] = useState({
-        formaat: 0,
-        materiaal: 0,
-        print: 0,
-        bevestiging: 0
-    });
+    const [quantity, setQuantity] = useState(1);
+    const [deliverySpeed, setDeliverySpeed] = useState('Standaard');
+    const [selections, setSelections] = useState<Record<string, number>>({});
+    const [customImages, setCustomImages] = useState<string[]>([]);
+    const [notes, setNotes] = useState('');
+    const [activeImage, setActiveImage] = useState<string>('');
+    const configRef = useRef<HTMLDivElement>(null);
 
-    const [pricingSelection, setPricingSelection] = useState({
-        quantity: 1,
-        speed: 'Standaard' // 'Standaard', 'Express', 'Spoed'
-    });
+    // Help normalize options (object or array) to a common array format
+    const normalizeOptions = (options: any): any[] => {
+        if (!options) return [];
+        if (Array.isArray(options)) {
+            return options.map(cat => ({
+                ...cat,
+                options: cat.options.map((opt: any) => ({
+                    ...opt,
+                    // If safety fallback is needed, map cat.hidePrice to opt.hidePrice for backward compatibility
+                    hidePrice: opt.hidePrice ?? cat.hidePrice ?? false,
+                    desc: opt.desc || '',
+                    badge: opt.badge || '',
+                    deliveryTime: opt.deliveryTime || ''
+                }))
+            }));
+        }
+        // Legacy Record<string, ProductOption[]>
+        return Object.entries(options).map(([name, opts]) => ({
+            id: name.toLowerCase().replace(/\s+/g, '-'),
+            name: name,
+            options: (opts as any[]).map(opt => ({
+                ...opt,
+                hidePrice: opt.hidePrice ?? false,
+                desc: opt.desc || '',
+                badge: opt.badge || '',
+                deliveryTime: opt.deliveryTime || ''
+            }))
+        }));
+    };
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -54,14 +81,26 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
             }
 
             if (data) {
+                const normalizedOptions = normalizeOptions(data.options);
                 setProductDef({
                     id: data.slug,
                     dbId: data.id,
                     name: data.name,
                     basePrice: data.base_price,
                     image: data.images ? data.images[0] : '',
-                    options: data.options
+                    images: data.images || [],
+                    options: normalizedOptions
                 });
+                if (data.images && data.images.length > 0) {
+                    setActiveImage(data.images[0]);
+                }
+
+                // Initialize selections by index
+                const initialSelections: Record<string, number> = {};
+                normalizedOptions.forEach((cat: any) => {
+                    initialSelections[cat.id] = 0;
+                });
+                setSelections(initialSelections);
             } else {
                 console.error(`Product not found for ID/Slug: ${id}`, error);
             }
@@ -75,344 +114,538 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
         return (
             <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 text-center">
                 <span className="material-symbols-outlined text-6xl text-red-500 mb-4 animate-bounce">error</span>
-                <h1 className="text-2xl font-black text-white mb-2 tracking-tight">Product niet gevonden</h1>
-                <p className="text-gray-500 mb-8 max-w-sm">
+                <h1 className="text-2xl font-black text-white mb-2 tracking-tight uppercase">Product niet gevonden</h1>
+                <p className="text-zinc-500 mb-8 max-w-sm">
                     Het product dat u probeert te bekijken (<strong>{id}</strong>) kan niet worden gevonden of bestaat niet meer.
                 </p>
-                <Link href="/shop" className="px-8 py-4 bg-[#0df2a2] text-[#0A0A0A] font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(13,242,162,0.3)]">
+                <Link href="/shop" className="px-8 py-4 bg-[#10b77f] text-[#0A0A0A] font-black rounded-2xl text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(16,183,127,0.3)]">
                     Terug naar de shop
                 </Link>
             </div>
         );
     }
 
-    const currentFormaat = productDef?.options?.formaat ? productDef.options.formaat[selections.formaat] || { price: 0, label: '' } : { price: 0, label: '' };
-    const currentMateriaal = productDef?.options?.materiaal ? productDef.options.materiaal[selections.materiaal] || { price: 0, label: '' } : { price: 0, label: '' };
-    const currentPrint = productDef?.options?.print ? productDef.options.print[selections.print] || { price: 0, label: '' } : { price: 0, label: '' };
-    const currentBevestiging = productDef?.options?.bevestiging ? productDef.options.bevestiging[selections.bevestiging] || { price: 0, label: '' } : { price: 0, label: '' };
+    // State for the currently expanded step in the accordion
+    const [expandedStep, setExpandedStep] = useState<string | 'quantity' | 'upload'>('quantity');
 
-    const basePerUnit = (productDef?.basePrice || 0) +
-        currentFormaat.price +
-        currentMateriaal.price +
-        currentPrint.price +
-        currentBevestiging.price;
+    // Helper to advance to next step
+    const advanceNext = (currentStepId: string) => {
+        const normalized = productDef?.options || [];
+        const currentIndex = normalized.findIndex((cat: any) => cat.id === currentStepId);
 
-    // Pricing calculation logic
-    const calculatePrice = (qty: number, speed: string) => {
-        let discountFactor = 1;
-        if (qty >= 10) discountFactor = 0.8;
-        else if (qty >= 5) discountFactor = 0.9;
-        else if (qty >= 2) discountFactor = 0.95;
-
-        let speedMarkup = 1;
-        if (speed === 'Express') speedMarkup = 1.25;
-        if (speed === 'Spoed') speedMarkup = 1.5;
-
-        return (basePerUnit * qty * discountFactor * speedMarkup);
+        if (currentStepId === 'quantity') {
+            if (normalized.length > 0) setExpandedStep(normalized[0].id);
+            else setExpandedStep('upload');
+        } else if (currentIndex !== -1 && currentIndex < normalized.length - 1) {
+            setExpandedStep(normalized[currentIndex + 1].id);
+        } else {
+            setExpandedStep('upload');
+        }
     };
 
-    const finalTotalPrice = calculatePrice(pricingSelection.quantity, pricingSelection.speed);
+    const handleSelectOption = (catId: string, optIdx: number) => {
+        setSelections(prev => ({ ...prev, [catId]: optIdx }));
+        // Auto-advance to next step with slight delay for visual feedback
+        setTimeout(() => advanceNext(catId), 400);
+    };
 
-    const handleAddToCart = () => {
+    // Dynamic Price Calculation
+    const calculateBasePerUnit = () => {
+        let total = productDef?.basePrice || 0;
+        if (productDef?.options) {
+            productDef.options.forEach((cat: any) => {
+                const selectionIdx = selections[cat.id] ?? 0;
+                const opt = cat.options[selectionIdx];
+                if (opt) total += opt.price || 0;
+            });
+        }
+        return total;
+    };
+
+    const basePerUnit = calculateBasePerUnit();
+
+    // Pricing calculation logic for bulk and speed
+    const calculateTotal = () => {
+        let discountFactor = 1;
+        if (quantity >= 10) discountFactor = 0.8;
+        else if (quantity >= 5) discountFactor = 0.9;
+        else if (quantity >= 2) discountFactor = 0.95;
+
+        let speedMarkup = 1;
+        if (deliverySpeed === 'Express') speedMarkup = 1.25;
+        if (deliverySpeed === 'Spoed') speedMarkup = 1.5;
+
+        return (basePerUnit * quantity * discountFactor * speedMarkup);
+    };
+
+    const handleAddToCart = async () => {
         if (!productDef) return;
+        setIsAddingToCart(true);
 
-        const dynamicOptions = [];
-        if (productDef.options?.formaat) dynamicOptions.push({ name: 'Formaat', value: currentFormaat.label, price: currentFormaat.price });
-        if (productDef.options?.materiaal) dynamicOptions.push({ name: 'Materiaal', value: currentMateriaal.label, price: currentMateriaal.price });
-        if (productDef.options?.print) dynamicOptions.push({ name: 'Print', value: currentPrint.label, price: currentPrint.price });
-        if (productDef.options?.bevestiging) dynamicOptions.push({ name: 'Bevestiging', value: currentBevestiging.label, price: currentBevestiging.price });
+        try {
+            const dynamicOptions: any[] = [];
+            if (productDef.options) {
+                productDef.options.forEach((cat: any) => {
+                    const selectionIdx = selections[cat.id] ?? 0;
+                    const opt = cat.options[selectionIdx];
+                    if (opt) {
+                        dynamicOptions.push({
+                            name: cat.name,
+                            value: opt.label,
+                            price: opt.price
+                        });
+                    }
+                });
+            }
 
-        dynamicOptions.push({ name: 'Levering', value: pricingSelection.speed, price: 0 });
+            dynamicOptions.push({ name: 'Levering', value: deliverySpeed, price: 0 });
+            if (notes) dynamicOptions.push({ name: 'Opmerkingen', value: notes, price: 0 });
 
-        addItem({
-            productId: id as string,
-            dbId: productDef.dbId,
-            name: productDef.name,
-            basePrice: basePerUnit,
-            quantity: pricingSelection.quantity,
-            image: productDef.image,
-            options: dynamicOptions
-        });
-        router.push('/shop/cart');
+            addItem({
+                productId: productDef.id,
+                dbId: productDef.dbId,
+                name: productDef.name,
+                basePrice: productDef.basePrice,
+                quantity: quantity,
+                image: productDef.image,
+                options: dynamicOptions,
+                customImages: customImages,
+                speed: deliverySpeed,
+                notes: notes
+            });
+            router.push('/shop/cart');
+        } catch (err) {
+            console.error("Error adding to cart:", err);
+        } finally {
+            setIsAddingToCart(false);
+        }
     };
 
     if (isLoading) {
         return (
             <div className="flex min-h-screen bg-[#0A0A0A] items-center justify-center">
-                <div className="w-8 h-8 rounded-full border-4 border-[#0df2a2]/20 border-t-[#0df2a2] animate-spin"></div>
-            </div>
-        );
-    }
-
-    if (!productDef) {
-        return (
-            <div className="flex min-h-screen bg-[#0A0A0A] items-center justify-center text-white flex-col gap-4">
-                <h1 className="text-xl font-bold">Product niet gevonden</h1>
-                <Link href="/shop" className="text-[#0df2a2] flex items-center gap-2 hover:underline">
-                    <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    Terug naar shop
-                </Link>
+                <div className="w-12 h-12 rounded-full border-4 border-[#10b77f]/20 border-t-[#10b77f] animate-spin shadow-[0_0_20px_rgba(16,183,127,0.2)]"></div>
             </div>
         );
     }
 
     return (
-        <div className="relative flex flex-col min-h-screen bg-[#0A0A0A]">
+        <div className="relative flex flex-col min-h-screen bg-[#0A0A0A] text-white">
             {/* Top Header */}
-            <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#0A0A0A]/80 backdrop-blur-md z-50">
-                <div className="flex items-center gap-4">
+            <header className="flex items-center justify-between px-8 py-5 border-b border-white/5 sticky top-0 bg-[#0A0A0A]/90 backdrop-blur-xl z-50">
+                <div className="flex items-center gap-6">
                     <button
-                        onClick={() => step === 2 ? setStep(1) : router.push('/shop')}
-                        className="flex items-center justify-center size-10 rounded-full hover:bg-white/10 transition-colors"
+                        onClick={() => router.push('/shop')}
+                        className="flex items-center justify-center size-10 rounded-full hover:bg-zinc-900 transition-all border border-white/5 group"
                     >
-                        <span className="material-symbols-outlined text-slate-100">arrow_back</span>
+                        <span className="material-symbols-outlined text-zinc-400 group-hover:text-white transition-colors">arrow_back</span>
                     </button>
-                    <h1 className="text-xl font-extrabold tracking-tight text-[#F8FAFC] uppercase">
-                        {productDef.name} <span className="text-[#0df2a2]">{step === 1 ? 'Configureer' : 'Afrekenen'}</span>
+                    <h1 className="text-[11px] font-black tracking-[0.3em] text-white uppercase italic">
+                        {productDef.name} <span className="text-[#10b77f] not-italic ml-2">Samenstellen</span>
                     </h1>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="hidden md:flex items-center bg-white/5 rounded-full px-4 py-1 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                        <span className={step === 1 ? 'text-[#0df2a2]' : ''}>Stap 1</span>
-                        <span className="mx-2">/</span>
-                        <span className={step === 2 ? 'text-[#0df2a2]' : ''}>Stap 2</span>
-                    </div>
-                    <Link href="/shop/cart" className="size-10 rounded-full bg-[#0df2a2]/20 border border-[#0df2a2]/50 text-[#0df2a2] flex items-center justify-center shadow-[0_0_15px_rgba(13,242,162,0.3)]">
-                        <span className="material-symbols-outlined text-[18px]">shopping_cart</span>
+                <div className="flex items-center gap-4">
+                    <Link href="/shop/cart" className="size-11 rounded-full bg-[#10b77f]/10 border border-[#10b77f]/20 text-[#10b77f] flex items-center justify-center hover:bg-[#10b77f]/20 transition-all shadow-[0_0_15px_rgba(16,183,127,0.1)] group relative">
+                        <span className="material-symbols-outlined text-[22px]">shopping_cart</span>
+                        <div className="absolute -top-1 -right-1 size-4 bg-[#10b77f] rounded-full border-2 border-[#0A0A0A] flex items-center justify-center text-[9px] font-black text-[#0A0A0A]">
+                            +
+                        </div>
                     </Link>
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 pb-24 md:pb-6">
-
-                {/* Left Panel (Always visible preview) */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                    <div className="sticky top-24">
-                        <div className="relative rounded-2xl overflow-hidden bg-[#111111] aspect-square flex items-center justify-center border border-white/5 shadow-2xl">
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#0df2a2]/5 to-transparent opacity-50"></div>
-                            <div className="relative z-10 w-full h-full p-12">
+            {/* Product Configuration Flow */}
+            <div className="max-w-[1400px] mx-auto px-4 py-12 w-full">
+                {/* Hero Section */}
+                <div className="mb-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                    {/* Left: Product Gallery */}
+                    <div className="space-y-8">
+                        <div className="aspect-[4/5] bg-zinc-900/40 rounded-[2.5rem] border border-white/5 overflow-hidden group relative glass-panel shadow-[0_40px_80px_rgba(0,0,0,0.2)]">
+                            {activeImage ? (
                                 <Image
-                                    src={productDef.image}
+                                    src={activeImage}
                                     alt={productDef.name}
                                     fill
-                                    className="object-contain drop-shadow-[0_0_30px_rgba(13,242,162,0.2)] p-12"
+                                    className="object-contain p-10 lg:p-14 transition-transform duration-1000 group-hover:scale-105"
+                                    priority
                                 />
-                            </div>
-                            <div className="absolute top-4 left-4 flex gap-2">
-                                <span className="px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-bold text-white/50 border border-white/5 uppercase">3D Preview</span>
-                            </div>
-                        </div>
-
-                        {/* Summary Card */}
-                        <div className="mt-6 bg-[#1A1D1C]/60 backdrop-blur-md rounded-xl p-6 border border-white/10">
-                            <h3 className="text-sm font-bold mb-4 text-[#0df2a2] flex items-center gap-2 uppercase tracking-widest">
-                                <span className="material-symbols-outlined text-[18px]">list_alt</span>
-                                Samenvatting
-                            </h3>
-                            <ul className="space-y-3">
-                                <li className="flex justify-between text-xs border-b border-white/5 pb-2">
-                                    <span className="text-gray-500">Product</span>
-                                    <span className="text-white font-semibold">{productDef.name}</span>
-                                </li>
-                                {productDef?.options?.formaat && (
-                                    <li className="flex justify-between text-xs border-b border-white/5 pb-2">
-                                        <span className="text-gray-500">Formaat</span>
-                                        <span className="text-white font-semibold">{currentFormaat.label.split(' ')[0]}</span>
-                                    </li>
-                                )}
-                                {productDef?.options?.materiaal && (
-                                    <li className="flex justify-between text-xs border-b border-white/5 pb-2">
-                                        <span className="text-gray-500">Materiaal</span>
-                                        <span className="text-white font-semibold">{currentMateriaal.label.split(' (')[0]}</span>
-                                    </li>
-                                )}
-                                {productDef?.options?.bevestiging && (
-                                    <li className="flex justify-between text-xs">
-                                        <span className="text-gray-500">Bevestiging</span>
-                                        <span className="text-white font-semibold">{currentBevestiging.label}</span>
-                                    </li>
-                                )}
-                            </ul>
-                        </div>
-
-                        {/* Final Action Button (Moved to sticky sidebar) */}
-                        {step === 2 && (
-                            <div className="mt-6 p-6 bg-[#0df2a2] rounded-xl shadow-[0_0_30px_rgba(13,242,162,0.2)]">
-                                <div className="mb-4">
-                                    <span className="text-[10px] font-bold text-[#0A0A0A]/60 uppercase tracking-widest block mb-1">Totaalprijs (ex. BTW)</span>
-                                    <div className="text-2xl font-extrabold text-[#0A0A0A]">€ {finalTotalPrice.toFixed(2)}</div>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-800">
+                                    <span className="material-symbols-outlined text-8xl">image</span>
                                 </div>
-                                <button
-                                    onClick={handleAddToCart}
-                                    className="w-full bg-[#0A0A0A] text-[#0df2a2] py-4 rounded-xl font-extrabold flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-xl active:scale-95"
-                                >
-                                    ORDER AFRONDEN
-                                    <span className="material-symbols-outlined text-[20px]">shopping_cart_checkout</span>
-                                </button>
-                                <p className="text-[9px] text-[#0A0A0A]/60 font-medium text-center mt-3">Gratis verzending in heel Nederland</p>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        </div>
+
+                        {productDef.images && productDef.images.length > 1 && (
+                            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1">
+                                {productDef.images.map((img: string, i: number) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setActiveImage(img)}
+                                        className={`relative size-12 rounded-xl border transition-all flex-shrink-0 bg-zinc-900/50 p-1 overflow-hidden ${activeImage === img ? 'border-[#10b77f] ring-4 ring-[#10b77f]/10 shadow-[0_0_15px_rgba(16,183,127,0.15)] scale-105' : 'border-white/5 opacity-40 hover:opacity-100 hover:border-white/10'}`}
+                                    >
+                                        <Image src={img} alt={`Thumbnail ${i}`} fill className="object-contain p-1" />
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>
+
+                    {/* Right: Product Intro */}
+                    <div className="lg:pt-20 space-y-12">
+                        <div className="space-y-6">
+                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-[#10b77f]/10 text-[#10b77f] text-[9px] font-black uppercase tracking-[0.3em] border border-[#10b77f]/10">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b77f] opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b77f]"></span>
+                                </span>
+                                Handcrafted Selection
+                            </div>
+                            <h2 className="text-4xl lg:text-7xl font-black text-white tracking-tighter leading-none uppercase italic selection:bg-[#10b77f] selection:text-black break-words max-w-full">
+                                {productDef.name}
+                            </h2>
+                        </div>
+
+                        <p className="text-zinc-500 text-xl max-w-sm font-medium leading-relaxed italic border-l-4 border-[#10b77f]/30 pl-8 transition-all hover:border-[#10b77f] cursor-default">
+                            Breng je merk tot leven. Stel je eigen <span className="text-zinc-300">{productDef.name.toLowerCase()}</span> samen met onze premium configurator.
+                        </p>
+
+                        <button
+                            onClick={() => {
+                                setExpandedStep('quantity');
+                                configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }}
+                            className="group flex items-center gap-8 px-14 py-7 bg-[#10b77f] text-[#0A0A0A] rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] hover:bg-[#10b77f]/90 transition-all shadow-[0_20px_50px_rgba(16,183,127,0.2)] active:scale-[0.97] mt-8"
+                        >
+                            Begin Configuratie
+                            <span className="material-symbols-outlined group-hover:translate-x-3 transition-transform text-xl">east</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Right Panel (Changes based on Step) */}
-                <div className="lg:col-span-8">
-                    {step === 1 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <h2 className="text-3xl font-extrabold mb-2 tracking-tight">Kies uw <span className="text-[#0df2a2]">opties</span></h2>
-                                <p className="text-gray-500 text-sm mb-6">Stel uw product samen voor de beste kwaliteit en prijs.</p>
-                            </div>
+                <div className="max-w-4xl mx-auto space-y-6" ref={configRef}>
+                    {/* Configuration Steps */}
+                    <div className="space-y-4">
+                        {/* Step 1: Quantity */}
+                        <div className={`rounded-[2rem] border transition-all duration-500 overflow-hidden ${expandedStep === 'quantity' ? 'border-[#10b77f]/30 glass-panel shadow-[0_20px_60px_rgba(16,183,127,0.05)] ring-1 ring-[#10b77f]/10' : 'border-white/5 bg-zinc-900/40 hover:border-white/10'}`}>
+                            <button
+                                onClick={() => setExpandedStep('quantity')}
+                                className="w-full text-left p-8 flex items-center justify-between group"
+                            >
+                                <div className="flex items-center gap-6">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-500 ${expandedStep === 'quantity' ? 'bg-[#10b77f] text-[#0A0A0A] shadow-[0_0_20px_rgba(16,183,127,0.4)]' : 'bg-zinc-800 text-zinc-500'}`}>01</div>
+                                    <div>
+                                        <h3 className="text-white font-black uppercase tracking-widest text-[11px]">Aantal</h3>
+                                        {expandedStep !== 'quantity' && (
+                                            <p className="text-[10px] text-[#10b77f] font-black uppercase tracking-widest mt-1 opacity-70 italic">{quantity} stuks geselecteerd</p>
+                                        )}
+                                    </div>
+                                </div>
+                                {expandedStep !== 'quantity' && (
+                                    <div className="flex items-center gap-3">
+                                        <span className="material-symbols-outlined text-[#10b77f] text-lg font-bold">check_circle</span>
+                                        <span className="material-symbols-outlined text-zinc-600 group-hover:text-[#10b77f] text-sm transition-colors">edit_square</span>
+                                    </div>
+                                )}
+                            </button>
 
-                            {/* Formaat Card */}
-                            {productDef.options?.formaat && (
-                                <div className="md:col-span-2 bg-[#1A1D1C]/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 group hover:border-[#0df2a2]/30 transition-all">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="size-10 rounded-xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[#0df2a2]">aspect_ratio</span>
+                            {expandedStep === 'quantity' && (
+                                <div className="px-8 pb-10 border-t border-white/5 pt-10 animate-in fade-in slide-in-from-top-6 duration-700">
+                                    <div className="flex flex-col gap-10">
+                                        <div className="space-y-6 max-w-sm">
+                                            <p className="text-xs text-zinc-400 font-bold uppercase tracking-[0.2em] italic opacity-60">Hoeveel stuks heb je nodig?</p>
+                                            <div className="relative group">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={quantity}
+                                                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                                                    className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-6 px-8 text-white text-4xl font-black outline-none focus:border-[#10b77f]/50 focus:bg-zinc-950 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-inner"
+                                                />
+                                                <span className="absolute right-8 top-1/2 -translate-y-1/2 text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">STUKS</span>
+                                            </div>
                                         </div>
-                                        <h4 className="font-bold text-lg">Formaat</h4>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        {productDef.options.formaat.map((opt: any, idx: number) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setSelections({ ...selections, formaat: idx })}
-                                                className={`relative p-4 rounded-xl border text-left transition-all group/btn ${selections.formaat === idx
-                                                    ? 'bg-[#0df2a2]/10 border-[#0df2a2] text-white'
-                                                    : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/20'
-                                                    }`}
-                                            >
-                                                <span className="block font-bold text-sm mb-1">{opt.label}</span>
-                                                <span className="block text-[10px] text-gray-500">{opt.price > 0 ? `+€${opt.price.toFixed(2)}` : opt.price < 0 ? `-€${Math.abs(opt.price).toFixed(2)}` : 'Basisformaat'}</span>
-                                                {selections.formaat === idx && <div className="absolute top-2 right-2 size-2 bg-[#0df2a2] rounded-full shadow-[0_0_8px_#0df2a2]"></div>}
-                                            </button>
-                                        ))}
+                                        <button
+                                            onClick={() => advanceNext('quantity')}
+                                            className="w-full sm:w-auto px-12 py-5 bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-[#10b77f]/20 active:scale-[0.98] outline-none"
+                                        >
+                                            Verder naar product opties
+                                        </button>
                                     </div>
                                 </div>
                             )}
-
-                            {/* Materiaal Card */}
-                            {productDef.options?.materiaal && (
-                                <div className="bg-[#1A1D1C]/60 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <span className="material-symbols-outlined text-[#0df2a2]/60">layers</span>
-                                        <h4 className="font-bold text-base">Materiaal</h4>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        {productDef.options.materiaal.map((opt: any, idx: number) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setSelections({ ...selections, materiaal: idx })}
-                                                className={`flex justify-between items-center p-3 rounded-lg border text-xs transition-all ${selections.materiaal === idx
-                                                    ? 'bg-[#0df2a2]/10 border-[#0df2a2] text-white'
-                                                    : 'bg-transparent border-white/5 text-gray-400 hover:bg-white/5'
-                                                    }`}
-                                            >
-                                                <span className="font-medium">{opt.label}</span>
-                                                {opt.price > 0 && <span className="text-[#0df2a2] font-mono">+€{opt.price.toFixed(2)}</span>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Bevestiging Card */}
-                            {productDef.options?.bevestiging && (
-                                <div className="bg-[#1A1D1C]/60 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <span className="material-symbols-outlined text-[#0df2a2]/60">construction</span>
-                                        <h4 className="font-bold text-base">Bevestiging</h4>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        {productDef.options.bevestiging.map((opt: any, idx: number) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setSelections({ ...selections, bevestiging: idx })}
-                                                className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${selections.bevestiging === idx
-                                                    ? 'bg-[#0df2a2]/10 border-[#0df2a2] text-white'
-                                                    : 'bg-transparent border-white/5 text-gray-400 hover:bg-white/5'
-                                                    }`}
-                                            >
-                                                <span className="material-symbols-outlined text-sm mt-0.5">{opt.icon}</span>
-                                                <div className="flex-1 min-w-0">
-                                                    <span className="block font-bold text-xs">{opt.label}</span>
-                                                    <span className="block text-[9px] text-gray-500 truncate">{opt.desc}</span>
-                                                </div>
-                                                {opt.price > 0 && <span className="text-[#0df2a2] font-mono text-[10px]">+€{opt.price.toFixed(2)}</span>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="md:col-span-2 pt-4">
-                                <button
-                                    onClick={() => setStep(2)}
-                                    className="w-full py-5 bg-[#0df2a2] text-[#0A0A0A] font-extrabold text-lg rounded-2xl shadow-[0_0_20px_rgba(13,242,162,0.3)] hover:shadow-[0_0_30px_rgba(13,242,162,0.5)] hover:scale-[1.01] transition-all flex items-center justify-center gap-3 active:scale-95"
-                                >
-                                    VOLGENDE STAP: PRIJZEN
-                                    <span className="material-symbols-outlined">trending_flat</span>
-                                </button>
-                            </div>
                         </div>
-                    ) : (
-                        <div className="flex flex-col h-full">
-                            <h2 className="text-3xl font-extrabold mb-2 tracking-tight">Kies <span className="text-[#0df2a2]">aantal & levering</span></h2>
-                            <p className="text-gray-500 text-sm mb-6 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[16px]">info</span>
-                                De verwachte leverdatum geldt bij aanlevering voor 12:00 uur.
-                            </p>
 
-                            <div className="bg-[#1A1D1C]/60 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-                                {/* Table Header */}
-                                <div className="grid grid-cols-4 border-b border-white/5 bg-[#0A0A0A]/40">
-                                    <div className="p-4 text-xs font-bold uppercase text-gray-500 tracking-widest">Oplage</div>
-                                    <div className="p-4 border-l border-white/5">
-                                        <span className="px-2 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-400 font-bold uppercase block w-fit mb-1">Standaard</span>
-                                        <div className="text-[10px] text-white font-bold">10-03-2026</div>
+                        {/* Dynamics Steps from Product Options */}
+                        {productDef.options.map((cat: any, catIdx: number) => {
+                            const stepNum = catIdx + 2;
+                            const isExpanded = expandedStep === cat.id;
+                            const selectedOptIdx = selections[cat.id] ?? 0;
+                            const selectedOpt = cat.options[selectedOptIdx];
+
+                            return (
+                                <div key={cat.id} className={`rounded-[2rem] border transition-all duration-500 overflow-hidden ${isExpanded ? 'border-[#10b77f]/30 glass-panel shadow-[0_20px_60px_rgba(16,183,127,0.05)] ring-1 ring-[#10b77f]/10' : 'border-white/5 bg-zinc-900/40 hover:border-white/10'}`}>
+                                    <button
+                                        onClick={() => setExpandedStep(cat.id)}
+                                        className="w-full text-left p-8 flex items-center justify-between group"
+                                    >
+                                        <div className="flex items-center gap-6">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-500 ${isExpanded ? 'bg-[#10b77f] text-[#0A0A0A] shadow-[0_0_20px_rgba(16,183,127,0.4)]' : 'bg-zinc-800 text-zinc-500'}`}>
+                                                {stepNum < 10 ? `0${stepNum}` : stepNum}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-white font-black uppercase tracking-widest text-[11px]">{cat.name}</h3>
+                                                {!isExpanded && selectedOpt && (
+                                                    <p className="text-[10px] text-[#10b77f] font-black uppercase tracking-widest mt-1 opacity-70 italic">{selectedOpt.label} geselecteerd</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {!isExpanded && (
+                                            <div className="flex items-center gap-3">
+                                                <span className="material-symbols-outlined text-[#10b77f] text-lg font-bold animate-in zoom-in duration-700">check_circle</span>
+                                                <span className="material-symbols-outlined text-zinc-600 group-hover:text-[#10b77f] text-sm transition-colors">edit_square</span>
+                                            </div>
+                                        )}
+                                    </button>
+
+                                    {isExpanded && (
+                                        <div className="px-8 pb-10 border-t border-white/5 pt-10 animate-in fade-in slide-in-from-top-6 duration-700">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                                                {cat.options.map((opt: any, idx: number) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => handleSelectOption(cat.id, idx)}
+                                                        className={`relative p-4 rounded-[1.5rem] border transition-all hover:shadow-xl hover:-translate-y-0.5 h-full flex flex-col gap-3 group ${selections[cat.id] === idx
+                                                            ? 'border-[#10b77f] bg-[#10b77f]/5 ring-1 ring-[#10b77f]/10 shadow-[0_10px_30px_rgba(16,183,127,0.1)]'
+                                                            : 'border-white/5 bg-zinc-950/30 hover:border-white/20'
+                                                            }`}
+                                                    >
+                                                        {opt.badge && (
+                                                            <div className="absolute top-0 left-4 -translate-y-1/2 bg-[#10b77f] text-[#0A0A0A] text-[7px] font-black px-2 py-1 rounded-md uppercase tracking-widest z-10 italic">
+                                                                {opt.badge}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="w-full aspect-square bg-zinc-900/40 rounded-xl flex items-center justify-center overflow-hidden relative border border-white/5">
+                                                            {opt.icon ? (
+                                                                <span className="material-symbols-outlined text-3xl text-zinc-700 group-hover:text-[#10b77f] transition-all duration-700">{opt.icon}</span>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <span className="material-symbols-outlined text-3xl text-zinc-800">image</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 flex flex-col">
+                                                            <span className="block font-black text-[10px] mb-1 text-white leading-tight uppercase tracking-wide">{opt.label}</span>
+
+                                                            <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
+                                                                {!opt.hidePrice ? (
+                                                                    <span className="text-[9px] text-[#10b77f] font-black uppercase tracking-widest italic">
+                                                                        {opt.price > 0 ? `+€${opt.price.toFixed(2)}` : opt.price < 0 ? `-€${Math.abs(opt.price).toFixed(2)}` : 'Inbegrepen'}
+                                                                    </span>
+                                                                ) : <div />}
+                                                            </div>
+                                                        </div>
+
+                                                        {selections[cat.id] === idx && (
+                                                            <div className="absolute top-3 right-3 flex items-center justify-center size-5 bg-[#10b77f] rounded-full shadow-[0_0_10px_rgba(16,183,127,0.5)] z-20">
+                                                                <span className="material-symbols-outlined text-[#0A0A0A] text-[12px] font-black">check</span>
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Step Final: Upload */}
+                        <div className={`rounded-[2rem] border transition-all duration-500 overflow-hidden ${expandedStep === 'upload' ? 'border-[#10b77f]/30 glass-panel shadow-[0_20px_60px_rgba(16,183,127,0.05)] ring-1 ring-[#10b77f]/10' : 'border-white/5 bg-zinc-900/40 hover:border-white/10'}`}>
+                            <button
+                                onClick={() => setExpandedStep('upload')}
+                                className="w-full text-left p-8 flex items-center justify-between group"
+                            >
+                                <div className="flex items-center gap-6">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-500 ${expandedStep === 'upload' ? 'bg-[#10b77f] text-[#0A0A0A] shadow-[0_0_20px_rgba(16,183,127,0.4)]' : 'bg-zinc-800 text-zinc-500'}`}>
+                                        {productDef.options.length + 2 < 10 ? `0${productDef.options.length + 2}` : productDef.options.length + 2}
                                     </div>
-                                    <div className="p-4 border-l border-white/5">
-                                        <span className="px-2 py-0.5 rounded text-[8px] bg-orange-500/20 text-orange-400 font-bold uppercase block w-fit mb-1">Express</span>
-                                        <div className="text-[10px] text-white font-bold">09-03-2026</div>
-                                    </div>
-                                    <div className="p-4 border-l border-white/5">
-                                        <span className="px-2 py-0.5 rounded text-[8px] bg-red-500/20 text-red-400 font-bold uppercase block w-fit mb-1">Spoed</span>
-                                        <div className="text-[10px] text-white font-bold">06-03-2026</div>
+                                    <h3 className="text-white font-black uppercase tracking-widest text-[11px]">Bestanden & Opmerkingen</h3>
+                                </div>
+                            </button>
+
+                            {expandedStep === 'upload' && (
+                                <div className="px-8 pb-10 border-t border-white/5 pt-10 animate-in fade-in slide-in-from-top-6 duration-700">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest italic opacity-60">Ontwerp uploaden</h4>
+                                                <p className="text-xs text-zinc-500 font-medium leading-relaxed italic border-l-2 border-[#10b77f]/20 pl-4 transition-all hover:border-[#10b77f]">Upload je bestanden voor een optimale kwaliteit.</p>
+                                            </div>
+                                            <div className="glass-panel p-6 rounded-3xl border border-white/5">
+                                                <ImageUpload
+                                                    onUpload={(url: string) => setCustomImages([...customImages, url])}
+                                                />
+                                            </div>
+                                            {customImages.length > 0 && (
+                                                <div className="flex flex-wrap gap-4 pt-2">
+                                                    {customImages.map((url, i) => (
+                                                        <div key={i} className="relative w-28 h-28 rounded-3xl overflow-hidden border border-white/10 shadow-xl group glass-panel">
+                                                            <img src={url} alt="Uploaded" className="w-full h-full object-cover p-2" />
+                                                            <button
+                                                                onClick={() => setCustomImages(prev => prev.filter((_, idx) => idx !== i))}
+                                                                className="absolute inset-0 bg-[#10b77f]/80 items-center justify-center hidden group-hover:flex transition-all duration-500"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[#0A0A0A] font-black text-3xl">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest italic opacity-60">Extra informatie</h4>
+                                                <p className="text-xs text-zinc-500 font-medium leading-relaxed italic border-l-2 border-[#10b77f]/20 pl-4 transition-all hover:border-[#10b77f]">Heb je nog specifieke wensen of instructies?</p>
+                                            </div>
+                                            <textarea
+                                                placeholder="Bijv: Logo graag in het midden uitgelijnd..."
+                                                value={notes}
+                                                onChange={(e) => setNotes(e.target.value)}
+                                                className="w-full h-[220px] bg-zinc-950/50 border border-white/10 rounded-3xl p-8 text-[13px] text-zinc-300 outline-none focus:border-[#10b77f]/50 focus:bg-zinc-950 transition-all shadow-inner placeholder:text-zinc-700 italic"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
+                            )}
+                        </div>
+                    </div>
 
-                                {/* Table Body - 10 Rows */}
-                                <div className="">
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((qty) => (
-                                        <div key={qty} className="grid grid-cols-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                                            <div className="p-4 flex items-center text-sm font-bold text-gray-400">{qty} st.</div>
+                    {/* Summary Section (New Bottom Panel) */}
+                    <div className="mt-12 space-y-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                            {/* Left: Summary Recap */}
+                            <div className="bg-zinc-900/40 rounded-[2.5rem] p-10 border border-white/5 glass-panel relative overflow-hidden group">
+                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5 relative z-10">
+                                    <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Samenvatting</h3>
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic opacity-50">Product</span>
+                                </div>
 
-                                            {['Standaard', 'Express', 'Spoed'].map((speed) => {
-                                                const price = calculatePrice(qty, speed);
-                                                const isActive = pricingSelection.quantity === qty && pricingSelection.speed === speed;
+                                <div className="flex gap-8 items-start relative z-10">
+                                    <div className="size-24 bg-zinc-950 rounded-2xl border border-white/5 p-2 flex-shrink-0">
+                                        <img src={productDef.image} alt={productDef.name} className="w-full h-full object-contain" />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="space-y-1">
+                                            <p className="text-[11px] font-black text-white leading-tight">{quantity} &times; {productDef.name}</p>
+                                            {productDef.options.map((cat: any) => {
+                                                const sel = selections[cat.id] ?? 0;
+                                                const opt = cat.options[sel];
                                                 return (
-                                                    <button
-                                                        key={speed}
-                                                        onClick={() => setPricingSelection({ quantity: qty, speed })}
-                                                        className={`p-4 border-l border-white/5 text-left transition-all relative ${isActive ? 'bg-[#0df2a2]/10 ring-1 ring-inset ring-[#0df2a2]' : ''}`}
-                                                    >
-                                                        <div className={`text-sm font-bold ${isActive ? 'text-[#0df2a2]' : 'text-white'}`}>
-                                                            € {price.toFixed(2)}
-                                                        </div>
-                                                        <div className="text-[9px] text-gray-500 mt-0.5">Excl. BTW</div>
-                                                        {isActive && <div className="absolute top-2 right-2 size-2 bg-[#0df2a2] rounded-full"></div>}
-                                                    </button>
+                                                    <div key={cat.id} className="flex gap-4 text-[10px] leading-tight group/line">
+                                                        <span className="text-zinc-500 font-bold w-16 uppercase tracking-tight italic">{cat.name}</span>
+                                                        <span className="text-zinc-300 font-medium italic group-hover/line:text-[#10b77f] transition-colors">{opt.label}</span>
+                                                    </div>
                                                 );
                                             })}
                                         </div>
-                                    ))}
+                                        <p className="text-[9px] text-[#10b77f] font-black uppercase tracking-widest cursor-pointer hover:underline italic">Aanleverspecificaties</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-12 space-y-4 relative z-10">
+                                    <div className="flex items-end justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic leading-none mb-3">Totaal excl. btw</span>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-xl font-black text-white italic">€</span>
+                                                <span className="text-4xl font-black text-white tracking-tighter italic">{calculateTotal().toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right space-y-1">
+                                            <p className="text-[9px] text-zinc-500 font-bold italic uppercase tracking-widest">Verzendkosten (gratis)</p>
+                                            <p className="text-[9px] text-zinc-500 font-bold italic uppercase tracking-widest">Verpakkingskosten (inbegrepen)</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8 flex flex-col gap-4">
+                                        <button
+                                            onClick={handleAddToCart}
+                                            disabled={isAddingToCart || !quantity || (customImages.length === 0 && productDef.name !== 'Ander Product')}
+                                            className="w-full bg-[#10b77f] text-[#0A0A0A] py-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-[#10b77f]/90 transition-all flex items-center justify-center gap-4 disabled:opacity-30 active:scale-[0.97] outline-none shadow-[0_20px_40px_rgba(16,183,127,0.2)] group/btn"
+                                        >
+                                            {isAddingToCart ? (
+                                                <div className="w-5 h-5 border-3 border-[#0A0A0A]/20 border-t-[#0A0A0A] rounded-full animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined font-black text-xl group-hover:rotate-12 transition-transform">local_mall</span>
+                                                    Toevoegen aan winkelwagen
+                                                </>
+                                            )}
+                                        </button>
+                                        <button className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.3em] hover:text-white transition-colors italic">Samenstelling opslaan</button>
+                                    </div>
+
+                                    <div className="pt-6 flex items-center gap-3 opacity-40">
+                                        <span className="material-symbols-outlined text-[#10b77f] text-sm font-black">info</span>
+                                        <p className="text-[9px] font-black text-[#10b77f] uppercase tracking-widest italic">Profiteer van korting bij hoge volumes.</p>
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Right: Delivery Dates */}
+                            <div className="bg-zinc-900/40 rounded-[2.5rem] p-10 border border-white/5 glass-panel h-full">
+                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5 relative z-10">
+                                    <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Beschikbare leverdatums</h3>
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic opacity-50">Logistiek</span>
+                                </div>
+
+                                <div className="space-y-3 relative z-10">
+                                    {[
+                                        { day: 'Donderdag', date: '5 mrt', price: 11.83, icon: 'local_shipping' },
+                                        { day: 'Vrijdag', date: '6 mrt', price: 8.87, icon: 'local_shipping' },
+                                        { day: 'Zaterdag', date: '7 mrt', price: 4.43, icon: 'local_shipping' },
+                                        { day: 'Maandag', date: '9 mrt', price: 4.43, icon: 'local_shipping' },
+                                        { day: 'Dinsdag', date: '10 mrt', price: 0, label: 'Geen spoedkosten', icon: 'local_shipping' }
+                                    ].map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setDeliverySpeed(item.price > 5 ? 'Spoed' : item.price > 0 ? 'Express' : 'Standaard')}
+                                            className={`flex items-center justify-between p-5 rounded-2xl border transition-all cursor-pointer group ${((item.price > 5 && deliverySpeed === 'Spoed') ||
+                                                (item.price > 0 && item.price <= 5 && deliverySpeed === 'Express') ||
+                                                (item.price === 0 && deliverySpeed === 'Standaard'))
+                                                ? 'bg-[#10b77f]/5 border-[#10b77f]/30' : 'bg-zinc-950/20 border-white/5 hover:border-white/10'}`}
+                                        >
+                                            <div className="flex items-center gap-5">
+                                                <div className={`p-3 rounded-xl transition-all ${((item.price > 5 && deliverySpeed === 'Spoed') ||
+                                                    (item.price > 0 && item.price <= 5 && deliverySpeed === 'Express') ||
+                                                    (item.price === 0 && deliverySpeed === 'Standaard'))
+                                                    ? 'bg-[#10b77f]/10 text-[#10b77f]' : 'bg-zinc-900 text-zinc-600 group-hover:text-zinc-400'}`}>
+                                                    <span className="material-symbols-outlined text-xl font-bold">{item.icon}</span>
+                                                </div>
+                                                <p className="text-[11px] font-black text-white italic uppercase tracking-tight">{item.day} {item.date}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                {item.price > 0 ? (
+                                                    <span className="text-[10px] font-black text-white italic">€ {item.price.toFixed(2)}</span>
+                                                ) : (
+                                                    <span className="text-[9px] font-black text-[#10b77f] uppercase tracking-widest italic">{item.label}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="mt-8 text-[9px] text-zinc-500 font-bold italic uppercase tracking-widest leading-relaxed opacity-60">
+                                    Je kiest de gewenste datum tijdens het afronden van je bestelling.
+                                </p>
+                            </div>
                         </div>
-                    )}
+                    </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 }

@@ -16,7 +16,20 @@ export default async function BillingSettingsPage() {
     // Fetch subscription
     const subscription = await getSubscription()
 
-    const plan = subscription?.plan || 'Essential'
+    // Fetch package details to get the correct name (e.g. "Essential" vs "Essential-ID")
+    let planName = 'Geen Pakket'
+    if (subscription?.plan) {
+        const { data: pkg } = await supabase
+            .from('packages')
+            .select('name')
+            .eq('id', subscription.plan)
+            .single()
+        if (pkg) planName = pkg.name
+    } else {
+        planName = 'Essential' // Default starting state
+    }
+
+    const plan = planName
     const status = subscription?.status || 'active'
 
     // Format next billing date

@@ -109,34 +109,37 @@ export default function CheckoutDeliveryPage() {
                             </div>
 
                             {isLoading ? (
-                                <div className="p-8 text-center bg-white/5 rounded-2xl border border-white/5">
-                                    <div className="size-8 border-2 border-[#0df2a2]/20 border-t-[#0df2a2] rounded-full animate-spin mx-auto mb-3"></div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Adressen laden...</p>
+                                <div className="p-12 text-center glass-panel rounded-[2rem] border-white/5">
+                                    <div className="size-10 border-4 border-[#10b77f]/20 border-t-[#10b77f] rounded-full animate-spin mx-auto mb-4 shadow-[0_0_20px_rgba(16,183,127,0.2)]"></div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Adressen laden...</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {addresses.map((addr) => (
-                                        <label key={addr.id} className={`group relative flex cursor-pointer rounded-2xl border-2 p-5 transition-all hover:scale-[1.01] ${selectedAddress === addr.id ? 'border-[#0df2a2] bg-[#0df2a2]/5 shadow-[0_0_20px_rgba(13,242,162,0.1)]' : 'border-white/5 bg-[#1A1D1C]/60 hover:border-white/20'}`}>
+                                        <label key={addr.id} className={`group relative flex cursor-pointer rounded-[2.5rem] border-2 p-8 transition-all duration-700 hover:scale-[1.02] overflow-hidden ${selectedAddress === addr.id ? 'glass-panel border-[#10b77f] shadow-[0_20px_50px_rgba(16,183,127,0.15)]' : 'glass-panel border-white/5 hover:border-white/20'}`}>
+                                            {selectedAddress === addr.id && (
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#10b77f]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                                            )}
                                             <input
                                                 type="radio"
                                                 name="address"
                                                 checked={selectedAddress === addr.id}
                                                 onChange={() => setSelectedAddress(addr.id)}
-                                                className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-slate-600 bg-transparent checked:border-[#0df2a2] checked:bg-[#0df2a2] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3.5px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
+                                                className="mt-1.5 h-6 w-6 appearance-none rounded-full border-2 border-zinc-700 bg-transparent checked:border-[#10b77f] checked:bg-[#10b77f] focus:ring-0 relative before:content-[''] before:absolute before:inset-[4px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer z-10"
                                             />
-                                            <div className="ml-4 flex flex-1 flex-col">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="block text-sm font-extrabold text-[#F8FAFC] tracking-tight truncate max-w-[150px]">{addr.name}</span>
+                                            <div className="ml-6 flex flex-1 flex-col z-10">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="block text-lg font-black text-white tracking-tighter uppercase italic truncate max-w-[150px]">{addr.name}</span>
                                                     {addr.is_default && (
-                                                        <span className="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest bg-[#0df2a2] text-[#0A0A0A]">Standaard</span>
+                                                        <span className="text-[8px] px-2 py-0.5 rounded-lg font-black uppercase tracking-[0.2em] bg-[#10b77f] text-[#0A0A0A] italic">Standaard</span>
                                                     )}
                                                 </div>
-                                                <span className="block text-xs text-gray-500 leading-relaxed truncate">{addr.street}, {addr.city}</span>
-                                                <span className="block text-[10px] text-gray-400 mt-1">{addr.contact}</span>
+                                                <span className="block text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic leading-relaxed truncate">{addr.street}, {addr.city}</span>
+                                                <span className="block text-[9px] text-zinc-600 font-black uppercase tracking-[0.2em] italic mt-2 opacity-60">{addr.contact}</span>
                                             </div>
                                             {selectedAddress === addr.id && (
-                                                <div className="absolute top-4 right-4 text-[#0df2a2]">
-                                                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                                <div className="absolute top-6 right-6 text-[#10b77f]">
+                                                    <span className="material-symbols-outlined text-[24px] font-black drop-shadow-[0_0_10px_rgba(16,183,127,0.5)]">verified</span>
                                                 </div>
                                             )}
                                         </label>
@@ -144,12 +147,12 @@ export default function CheckoutDeliveryPage() {
                                     {/* New Address Card */}
                                     <button
                                         onClick={() => setShowAddressForm(true)}
-                                        className="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-[#0df2a2]/30 transition-all group min-h-[110px]"
+                                        className="flex flex-col items-center justify-center gap-4 p-8 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] hover:bg-[#10b77f]/2 hover:border-[#10b77f]/40 transition-all duration-700 group min-h-[140px]"
                                     >
-                                        <div className="size-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#0df2a2]/10 transition-colors">
-                                            <span className="material-symbols-outlined text-gray-500 group-hover:text-[#0df2a2]">add_location_alt</span>
+                                        <div className="size-14 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-[#10b77f] group-hover:text-[#0A0A0A] transition-all duration-500 shadow-inner">
+                                            <span className="material-symbols-outlined text-zinc-600 group-hover:text-inherit font-black text-[28px]">add_location_alt</span>
                                         </div>
-                                        <span className="text-xs font-bold text-gray-500 group-hover:text-white uppercase tracking-widest">Nieuw adres toevoegen</span>
+                                        <span className="text-[10px] font-black text-zinc-500 group-hover:text-white uppercase tracking-[0.2em] transition-colors italic">Nieuw adres toevoegen</span>
                                     </button>
                                 </div>
                             )}
@@ -157,60 +160,63 @@ export default function CheckoutDeliveryPage() {
 
                         {/* Section 2: Bezorgmoment */}
                         <section>
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="size-10 rounded-xl bg-[#0df2a2]/10 border border-[#0df2a2]/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[#0df2a2]">schedule</span>
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="size-12 rounded-2xl bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center shadow-[0_0_20px_rgba(16,183,127,0.1)]">
+                                    <span className="material-symbols-outlined text-[#10b77f] font-black">schedule</span>
                                 </div>
-                                <h3 className="text-xl font-extrabold tracking-tight">Kies uw <span className="text-[#0df2a2]">levermoment</span></h3>
+                                <h3 className="text-2xl font-black tracking-tighter uppercase italic">Kies uw <span className="text-[#10b77f]">levermoment</span></h3>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <label className={`flex flex-col cursor-pointer rounded-2xl border-2 p-6 transition-all hover:scale-[1.01] ${selectedTiming === 'standaard' ? 'border-[#0df2a2] bg-[#0df2a2]/5' : 'border-white/5 bg-[#1A1D1C]/60 hover:border-white/20'}`}>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <input
-                                            type="radio"
-                                            name="timing"
-                                            checked={selectedTiming === 'standaard'}
-                                            onChange={() => setSelectedTiming('standaard')}
-                                            className="h-5 w-5 appearance-none rounded-full border-2 border-slate-600 bg-transparent checked:border-[#0df2a2] checked:bg-[#0df2a2] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3.5px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
-                                        />
-                                        <span className="text-xs font-black text-[#0df2a2] tracking-widest uppercase">Gratis</span>
-                                    </div>
-                                    <span className="text-lg font-extrabold text-white tracking-tight">Standaard Levering</span>
-                                    <span className="text-xs text-gray-500 mt-1">Verwachte levering: 10 maart</span>
-                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <label className={`flex flex-col cursor-pointer rounded-[2.5rem] border-2 p-8 transition-all duration-700 hover:scale-[1.02] overflow-hidden ${selectedTiming === 'standaard' ? 'glass-panel border-[#10b77f] shadow-[0_20px_40px_rgba(16,183,127,0.1)]' : 'glass-panel border-white/5 hover:border-white/20'}`}>
+                                        <div className="flex justify-between items-start mb-6">
+                                            <input
+                                                type="radio"
+                                                name="timing"
+                                                checked={selectedTiming === 'standaard'}
+                                                onChange={() => setSelectedTiming('standaard')}
+                                                className="h-6 w-6 appearance-none rounded-full border-2 border-zinc-700 bg-transparent checked:border-[#10b77f] checked:bg-[#10b77f] focus:ring-0 relative before:content-[''] before:absolute before:inset-[4px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
+                                            />
+                                            <span className="text-[10px] font-black text-[#10b77f] tracking-[0.2em] uppercase italic">Gratis</span>
+                                        </div>
+                                        <span className="text-xl font-black text-white tracking-tighter uppercase italic">Standaard Levering</span>
+                                        <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic mt-2 opacity-60">Verwachte levering: 10 maart</span>
+                                    </label>
 
-                                <label className={`flex flex-col cursor-pointer rounded-2xl border-2 p-6 transition-all hover:scale-[1.01] ${selectedTiming === 'ochtend' ? 'border-[#0df2a2] bg-[#0df2a2]/5' : 'border-white/5 bg-[#1A1D1C]/60 hover:border-white/20'}`}>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <input
-                                            type="radio"
-                                            name="timing"
-                                            checked={selectedTiming === 'ochtend'}
-                                            onChange={() => setSelectedTiming('ochtend')}
-                                            className="h-5 w-5 appearance-none rounded-full border-2 border-slate-600 bg-transparent checked:border-[#0df2a2] checked:bg-[#0df2a2] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3.5px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
-                                        />
-                                        <span className="text-xs font-black text-white/40 tracking-widest uppercase">+€10,00</span>
-                                    </div>
-                                    <span className="text-lg font-extrabold text-white tracking-tight">Ochtend Levering</span>
-                                    <span className="text-xs text-gray-500 mt-1">Gegarandeerd voor 10:00 uur</span>
-                                </label>
+                                    <label className={`flex flex-col cursor-pointer rounded-[2.5rem] border-2 p-8 transition-all duration-700 hover:scale-[1.02] overflow-hidden ${selectedTiming === 'ochtend' ? 'glass-panel border-[#10b77f] shadow-[0_20px_40px_rgba(16,183,127,0.1)]' : 'glass-panel border-white/5 hover:border-white/20'}`}>
+                                        <div className="flex justify-between items-start mb-6">
+                                            <input
+                                                type="radio"
+                                                name="timing"
+                                                checked={selectedTiming === 'ochtend'}
+                                                onChange={() => setSelectedTiming('ochtend')}
+                                                className="h-6 w-6 appearance-none rounded-full border-2 border-zinc-700 bg-transparent checked:border-[#10b77f] checked:bg-[#10b77f] focus:ring-0 relative before:content-[''] before:absolute before:inset-[4px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer"
+                                            />
+                                            <span className="text-[10px] font-black text-white/40 tracking-[0.2em] uppercase italic">+€10,00</span>
+                                        </div>
+                                        <span className="text-xl font-black text-white tracking-tighter uppercase italic">Ochtend Levering</span>
+                                        <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic mt-2 opacity-60">Gegarandeerd voor 10:00 uur</span>
+                                    </label>
+                                </div>
                             </div>
                         </section>
 
                         {/* Section 3: Extra Opties */}
-                        <section className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="size-10 rounded-full bg-white/5 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-gray-400">person_pin</span>
+                        <section className="glass-panel border-white/5 rounded-[2rem] p-10 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-6">
+                                    <div className="size-14 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:border-[#10b77f]/30 transition-all">
+                                        <span className="material-symbols-outlined text-zinc-500 group-hover:text-[#10b77f] font-black text-[28px] transition-colors">person_pin</span>
                                     </div>
                                     <div>
-                                        <p className="font-extrabold text-white tracking-tight">Factuuradres is gelijk aan bezorgadres</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">Bespaar tijd bij het afrekenen</p>
+                                        <p className="font-black text-white text-lg uppercase tracking-tight italic">Factuuradres is gelijk</p>
+                                        <p className="text-[11px] text-zinc-500 font-bold uppercase italic opacity-60">Bespaar tijd bij het afrekenen</p>
                                     </div>
                                 </div>
-                                <div className="relative inline-flex items-center cursor-pointer">
+                                <div className="relative inline-flex items-center cursor-pointer scale-110">
                                     <input defaultChecked type="checkbox" className="sr-only peer" />
-                                    <div className="w-12 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[4px] after:bg-white/40 after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:bg-[#0df2a2] peer-checked:after:bg-[#0A0A0A] peer-checked:after:opacity-100"></div>
+                                    <div className="w-14 h-7 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0A0A0A] after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-zinc-800 after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-[#10b77f] peer-checked:after:bg-[#0A0A0A] shadow-inner"></div>
                                 </div>
                             </div>
                         </section>
@@ -218,47 +224,47 @@ export default function CheckoutDeliveryPage() {
 
                     {/* Right Column: Sticky Summary */}
                     <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-                        <div className="bg-[#1A1D1C]/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#0df2a2]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                            <h3 className="text-xl font-extrabold mb-8 flex items-center gap-3 tracking-tight">
-                                <span className="material-symbols-outlined text-[#0df2a2]">receipt_long</span>
-                                Besteloverzicht
+                        <div className="glass-panel border-white/10 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-[#10b77f]/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:bg-[#10b77f]/10 transition-all duration-1000"></div>
+                            <h3 className="text-2xl font-black mb-10 flex items-center gap-4 tracking-tighter uppercase italic relative z-10">
+                                <span className="material-symbols-outlined text-[#10b77f] font-black">receipt_long</span>
+                                Bestelling
                             </h3>
 
-                            <div className="space-y-4 mb-8">
-                                <div className="flex justify-between text-gray-400 font-medium text-sm">
+                            <div className="space-y-6 mb-10 relative z-10">
+                                <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>Producten (totaal)</span>
-                                    <span className="text-white font-bold">€ {(total * 1.21).toFixed(2)}</span>
+                                    <span className="text-white not-italic font-black">€ {(total * 1.21).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-400 font-medium text-sm">
+                                <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>Bezorging ({selectedTiming})</span>
-                                    <span className={selectedTiming === 'standaard' ? 'text-[#0df2a2] font-bold' : 'text-white font-bold'}>
+                                    <span className={`not-italic font-black uppercase tracking-widest ${selectedTiming === 'standaard' ? 'text-[#10b77f]' : 'text-white'}`}>
                                         {selectedTiming === 'standaard' ? 'GRATIS' : '€ 10.00'}
                                     </span>
                                 </div>
-                                <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                                <div className="pt-8 mt-4 border-t border-white/5 flex justify-between items-end">
                                     <div className="flex flex-col">
-                                        <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">Te betalen</span>
-                                        <span className="text-[9px] text-white/30 font-medium italic">Inclusief 21% BTW</span>
+                                        <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2 italic">Te betalen</span>
+                                        <span className="text-[8px] text-[#10b77f] font-black uppercase tracking-widest italic opacity-40">Inclusief 21% BTW</span>
                                     </div>
-                                    <span className="text-3xl font-black text-[#0df2a2] tracking-tighter drop-shadow-[0_0_15px_rgba(13,242,162,0.3)] text-right">
+                                    <span className="text-4xl font-black text-[#10b77f] tracking-tighter italic drop-shadow-[0_0_30px_rgba(16,183,127,0.2)] text-right">
                                         € {(total * 1.21 + (selectedTiming === 'ochtend' ? 10 : 0)).toFixed(2)}
                                     </span>
                                 </div>
                             </div>
 
-                            <Link href="/shop/checkout/payment" className="w-full bg-[#0df2a2] hover:bg-[#0df2a2]/90 text-[#0A0A0A] font-black py-5 rounded-2xl shadow-[0_10px_30px_rgba(13,242,162,0.2)] flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-95 group/btn text-lg">
+                            <Link href="/shop/checkout/payment" className="w-full bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] font-black py-6 rounded-2xl shadow-[0_20px_40px_rgba(16,183,127,0.2)] flex items-center justify-center gap-4 transition-all uppercase tracking-widest text-[11px] group/btn italic">
                                 NAAR BETALING
-                                <span className="material-symbols-outlined font-bold transition-transform group-hover/btn:translate-x-1">payments</span>
+                                <span className="material-symbols-outlined font-black transition-transform group-hover/btn:translate-x-2">payments</span>
                             </Link>
 
-                            <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
-                                <div className="flex items-start gap-3">
-                                    <span className="material-symbols-outlined text-gray-500 text-[18px]">info</span>
-                                    <p className="text-[10px] text-gray-500 leading-relaxed font-medium">U kunt uw adresgegevens en levermethode later nog inzien in uw account.</p>
+                            <div className="mt-8 pt-6 border-t border-white/5 space-y-6 relative z-10">
+                                <div className="flex items-start gap-3 opacity-30">
+                                    <span className="material-symbols-outlined text-zinc-500 text-[18px] font-black">info</span>
+                                    <p className="text-[9px] text-zinc-500 leading-relaxed font-black uppercase tracking-widest italic">U kunt uw adresgegevens en levermethode later nog inzien in uw account.</p>
                                 </div>
-                                <Link href="/shop/cart" className="flex items-center gap-2 text-xs font-bold text-[#0df2a2]/60 hover:text-[#0df2a2] transition-colors uppercase tracking-widest text-[10px]">
-                                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                                <Link href="/shop/cart" className="flex items-center gap-3 text-[10px] font-black text-[#10b77f] hover:text-[#10b77f]/80 transition-all uppercase tracking-[0.2em] italic group/back">
+                                    <span className="material-symbols-outlined text-[18px] font-black transition-transform group-hover/back:-translate-x-2">west</span>
                                     Terug naar winkelmand
                                 </Link>
                             </div>

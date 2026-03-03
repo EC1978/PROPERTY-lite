@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const defaultNavItems = [
         { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+        { label: 'Landingspagina', path: '/admin/landing', icon: Globe },
         { label: 'Makelaars', path: '/admin/users', icon: Users },
         { label: 'Pakket Builder', path: '/admin/packages', icon: CreditCard },
         { label: 'Bestellingen', path: '/admin/orders', icon: ShoppingCart },

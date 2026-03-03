@@ -34,7 +34,6 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
         {
             label: 'Kantoorinstellingen',
             items: [
-                { name: 'Landingspagina', href: '/settings/landing', icon: 'web' },
                 { name: 'Team Beheer', href: '/settings/team', icon: 'group' },
                 { name: 'Geautomatiseerde E-mails', href: '/settings/emails', icon: 'mail' },
             ],
