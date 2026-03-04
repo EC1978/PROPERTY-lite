@@ -27,6 +27,7 @@ export async function getAdminProducts() {
     const { data, error } = await supabaseAdmin
         .from('shop_products')
         .select('*')
+        .eq('is_archived', false)
         .order('name')
 
     if (error) return { error: error.message }
@@ -89,7 +90,7 @@ export async function deleteProduct(id: string) {
     const supabaseAdmin = await createAdminClient()
     const { error } = await supabaseAdmin
         .from('shop_products')
-        .delete()
+        .update({ is_archived: true })
         .eq('id', id)
 
     if (error) return { error: error.message }

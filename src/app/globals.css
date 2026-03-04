@@ -46,6 +46,15 @@
   scrollbar-width: none;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Original custom classes preserved where not conflicting */
 .premium-blur {
   filter: blur(100px);

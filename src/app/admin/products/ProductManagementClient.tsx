@@ -4,11 +4,75 @@ import { useState, useEffect } from 'react'
 import {
     Plus, Search, Edit2, Trash2, Package,
     X, ChevronRight, Image as ImageIcon,
-    AlertCircle, Check, Trash, GripVertical, Eye, EyeOff
+    AlertCircle, Check, Trash, GripVertical, Eye, EyeOff, Copy, CheckCircle2
 } from 'lucide-react'
 import { createProduct, updateProduct, deleteProduct } from './actions'
 import toast from 'react-hot-toast'
 import ImageUpload from '@/components/ImageUpload'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    horizontalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { restrictToFirstScrollableAncestor, restrictToWindowEdges } from '@dnd-kit/modifiers'
+
+// Sortable Image Component
+// Sortable Image Component
+function SortableImage({ url, index, onRemove, onUpload, isLarge = false }: { url: string; index: number; onRemove: () => void; onUpload: (url: string) => void; isLarge?: boolean }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: url || `empty-${index}` })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 0,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <div ref={setNodeRef} style={style} className={`relative group/sortable ${isLarge ? 'w-full aspect-square max-h-[400px]' : 'size-24'}`}>
+            <div {...attributes} {...listeners} className="absolute top-2 left-2 z-10 p-2 bg-black/50 rounded-lg cursor-grab active:cursor-grabbing opacity-0 group-hover/sortable:opacity-100 transition-opacity">
+                <GripVertical className="w-4 h-4 text-white" />
+            </div>
+            <button
+                type="button"
+                onClick={onRemove}
+                className="absolute top-2 right-2 z-10 p-2 bg-red-500/80 rounded-lg opacity-0 group-hover/sortable:opacity-100 transition-opacity hover:bg-red-600 transition-all"
+            >
+                <X className="w-4 h-4 text-white" />
+            </button>
+            <ImageUpload
+                compact={!isLarge}
+                defaultValue={url}
+                onUpload={onUpload}
+            />
+            {isLarge && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none">
+                    <span className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.2em]">Hoofdfoto</span>
+                </div>
+            )}
+        </div>
+    )
+}
 
 type ProductOption = {
     label: string
@@ -18,6 +82,8 @@ type ProductOption = {
     desc?: string
     badge?: string
     deliveryTime?: string
+    image?: string
+    isDefault?: boolean
 }
 
 // New Structure: Array of categories with settings
@@ -25,6 +91,10 @@ type OptionCategory = {
     id: string
     name: string
     options: ProductOption[]
+    condition?: {
+        parentId: string
+        showIfIndices: number[]
+    }
 }
 
 type Product = {
@@ -56,6 +126,19 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
         images: [] as string[],
         options: [] as OptionCategory[]
     })
+
+    const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null)
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
 
     // Helper to migrate legacy object options to array options
     const migrateOptions = (options: Product['options']): OptionCategory[] => {
@@ -147,6 +230,20 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
         }
     }
 
+    const handleOpenDuplicate = (product: Product) => {
+        setEditingProduct(null)
+        setFormData({
+            name: `${product.name} (Kopie)`,
+            slug: `${product.slug}-kopie`,
+            description: product.description || '',
+            base_price: product.base_price.toString(),
+            category: product.category || '',
+            images: product.images || [],
+            options: migrateOptions(product.options)
+        })
+        setIsModalOpen(true)
+    }
+
     const handleDelete = async (id: string) => {
         const loadingToast = toast.loading('Product verwijderen...')
         try {
@@ -170,7 +267,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
             const newCat: OptionCategory = {
                 id: Math.random().toString(36).substr(2, 9),
                 name: categoryName,
-                options: [{ label: 'Standaard', price: 0, hidePrice: false }]
+                options: [{ label: 'Standaard', price: 0, hidePrice: false, image: '' }]
             }
             setFormData({
                 ...formData,
@@ -204,7 +301,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
         setFormData({
             ...formData,
             options: formData.options.map(c =>
-                c.id === catId ? { ...c, options: [...c.options, { label: 'Nieuwe Optie', price: 0, hidePrice: false }] } : c
+                c.id === catId ? { ...c, options: [...c.options, { label: 'Nieuwe Optie', price: 0, hidePrice: false, image: '' }] } : c
             )
         })
     }
@@ -228,8 +325,15 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
             ...formData,
             options: formData.options.map(c => {
                 if (c.id === catId) {
-                    const newOpts = [...c.options]
-                    newOpts[index] = { ...newOpts[index], [field]: value }
+                    const newOpts = c.options.map((o, i) => {
+                        if (field === 'isDefault' && value === true) {
+                            return { ...o, isDefault: i === index }
+                        }
+                        if (i === index) {
+                            return { ...o, [field]: value }
+                        }
+                        return o
+                    })
                     return { ...c, options: newOpts }
                 }
                 return c
@@ -240,6 +344,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
     // Drag and Drop Logic
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
+
+    // Category Drag and Drop Logic
     const handleDragStart = (index: number) => {
         setDraggedIndex(index)
     }
@@ -258,6 +364,35 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
 
         setFormData({ ...formData, options: newOptions })
         setDraggedIndex(null)
+    }
+
+    const handleImageDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+
+        if (over && active.id !== over.id) {
+            const oldIndex = formData.images.indexOf(active.id as string)
+            const newIndex = formData.images.indexOf(over.id as string)
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const newImages = arrayMove(formData.images, oldIndex, newIndex)
+                setFormData({ ...formData, images: newImages })
+            }
+        }
+    }
+
+    const updateCategoryName = (id: string, newName: string) => {
+        setFormData({
+            ...formData,
+            options: formData.options.map(c => c.id === id ? { ...c, name: newName } : c)
+        })
+        setEditingCategoryName(null)
+    }
+
+    const updateCategoryCondition = (id: string, condition: OptionCategory['condition']) => {
+        setFormData({
+            ...formData,
+            options: formData.options.map(c => c.id === id ? { ...c, condition } : c)
+        })
     }
 
     return (
@@ -362,6 +497,14 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                 <span className="text-[10px] font-black uppercase tracking-widest pr-1">Bewerk</span>
                                             </button>
                                             <button
+                                                onClick={() => handleOpenDuplicate(product)}
+                                                className="p-3 rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-[#0df2a2]/30 text-zinc-400 hover:text-[#0df2a2] transition-all flex items-center gap-2 group/btn"
+                                                title="Product dupliceren"
+                                            >
+                                                <Copy className="w-4 h-4 transition-transform group-hover/btn:scale-110" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest pr-1">Dupliceer</span>
+                                            </button>
+                                            <button
                                                 onClick={() => setIsDeleting(product.id)}
                                                 className="p-3 rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-red-500/30 text-zinc-500 hover:text-red-500 transition-all"
                                             >
@@ -408,13 +551,89 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
 
                         <form onSubmit={handleSubmit} className="p-8 space-y-10">
                             {/* Basic Info */}
-                            <section className="space-y-6">
-                                <h4 className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <div className="w-4 h-px bg-[#0df2a2]"></div>
-                                    Basis Informatie
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                                    <div className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+                                {/* Left Side: Media */}
+                                <div className="space-y-4 order-2 lg:order-1">
+                                    <div className="flex items-center justify-between ml-1">
+                                        <label className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <div className="w-4 h-px bg-[#0df2a2]"></div>
+                                            Product Media
+                                        </label>
+                                        <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-tighter">Sleep om te sorteren</span>
+                                    </div>
+                                    <div className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-6">
+                                        <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={handleImageDragEnd}
+                                            modifiers={[restrictToFirstScrollableAncestor]}
+                                        >
+                                            <SortableContext
+                                                items={formData.images.filter(img => img.trim() !== '')}
+                                                strategy={horizontalListSortingStrategy}
+                                            >
+                                                <div className="space-y-6">
+                                                    {/* Main Photo (Always first in array) */}
+                                                    <div className="flex justify-center w-full">
+                                                        <SortableImage
+                                                            isLarge
+                                                            url={formData.images[0] || ''}
+                                                            index={0}
+                                                            onRemove={() => {
+                                                                const newImages = [...formData.images]
+                                                                newImages.splice(0, 1)
+                                                                setFormData({ ...formData, images: newImages })
+                                                            }}
+                                                            onUpload={(url) => {
+                                                                const newImages = [...formData.images]
+                                                                newImages[0] = url
+                                                                setFormData({ ...formData, images: newImages })
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Thumbnails */}
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {formData.images.slice(1).map((img, idx) => (
+                                                            <SortableImage
+                                                                key={img || `empty-${idx + 1}`}
+                                                                url={img}
+                                                                index={idx + 1}
+                                                                onRemove={() => {
+                                                                    const newImages = [...formData.images]
+                                                                    newImages.splice(idx + 1, 1)
+                                                                    setFormData({ ...formData, images: newImages })
+                                                                }}
+                                                                onUpload={(url) => {
+                                                                    const newImages = [...formData.images]
+                                                                    newImages[idx + 1] = url
+                                                                    setFormData({ ...formData, images: newImages })
+                                                                }}
+                                                            />
+                                                        ))}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, images: [...formData.images, ''] })}
+                                                            className="size-24 border border-dashed border-white/10 rounded-2xl text-zinc-500 hover:text-[#0df2a2] hover:border-[#0df2a2]/30 transition-all flex flex-col items-center justify-center gap-1 group bg-white/[0.02]"
+                                                        >
+                                                            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-[8px] font-black uppercase tracking-tighter">Voeg Foto</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </SortableContext>
+                                        </DndContext>
+                                        <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest text-center">De eerste foto is de hoofdfoto</p>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Basic Info */}
+                                <div className="space-y-6 order-1 lg:order-2">
+                                    <h4 className="text-[10px] font-black text-[#0df2a2] uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-4 h-px bg-[#0df2a2]"></div>
+                                        Basis Informatie
+                                    </h4>
+                                    <div className="space-y-6 bg-[#111] p-6 rounded-3xl border border-white/5">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Product Naam</label>
                                             <input
@@ -428,7 +647,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                 }}
                                                 placeholder="Bijv. Modern Te Koop Bord"
                                                 suppressHydrationWarning
-                                                className="w-full bg-[#1A1A1A] border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 focus:ring-1 focus:ring-[#0df2a2]/50 outline-none transition-all font-bold placeholder:text-zinc-700"
+                                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all font-bold placeholder:text-zinc-700"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -439,7 +658,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                 value={formData.slug}
                                                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                                                 suppressHydrationWarning
-                                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-zinc-400 focus:border-[#0df2a2]/30 outline-none transition-all font-mono text-xs"
+                                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-3 px-5 text-zinc-500 focus:border-[#0df2a2]/30 outline-none transition-all font-mono text-[10px]"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -453,7 +672,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                     onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
                                                     placeholder="0.00"
                                                     suppressHydrationWarning
-                                                    className="w-full bg-[#1A1A1A] border border-white/5 rounded-2xl py-4 px-5 text-[#0df2a2] font-black focus:border-[#0df2a2]/50 outline-none transition-all text-xl"
+                                                    className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-[#0df2a2] font-black focus:border-[#0df2a2]/50 outline-none transition-all text-xl"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -464,32 +683,23 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                                     placeholder="Bijv. Marketing"
                                                     suppressHydrationWarning
-                                                    className="w-full bg-[#1A1A1A] border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all font-bold"
+                                                    className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all font-bold"
                                                 />
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Product Afbeelding</label>
-                                        <ImageUpload
-                                            defaultValue={formData.images[0]}
-                                            onUpload={(url) => setFormData({ ...formData, images: [url] })}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2 md:col-span-2">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Beschrijving</label>
-                                        <textarea
-                                            rows={3}
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            placeholder="Korte omschrijving voor de shop..."
-                                            className="w-full bg-[#1A1A1A] border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all resize-none font-medium placeholder:text-zinc-700"
-                                        />
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Beschrijving</label>
+                                            <textarea
+                                                rows={3}
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                placeholder="Korte omschrijving voor de shop..."
+                                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all resize-none font-medium placeholder:text-zinc-700 text-xs"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </section>
+                            </div>
 
                             {/* Visual Options Builder */}
                             <section className="space-y-6 pt-4">
@@ -524,9 +734,80 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                     <div className="size-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 cursor-grab active:cursor-grabbing">
                                                         <GripVertical className="w-4 h-4" />
                                                     </div>
-                                                    <h5 className="font-black text-white uppercase tracking-widest text-sm">{cat.name}</h5>
+                                                    {editingCategoryName === cat.id ? (
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            defaultValue={cat.name}
+                                                            onBlur={(e) => updateCategoryName(cat.id, e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') updateCategoryName(cat.id, e.currentTarget.value)
+                                                                if (e.key === 'Escape') setEditingCategoryName(null)
+                                                            }}
+                                                            className="bg-zinc-800 border-none rounded-lg px-2 py-1 text-white text-sm font-black uppercase tracking-widest focus:ring-1 focus:ring-[#0df2a2]/50 outline-none w-48"
+                                                        />
+                                                    ) : (
+                                                        <h5
+                                                            onClick={() => setEditingCategoryName(cat.id)}
+                                                            className="font-black text-white uppercase tracking-widest text-sm cursor-pointer hover:text-[#0df2a2] transition-colors flex items-center gap-2 group/title"
+                                                        >
+                                                            {cat.name}
+                                                            <Edit2 className="w-3 h-3 opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                                                        </h5>
+                                                    )}
                                                     <span className="text-[10px] font-bold text-zinc-600 uppercase italic">({cat.options.length} opties)</span>
                                                 </div>
+
+                                                {/* Conditional Logic UI */}
+                                                {catIdx > 0 && (
+                                                    <div className="flex items-center gap-4 bg-zinc-900/50 px-4 py-2 rounded-2xl border border-white/5">
+                                                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest italic">Toon als:</span>
+                                                        <select
+                                                            value={cat.condition?.parentId || ''}
+                                                            onChange={(e) => {
+                                                                const parentId = e.target.value
+                                                                if (!parentId) {
+                                                                    updateCategoryCondition(cat.id, undefined)
+                                                                } else {
+                                                                    updateCategoryCondition(cat.id, { parentId, showIfIndices: [] })
+                                                                }
+                                                            }}
+                                                            className="bg-transparent border-none text-white text-[10px] font-black uppercase tracking-tight focus:ring-0 cursor-pointer"
+                                                        >
+                                                            <option value="" className="bg-zinc-900">Altijd tonen</option>
+                                                            {formData.options.slice(0, catIdx).map(fixedParent => (
+                                                                <option key={fixedParent.id} value={fixedParent.id} className="bg-zinc-900">
+                                                                    {fixedParent.name}...
+                                                                </option>
+                                                            ))}
+                                                        </select>
+
+                                                        {cat.condition?.parentId && (
+                                                            <div className="flex flex-wrap gap-2 items-center border-l border-white/10 pl-4">
+                                                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest italic">...is gelijk aan:</span>
+                                                                {formData.options.find(p => p.id === cat.condition?.parentId)?.options.map((opt, optIdx) => (
+                                                                    <button
+                                                                        key={optIdx}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const current = cat.condition?.showIfIndices || []
+                                                                            const next = current.includes(optIdx)
+                                                                                ? current.filter(i => i !== optIdx)
+                                                                                : [...current, optIdx]
+                                                                            updateCategoryCondition(cat.id, { ...cat.condition!, showIfIndices: next })
+                                                                        }}
+                                                                        className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${cat.condition?.showIfIndices.includes(optIdx)
+                                                                            ? 'bg-[#0df2a2] text-[#0A0A0A]'
+                                                                            : 'bg-zinc-800 text-zinc-500 hover:text-white'
+                                                                            }`}
+                                                                    >
+                                                                        {opt.label}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         type="button"
@@ -540,7 +821,15 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
 
                                             <div className="space-y-3">
                                                 {cat.options.map((opt: ProductOption, idx: number) => (
-                                                    <div key={idx} className="flex flex-col md:flex-row gap-4 items-center bg-zinc-900/50 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all group/opt">
+                                                    <div key={idx} className="flex flex-col md:flex-row gap-4 items-start bg-zinc-900/50 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-all group/opt">
+                                                        {/* Option Image */}
+                                                        <div className="size-24 flex-shrink-0">
+                                                            <ImageUpload
+                                                                compact
+                                                                defaultValue={opt.image}
+                                                                onUpload={(url) => updateOption(cat.id, idx, 'image', url)}
+                                                            />
+                                                        </div>
                                                         <div className="flex-1 w-full space-y-4">
                                                             <div className="flex flex-col md:flex-row gap-4">
                                                                 <div className="flex-1 space-y-1">
@@ -614,13 +903,22 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-end h-full pt-4">
+                                                        <div className="flex flex-col gap-2 pt-4">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeOptionFromCategory(cat.id, idx)}
                                                                 className="p-2 text-zinc-700 hover:text-red-400 opacity-0 group-hover/opt:opacity-100 transition-all"
+                                                                title="Verwijder optie"
                                                             >
                                                                 <X className="w-5 h-5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateOption(cat.id, idx, 'isDefault', !opt.isDefault)}
+                                                                className={`p-2 rounded-lg transition-all ${opt.isDefault ? 'text-[#0df2a2] bg-[#0df2a2]/10' : 'text-zinc-700 hover:text-zinc-400'}`}
+                                                                title={opt.isDefault ? 'Standaard gekozen' : 'Maak standaard'}
+                                                            >
+                                                                <CheckCircle2 className={`w-5 h-5 ${opt.isDefault ? 'fill-[#0df2a2]/20' : ''}`} />
                                                             </button>
                                                         </div>
                                                     </div>

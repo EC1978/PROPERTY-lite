@@ -20,6 +20,7 @@ export default function ShopCategoryPage() {
             const { data, error } = await supabase
                 .from('shop_products')
                 .select('*')
+                .eq('is_archived', false)
                 .order('name');
 
             if (data) {
