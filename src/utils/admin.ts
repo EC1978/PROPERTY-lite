@@ -13,30 +13,44 @@ export async function isAdmin() {
             return false
         }
 
-        const rawAdminEmails = process.env.ADMIN_EMAILS
+        const userEmail = user.email.toLowerCase()
 
-        if (!rawAdminEmails) {
-            console.error('[ADMIN_CHECK] CRITICAL: process.env.ADMIN_EMAILS is undefined or empty in this environment.')
+        // 1. Check environment variable first
+        const rawAdminEmails = process.env.ADMIN_EMAILS
+        if (rawAdminEmails) {
+            const adminEmails = rawAdminEmails
+                .replace(/^["']|["']$/g, '') // Remove start/end quotes
+                .split(',')
+                .map(email => email.trim().toLowerCase())
+                .filter(email => email.length > 0)
+
+            if (adminEmails.includes(userEmail)) {
+                console.log(`[ADMIN_CHECK] Authorized via ENV: ${userEmail}`)
+                return true
+            }
+        }
+
+        // 2. Check database role as fallback
+        const { data: userData, error: roleError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (roleError) {
+            console.warn(`[ADMIN_CHECK] Role check failed for ${userEmail}:`, roleError)
             return false
         }
 
-        // Robust parsing: remove outer quotes, trim, split by comma, and lowercase everything
-        const adminEmails = rawAdminEmails
-            .replace(/^["']|["']$/g, '') // Remove start/end quotes
-            .split(',')
-            .map(email => email.trim().toLowerCase())
-            .filter(email => email.length > 0)
+        const isSuperadmin = userData?.role === 'superadmin'
 
-        const userEmail = user.email.toLowerCase()
-        const isUserAdmin = adminEmails.includes(userEmail)
-
-        if (!isUserAdmin) {
-            console.warn(`[ADMIN_CHECK] Denied: ${userEmail} is not in:`, adminEmails)
+        if (isSuperadmin) {
+            console.log(`[ADMIN_CHECK] Authorized via DB Role: ${userEmail}`)
         } else {
-            console.log(`[ADMIN_CHECK] Authorized: ${userEmail}`)
+            console.warn(`[ADMIN_CHECK] Denied: ${userEmail} is not an admin via ENV or DB.`)
         }
 
-        return isUserAdmin
+        return isSuperadmin
     } catch (e) {
         console.error('[ADMIN_CHECK] Fatal exception:', e)
         return false

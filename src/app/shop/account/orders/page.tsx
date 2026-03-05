@@ -86,15 +86,33 @@ export default function OrderListPage() {
             case 'afgerond':
             case 'completed':
             case 'paid':
+            case 'delivered':
                 return 'text-[#0df2a2]'
             case 'pending':
             case 'openstaand':
+            case 'awaiting_payment':
+            case 'processing':
+            case 'production':
                 return 'text-yellow-500'
             case 'cancelled':
                 return 'text-red-500'
             default:
                 return 'text-gray-400'
         }
+    }
+
+    const getStatusLabel = (status: string) => {
+        const labels: Record<string, string> = {
+            'pending': 'In afwachting',
+            'awaiting_payment': 'Wacht op betaling',
+            'processing': 'In behandeling',
+            'production': 'In productie',
+            'shipped': 'Verzonden',
+            'delivered': 'Geleverd',
+            'cancelled': 'Geannuleerd',
+            'paid': 'Afgerond'
+        }
+        return labels[status.toLowerCase()] || status
     }
 
     const filteredOrders = orders.filter(order => {
@@ -257,7 +275,7 @@ export default function OrderListPage() {
                                                 {isCompleted ? 'check_circle' : 'pending'}
                                             </span>
                                             <span className={`text-xs font-black uppercase tracking-widest hidden md:inline-block ${getStatusColor(status)}`}>
-                                                {order.status || 'Afgerond'}
+                                                {getStatusLabel(order.status || 'Afgerond')}
                                             </span>
                                         </div>
                                         <span className="material-symbols-outlined text-gray-700 group-hover:text-[#0df2a2] group-hover:translate-x-1 transition-all">chevron_right</span>

@@ -45,14 +45,6 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
                 { name: 'Integraties', href: '/settings/integrations', icon: 'extension' },
             ],
         },
-        {
-            label: 'Superadmin',
-            adminOnly: true,
-            items: [
-                { name: 'Systeemonderhoud', href: '/settings/system', icon: 'build_circle' },
-                { name: 'Audit Logboek', href: '/settings/audit', icon: 'history' },
-            ],
-        },
     ]
 
     const visibleGroups = groups.filter(g => !g.adminOnly || isSuperadmin)

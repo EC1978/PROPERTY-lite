@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe } from 'lucide-react'
+import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe, Wrench, History, AlertCircle } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const defaultNavItems = [
@@ -8,7 +8,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Makelaars', path: '/admin/users', icon: Users },
         { label: 'Pakket Builder', path: '/admin/packages', icon: CreditCard },
         { label: 'Bestellingen', path: '/admin/orders', icon: ShoppingCart },
+        { label: 'Reclamaties', path: '/admin/complaints', icon: AlertCircle },
         { label: 'Producten', path: '/admin/products', icon: Package },
+        { label: 'Systeemonderhoud', path: '/admin/system', icon: Wrench },
+        { label: 'Audit Logboek', path: '/admin/audit', icon: History },
         { label: 'Instellingen', path: '/admin/settings', icon: Settings },
     ]
 

@@ -1,4 +1,4 @@
-import { getSystemSettings } from '@/app/settings/system/actions'
+import { getSystemSettings } from '@/app/admin/system/actions'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'

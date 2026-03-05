@@ -69,6 +69,11 @@ export default function ImageUpload({ defaultValue, onUpload, onUploading, compa
         return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || url.includes('video')
     }
 
+    const isPDF = (url: string | null) => {
+        if (!url) return false
+        return url.toLowerCase().endsWith('.pdf') || url.includes('pdf') || url.includes('.ai') || url.includes('.eps')
+    }
+
     return (
         <div className="w-full">
             <div
@@ -92,6 +97,11 @@ export default function ImageUpload({ defaultValue, onUpload, onUploading, compa
                                 loop
                                 playsInline
                             />
+                        ) : isPDF(previewUrl) ? (
+                            <div className="absolute inset-0 w-full h-full bg-[#1A1A1A] flex flex-col items-center justify-center gap-4">
+                                <span className="material-symbols-outlined text-6xl text-red-500">description</span>
+                                <p className="text-white font-bold text-xs uppercase tracking-widest italic">Document (PDF/Print)</p>
+                            </div>
                         ) : (
                             <img
                                 src={previewUrl}
@@ -104,7 +114,7 @@ export default function ImageUpload({ defaultValue, onUpload, onUploading, compa
                                 Wijzigen
                                 <input
                                     type="file"
-                                    accept="image/*,video/*"
+                                    accept="image/*,video/*,application/pdf,.ai,.eps,.svg"
                                     className="hidden"
                                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
                                 />
@@ -142,7 +152,7 @@ export default function ImageUpload({ defaultValue, onUpload, onUploading, compa
                                                 <span className="material-symbols-outlined text-white text-xl">edit</span>
                                                 <input
                                                     type="file"
-                                                    accept="image/*,video/*"
+                                                    accept="image/*,video/*,application/pdf,.ai,.eps,.svg"
                                                     className="hidden"
                                                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
                                                 />

@@ -104,20 +104,102 @@ export async function getAdminOrders() {
     if (!await verifyAdmin()) return { error: 'Geen toegang' }
 
     const supabaseAdmin = await createAdminClient()
-    const { data, error } = await supabaseAdmin
+
+    // Fetch orders first without the failing join
+    const { data: orders, error: ordersError } = await supabaseAdmin
         .from('shop_orders')
         .select(`
             *,
-            users (email, full_name),
             shop_order_items (
                 *,
-                shop_products (name)
-            )
+                shop_products (name, images)
+            ),
+            shop_complaints (*)
         `)
         .order('created_at', { ascending: false })
 
-    if (error) return { error: error.message }
-    return { success: true, data }
+    if (ordersError) return { error: ordersError.message }
+    if (!orders) return { success: true, data: [] }
+
+    // Fetch all users to map them manually
+    const { data: users, error: usersError } = await supabaseAdmin
+        .from('users')
+        .select('id, email, full_name')
+
+    if (usersError) {
+        console.error('Error fetching users for orders:', usersError)
+    }
+
+    // Join manually
+    const joinedData = orders.map(order => ({
+        ...order,
+        users: users?.find(u => u.id === order.user_id) || { email: 'Onbekend', full_name: 'Verwijderde Gebruiker' }
+    }))
+
+    return { success: true, data: joinedData }
+}
+
+export async function updateOrderTracking(orderId: string, trackingNumber: string) {
+    const isAdmin = await verifyAdmin()
+    if (!isAdmin) throw new Error('Unauthorized')
+
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({ tracking_number: trackingNumber })
+        .eq('id', orderId)
+
+    if (error) throw error
+    revalidatePath('/admin/orders')
+    return { success: true }
+}
+
+export async function updateOrderDesignStatus(orderId: string, status: string, remarks?: string) {
+    const isAdmin = await verifyAdmin()
+    if (!isAdmin) throw new Error('Unauthorized')
+
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({
+            design_status: status,
+            design_remarks: remarks || null
+        })
+        .eq('id', orderId)
+
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/admin/orders')
+    return { success: true }
+}
+
+export async function updateOrderDesignUrl(orderId: string, url: string | null) {
+    const isAdmin = await verifyAdmin()
+    if (!isAdmin) return { success: false, error: 'Unauthorized' }
+
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({ design_url: url })
+        .eq('id', orderId)
+
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/admin/orders')
+    return { success: true }
+}
+
+export async function updateOrderDeliveryDate(orderId: string, date: string) {
+    const isAdmin = await verifyAdmin()
+    if (!isAdmin) return { success: false, error: 'Unauthorized' }
+
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({ delivery_date: date })
+        .eq('id', orderId)
+
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/admin/orders')
+    return { success: true }
 }
 
 export async function updateOrderStatus(id: string, status: string) {
@@ -131,6 +213,25 @@ export async function updateOrderStatus(id: string, status: string) {
 
     if (error) return { error: error.message }
 
+    revalidatePath('/admin/orders')
+    return { success: true }
+}
+
+export async function updateOrderDesign(orderId: string, url: string) {
+    // This action can be called by brokers to update their own design
+    // We use admin client to bypass potential RLS issues with specific columns
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({
+            design_url: url,
+            design_status: 'pending',
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+
+    if (error) return { success: false, error: error.message }
+    revalidatePath(`/shop/account/orders/${orderId}`)
     revalidatePath('/admin/orders')
     return { success: true }
 }

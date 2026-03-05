@@ -100,9 +100,14 @@ export default function ClaimsPage() {
                                     <div className="flex items-center gap-6 self-end md:self-center">
                                         <div className="text-right">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 block mb-1">Status</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="size-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                                                <span className="text-xs font-black text-yellow-500 uppercase tracking-widest">{claim.status || 'In behandeling'}</span>
+                                            <div className={`flex items-center gap-2 ${claim.status === 'Opgelost' ? 'text-[#0df2a2]' :
+                                                    claim.status === 'Afgewezen' ? 'text-red-500' :
+                                                        'text-yellow-500'
+                                                }`}>
+                                                {claim.status !== 'Opgelost' && claim.status !== 'Afgewezen' && (
+                                                    <span className="size-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                                                )}
+                                                <span className="text-xs font-black uppercase tracking-widest">{claim.status || 'In behandeling'}</span>
                                             </div>
                                         </div>
                                         <Link href={`/shop/account/orders/${claim.order_id}`} className="size-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-500 hover:text-white transition-colors group-hover:border-[#0df2a2]/30 border border-transparent">
@@ -147,6 +152,19 @@ export default function ClaimsPage() {
                                             </div>
                                         </div>
                                     </div>
+                                    {claim.admin_response && (
+                                        <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-sm text-[#0df2a2]">admin_panel_settings</span>
+                                                Reactie Beheerder
+                                            </h4>
+                                            <div className="bg-[#111] border border-white/10 rounded-2xl p-5">
+                                                <p className="text-gray-300 text-sm leading-relaxed italic">
+                                                    "{claim.admin_response}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
