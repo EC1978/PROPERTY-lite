@@ -19,6 +19,12 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
     const audioQueueRef = useRef<Float32Array[]>([]);
     const isPlayingRef = useRef(false);
     const nextStartTimeRef = useRef(0);
+    const leadIdRef = useRef<string | null>(null);
+    const ownerIdRef = useRef<string | null>(null);
+    const rawTextRef = useRef<string[]>([]);
+    const isToolExecutingRef = useRef<boolean>(false);
+    const isStoppingRef = useRef<boolean>(false); // Prevent double-stop race condition
+    const userTranscriptRef = useRef<string[]>([]); // Track what user said (from audio input events)
 
     const fetchSessionDetails = async () => {
         const response = await fetch("/api/voice/session", {
@@ -31,14 +37,65 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             console.warn("Backend session error, using partial data");
         }
 
-        // Always try to parse JSON, even if error (for system prompt)
         return await response.json().catch(() => ({ systemPrompt: "You are a helpful assistant." }));
     };
 
-    const stopSession = useCallback(() => {
+    const stopSession = useCallback(async () => {
+        // CRITICAL: Prevent double-execution from ws.onclose calling stopSession again
+        if (isStoppingRef.current) {
+            console.log("⏸️ stopSession already in progress, skipping duplicate call");
+            return;
+        }
+        isStoppingRef.current = true;
         console.log("🛑 Stopping Gemini Session");
+
+        // Snapshot refs BEFORE any async work (they might get cleared by re-renders)
+        const leadId = leadIdRef.current;
+        const rawTexts = [...rawTextRef.current];
+
+        // POST-SESSION EXTRACTION
+        if (leadId && rawTexts.length > 0) {
+            const allRawText = rawTexts.join('\n');
+            console.log("🧠 Raw text collected for extraction. Size:", allRawText.length, "chunks:", rawTexts.length);
+            console.log("🧠 First 500 chars:", allRawText.substring(0, 500));
+
+            try {
+                const extractRes = await fetch('/api/voice/extract-lead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rawText: allRawText, propertyId })
+                });
+                const extracted = await extractRes.json();
+                console.log("✅ Extracted lead data:", JSON.stringify(extracted));
+
+                if (!extracted.error) {
+                    const updateRes = await fetch('/api/voice/capture-lead', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            leadId: leadId,
+                            name: extracted.name || undefined,
+                            phone: extracted.phone || undefined,
+                            email: extracted.email || undefined,
+                            reason: extracted.reason || undefined,
+                            budget: extracted.budget || undefined,
+                            transcript: extracted.transcript || undefined,
+                            score: extracted.score || undefined
+                        })
+                    });
+                    const updateResult = await updateRes.json();
+                    console.log("✅ Lead PATCH result:", JSON.stringify(updateResult));
+                }
+            } catch (err) {
+                console.error("❌ Post-session extraction failed:", err);
+            }
+        } else {
+            console.warn("⚠️ No extraction possible. leadId:", leadId, "rawText chunks:", rawTexts.length);
+        }
+
+        // Close WebSocket
         if (wsRef.current) {
-            wsRef.current.close();
+            try { wsRef.current.close(); } catch (e) { /* ignore */ }
             wsRef.current = null;
         }
 
@@ -56,7 +113,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             sourceRef.current = null;
         }
         if (audioContextRef.current) {
-            audioContextRef.current.close();
+            try { audioContextRef.current.close(); } catch (e) { /* ignore */ }
             audioContextRef.current = null;
         }
 
@@ -66,7 +123,11 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
         audioQueueRef.current = [];
         isPlayingRef.current = false;
         nextStartTimeRef.current = 0;
-    }, []);
+        rawTextRef.current = [];
+        userTranscriptRef.current = [];
+        leadIdRef.current = null;
+        isStoppingRef.current = false; // Ready for next session
+    }, [propertyId]);
 
     const playNextChunk = () => {
         if (audioQueueRef.current.length === 0 || !audioContextRef.current) {
@@ -79,7 +140,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
         setIsSpeaking(true);
 
         const float32Data = audioQueueRef.current.shift()!;
-        const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000); // Gemini sends 24kHz
+        const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000);
         buffer.copyToChannel(new Float32Array(float32Data.buffer as ArrayBuffer), 0);
 
         const source = audioContextRef.current.createBufferSource();
@@ -87,7 +148,6 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
         source.connect(audioContextRef.current.destination);
 
         const currentTime = audioContextRef.current.currentTime;
-        // Schedule slightly in future to prevent gaps, or immediately if fell behind
         const startTime = Math.max(currentTime, nextStartTimeRef.current);
 
         source.start(startTime);
@@ -101,7 +161,6 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
     const handleAudioData = (base64Audio: string) => {
         if (!audioContextRef.current) return;
 
-        // Base64 to ArrayBuffer
         const binaryString = window.atob(base64Audio);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -109,7 +168,6 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             bytes[i] = binaryString.charCodeAt(i);
         }
 
-        // PCM16 to Float32
         const int16Data = new Int16Array(bytes.buffer);
         const float32Data = new Float32Array(int16Data.length);
         for (let i = 0; i < int16Data.length; i++) {
@@ -124,28 +182,25 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
     const startSession = useCallback(async () => {
         console.log("🚀 Starting Gemini Session...");
+        isStoppingRef.current = false; // Reset stop guard for new session
         try {
             setError(null);
 
-            // 1. Get System Prompt from Backend
             console.log("📥 Fetching System Prompt...");
             const sessionData = await fetchSessionDetails();
             const systemPrompt = sessionData.systemPrompt || "You are a helpful AI assistant.";
+            ownerIdRef.current = sessionData.ownerId;
             console.log("✅ System Prompt Received");
 
-            // 2. Setup Audio Context
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
             const audioCtx = new AudioContextClass({ sampleRate: 16000 });
             audioContextRef.current = audioCtx;
-            console.log("🔊 AudioContext Created:", audioCtx.state);
 
-            // 3. Connect to Gemini
             const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
             if (!API_KEY) throw new Error("Google API Key missing in environment");
 
-            // CHANGED: Use v1beta AND gemini-2.5-flash-native-audio-latest
             const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
-            console.log("🔗 Connecting to Gemini WebSocket (v1beta)...");
+            console.log("🔗 Connecting to Gemini WebSocket...");
             const ws = new WebSocket(url);
             wsRef.current = ws;
 
@@ -155,28 +210,59 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                 setIsListening(true);
 
                 if (audioCtx.state === 'suspended') {
-                    console.log("🔊 Resuming Audio Context");
                     await audioCtx.resume();
                 }
 
-                // Send Setup Message
+                // AUTO-CREATE LEAD on session start
+                if (!leadIdRef.current) {
+                    console.log("📝 Auto-creating lead...");
+                    try {
+                        const res = await fetch('/api/voice/capture-lead', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: 'Voice AI Bezoeker',
+                                wensen: 'Gesprek via Voice AI gestart',
+                                budget: 'Onbekend',
+                                propertyId,
+                                userId: ownerIdRef.current || '',
+                                address: 'Bezoeker van woningpagina'
+                            })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            leadIdRef.current = result.leadId;
+                            console.log("✅ Lead created with ID:", result.leadId);
+                        } else {
+                            console.error("❌ Lead creation failed:", result.error);
+                        }
+                    } catch (err) {
+                        console.error("❌ Lead creation fetch failed:", err);
+                    }
+                }
+
+                // Setup: AUDIO-only + enable transcription for both input and output
+                // Transcription events give us text of what was said without affecting audio generation
                 const setupMsg = {
                     setup: {
                         model: "models/gemini-2.5-flash-native-audio-latest",
                         generationConfig: {
                             responseModalities: ["AUDIO"]
-                        }
+                        },
+                        inputAudioTranscription: {},
+                        outputAudioTranscription: {},
+                        tools: []
                     }
                 };
-                console.log("📤 Sending Setup:", setupMsg);
+                console.log("📤 Sending Setup (AUDIO + transcription enabled)");
                 ws.send(JSON.stringify(setupMsg));
 
-                // Send Initial Prompt
+                // Send the system prompt
                 const initMsg = {
                     clientContent: {
                         turns: [{
                             role: "user",
-                            parts: [{ text: systemPrompt + " Introduce yourself briefly." }]
+                            parts: [{ text: "Je bent zojuist geactiveerd. Lees de volgende SYSTEEM REGELS strikt en volg ze altijd op. Hierna zal de bezoeker spreken.\n\n" + systemPrompt }]
                         }],
                         turnComplete: true
                     }
@@ -186,13 +272,12 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
                 // Setup Microphone
                 try {
-                    console.log("🎤 Requesting Microphone Access...");
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Microfoon niet beschikbaar. Gebruik localhost of HTTPS.');
+                    }
+
                     const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            sampleRate: 16000,
-                            channelCount: 1,
-                            echoCancellation: true
-                        }
+                        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true }
                     });
                     mediaStreamRef.current = stream;
                     console.log("🎤 Microphone Active");
@@ -205,7 +290,6 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
                     processor.onaudioprocess = (e) => {
                         const inputData = e.inputBuffer.getChannelData(0);
-
                         const pcm16 = new Int16Array(inputData.length);
                         for (let i = 0; i < inputData.length; i++) {
                             let s = Math.max(-1, Math.min(1, inputData[i]));
@@ -219,13 +303,10 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                         }
                         const b64 = window.btoa(binary);
 
-                        if (ws.readyState === WebSocket.OPEN) {
+                        if (ws.readyState === WebSocket.OPEN && !isToolExecutingRef.current) {
                             ws.send(JSON.stringify({
                                 realtimeInput: {
-                                    mediaChunks: [{
-                                        mimeType: "audio/pcm",
-                                        data: b64
-                                    }]
+                                    mediaChunks: [{ mimeType: "audio/pcm", data: b64 }]
                                 }
                             }));
                         }
@@ -248,24 +329,102 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                     data = JSON.parse(event.data);
                 }
 
+                // Intercept tool calls
+                if (data.toolCall) {
+                    isToolExecutingRef.current = true;
+                    console.log("🛠️ Tool call intercepted");
+                    try {
+                        ws.send(JSON.stringify({
+                            toolResponse: {
+                                functionResponses: data.toolCall.functionCalls.map((fc: any) => ({
+                                    id: fc.id,
+                                    name: fc.name,
+                                    response: { success: true }
+                                }))
+                            }
+                        }));
+                    } catch (e) { /* ignore */ }
+                    setTimeout(() => isToolExecutingRef.current = false, 500);
+                    return;
+                }
+
                 if (data.serverContent) {
                     if (data.serverContent.modelTurn) {
                         const parts = data.serverContent.modelTurn.parts;
                         for (const part of parts) {
                             if (part.inlineData && part.inlineData.mimeType.startsWith('audio')) {
-                                console.log("🌊 Audio Chunk Received");
                                 handleAudioData(part.inlineData.data);
+                            }
+                            if (part.functionCall) {
+                                isToolExecutingRef.current = true;
+                                try {
+                                    ws.send(JSON.stringify({
+                                        toolResponse: {
+                                            functionResponses: [{
+                                                id: part.functionCall.id || part.functionCall.name,
+                                                name: part.functionCall.name,
+                                                response: { success: true }
+                                            }]
+                                        }
+                                    }));
+                                } catch (e) { /* ignore */ }
+                                setTimeout(() => isToolExecutingRef.current = false, 500);
+                            }
+                            // COLLECT ALL TEXT — this is the model's text output
+                            if (part.text) {
+                                const txt = part.text.trim();
+                                if (txt.length > 0) {
+                                    console.log("📝 Text received:", txt.substring(0, 200));
+                                    rawTextRef.current.push(txt);
+                                }
                             }
                         }
                     }
                     if (data.serverContent.turnComplete) {
-                        console.log("✅ Turn Complete");
+                        console.log("✅ Turn Complete. Raw text chunks so far:", rawTextRef.current.length);
                     }
+                    // Capture user's speech transcription
+                    if (data.serverContent.inputTranscription) {
+                        const userText = data.serverContent.inputTranscription.text;
+                        if (userText) {
+                            console.log("👤 User said:", userText);
+                            rawTextRef.current.push(`[BEZOEKER ZEGT]: ${userText}`);
+                        }
+                    }
+                    if (data.serverContent.outputTranscription) {
+                        const aiText = data.serverContent.outputTranscription.text;
+                        if (aiText) {
+                            console.log("🤖 AI said:", aiText);
+                            rawTextRef.current.push(`[AI ZEGT]: ${aiText}`);
+                        }
+                    }
+                }
+
+                // Also handle transcription events at top level (some API versions send it here)
+                if (data.inputTranscription) {
+                    const userText = data.inputTranscription.text;
+                    if (userText) {
+                        console.log("👤 [TOP] User said:", userText);
+                        rawTextRef.current.push(`[BEZOEKER ZEGT]: ${userText}`);
+                    }
+                }
+                if (data.outputTranscription) {
+                    const aiText = data.outputTranscription.text;
+                    if (aiText) {
+                        console.log("🤖 [TOP] AI said:", aiText);
+                        rawTextRef.current.push(`[AI ZEGT]: ${aiText}`);
+                    }
+                }
+
+                // Debug: log all top-level keys in every message
+                const keys = Object.keys(data);
+                if (!keys.includes('serverContent') || keys.length > 1) {
+                    console.log("📦 Message keys:", keys.join(', '));
                 }
             };
 
             ws.onerror = (e) => {
-                console.error("❌ Gemini Socket Error Details:", e);
+                console.error("❌ Gemini Socket Error:", e);
                 setError("Verbinding verbroken (Check Console)");
             };
 
@@ -274,12 +433,14 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                 if (e.code !== 1000) {
                     setError(`Verbinding gesloten (${e.code}): ${e.reason || 'Check API Key/Model'}`);
                 }
+                // stopSession handles the race condition guard internally
                 stopSession();
             };
 
         } catch (err: any) {
             console.error("Start Session Error:", err);
             setError(err.message || "Kon geen verbinding maken");
+            isStoppingRef.current = false;
             stopSession();
         }
     }, [propertyId, stopSession]);

@@ -14,10 +14,11 @@ export default async function NewPropertyPage() {
         redirect('/login')
     }
 
-    const { allowed } = await checkPropertyLimit(supabase, user.id)
+    const { allowed, limit, plan } = await checkPropertyLimit(supabase, user.id)
+    const planName = plan as string || 'Essential'
 
     if (!allowed) {
-        return <UpgradeModal />
+        return <UpgradeModal planName={planName} limit={limit} />
     }
 
     return <UploadWizard />

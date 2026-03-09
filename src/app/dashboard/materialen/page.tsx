@@ -8,6 +8,7 @@ import MaterialCard from '@/components/materials/MaterialCard'
 import LinkPropertyModal from '@/components/materials/LinkPropertyModal'
 import AddMaterialModal from '@/components/materials/AddMaterialModal'
 import ScansPerPropertyModal from '@/components/materials/ScansPerPropertyModal'
+import QRModal from '@/components/materials/QRModal'
 import { createClient } from '@/utils/supabase/client'
 import { getMaterials, getActiveProperties, linkMaterialToProperty, createMaterial, deleteMaterial, updateMaterialImage, updateMaterialName } from './actions'
 
@@ -31,6 +32,7 @@ export default function MaterialsPage() {
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [isScanModalOpen, setIsScanModalOpen] = useState(false)
+    const [isQRModalOpen, setIsQRModalOpen] = useState(false)
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [filter, setFilter] = useState<'all' | 'linked' | 'storage'>('all')
@@ -134,6 +136,11 @@ export default function MaterialsPage() {
         }
     }
 
+    const handleShowQR = (material: Material) => {
+        setSelectedMaterial(material)
+        setIsQRModalOpen(true)
+    }
+
     return (
         <div className="flex min-h-screen bg-[#F8F9FB] dark:bg-[#050505] text-slate-800 dark:text-slate-100 font-sans overflow-x-hidden">
             <Sidebar userEmail={userEmail} />
@@ -213,6 +220,7 @@ export default function MaterialsPage() {
                                     material={material}
                                     onLink={handleLinkClick}
                                     onShowScans={handleShowScans}
+                                    onShowQR={handleShowQR}
                                 />
                             ))}
                         </div>
@@ -282,6 +290,14 @@ export default function MaterialsPage() {
                     onClose={() => setIsScanModalOpen(false)}
                     materialId={selectedMaterial.id}
                     materialName={selectedMaterial.name}
+                />
+            )}
+
+            {isQRModalOpen && selectedMaterial && (
+                <QRModal
+                    isOpen={isQRModalOpen}
+                    onClose={() => setIsQRModalOpen(false)}
+                    material={selectedMaterial}
                 />
             )}
         </div>

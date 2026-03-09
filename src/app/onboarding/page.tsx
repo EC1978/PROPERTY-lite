@@ -1,5 +1,4 @@
-
-import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 export default function OnboardingPage() {
     return (
@@ -17,10 +16,7 @@ export default function OnboardingPage() {
             <div className="flex-1 flex flex-col relative z-10">
                 {/* Header / Logo */}
                 <div className="w-full px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2 text-primary">
-                        <span className="material-symbols-outlined text-3xl">graphic_eq</span>
-                        <span className="text-white font-semibold tracking-tight text-sm uppercase opacity-90">VoiceRealty AI</span>
-                    </div>
+                    <Logo />
                     <button className="text-white/40 text-sm font-medium hover:text-white transition-colors">Skip</button>
                 </div>
                 {/* Visual Anchor: Abstract 3D Form */}

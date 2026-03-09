@@ -20,6 +20,7 @@ export interface CartItem {
     speed?: string;
     customImages?: string[];
     notes?: string;
+    shippingCost: number;
 }
 
 interface CartContextType {
@@ -51,8 +52,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return sum + ((item.basePrice + itemOptionsTotal) * item.quantity);
     }, 0);
 
-    // Static shipping for now, could be dynamic later
-    const shipping = 0;
+    // Shipping is the highest shipping cost among items (common logic) 
+    // or you could sum it, but usually for one order it's one shipment.
+    // User said "gratis verzending of een x bedrag voor verzending", 
+    // usually meaning if any item has shipping cost, it applies.
+    const shipping = items.reduce((max, item) => Math.max(max, item.shippingCost || 0), 0);
     const total = subtotal + shipping;
 
     // Load from local storage on mount

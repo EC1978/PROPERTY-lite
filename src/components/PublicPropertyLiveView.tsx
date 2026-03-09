@@ -8,9 +8,10 @@ import { QRCodeSVG } from 'qrcode.react'
 interface PublicPropertyLiveViewProps {
     property: Record<string, any>
     isAdmin?: boolean
+    reviews?: any[]
 }
 
-export default function PublicPropertyLiveView({ property, isAdmin = false }: PublicPropertyLiveViewProps) {
+export default function PublicPropertyLiveView({ property, isAdmin = false, reviews = [] }: PublicPropertyLiveViewProps) {
     const { startSession, stopSession, isConnected, isListening, isSpeaking, error } = useVoiceAgent({ propertyId: property.id })
 
     const allImages: string[] = property.images?.length
@@ -176,17 +177,23 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
 
                         {/* Title + price */}
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white">
+                            <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-gray-500 mb-3 block italic opacity-70">
                                 {features.type || 'Woning'}
+                            </span>
+                            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black leading-[1.1] tracking-tighter text-[#0df2a2] uppercase italic drop-shadow-[0_0_20px_rgba(13,242,162,0.15)] break-words overflow-hidden">
+                                {streetName || 'Woning'}
                             </h1>
-                            <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-[#0df2a2] mt-1">
-                                {streetName}
-                            </h2>
-                            <p className="text-gray-400 text-sm mt-2 italic">{property.address}{property.city ? `, ${property.city}` : ''}</p>
+                            <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-3 font-bold uppercase tracking-widest">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[16px]">location_on</span>
+                                {property.address}{property.city ? `, ${property.city}` : ''}
+                            </div>
+
                             {property.price > 0 && (
-                                <p className="text-3xl font-bold text-[#0df2a2] mt-4">
-                                    € {property.price?.toLocaleString()} <span className="text-gray-400 text-base font-normal">k.k.</span>
-                                </p>
+                                <div className="mt-8 flex items-baseline gap-3">
+                                    <span className="text-4xl md:text-5xl font-black text-[#0df2a2] tracking-tighter">
+                                        € {property.price?.toLocaleString()}
+                                    </span>
+                                </div>
                             )}
                         </div>
 
@@ -204,9 +211,11 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                         {statCards.length > 3 && (
                             <div className="grid grid-cols-3 gap-3 -mt-3">
                                 {statCards.slice(3, 6).map((stat, i) => (
-                                    <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col gap-1">
-                                        <span className="text-[10px] uppercase text-gray-600 font-semibold tracking-widest leading-tight">{stat.label}</span>
-                                        <span className="text-base font-bold text-white mt-0.5">{stat.value}</span>
+                                    <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col gap-1 min-h-[80px] justify-center overflow-hidden">
+                                        <span className="text-[9px] uppercase text-gray-600 font-bold tracking-widest leading-none mb-1">{stat.label}</span>
+                                        <span className={`font-black text-white leading-tight break-words ${stat.value.toString().length > 10 ? 'text-[13px]' : 'text-base'}`}>
+                                            {stat.value}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -314,28 +323,92 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                         </div>
                     </div>
 
-                    {/* Bezichtiging CTA */}
-                    <div className="bg-gradient-to-br from-[#0df2a2]/10 to-transparent border border-[#0df2a2]/20 rounded-3xl p-8 text-center">
-                        <h3 className="text-xl font-bold text-white mb-2">Interesse in deze woning?</h3>
-                        <p className="text-gray-400 text-sm mb-6">Plan een bezichtiging of stel direct een vraag aan onze AI Makelaar.</p>
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <button
-                                onClick={isVoiceActive ? stopSession : startSession}
-                                className="flex items-center justify-center gap-2 bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold px-8 py-3.5 rounded-2xl transition-all shadow-[0_0_30px_rgba(13,242,162,0.2)]"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">mic</span>
-                                {isVoiceActive ? 'Gesprek Beëindigen' : 'Stel een Vraag via AI'}
-                            </button>
-                            {isAdmin && (
-                                <Link
-                                    href={`/properties/${property.id}`}
-                                    className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold px-8 py-3.5 rounded-2xl transition-all"
-                                >
-                                    <span className="material-symbols-outlined text-[20px] text-[#0df2a2]">edit</span>
-                                    Woning Bewerken
-                                </Link>
-                            )}
+                </div>
+
+                {/* Reviews Section */}
+                <div className="mt-20"> {/* Increased top margin for better separation from details */}
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="size-8 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center border border-[#0df2a2]/20">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[18px]">star</span>
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight italic">Beoordelingen</h3>
                         </div>
+                        {reviews.length > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-full">
+                                <span className="text-[#0df2a2] font-black text-sm">
+                                    {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)}
+                                </span>
+                                <div className="flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <span key={star} className={`material-symbols-outlined text-[14px] ${star <= (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length) ? 'text-[#0df2a2] fill-current' : 'text-zinc-700'}`}>star</span>
+                                    ))}
+                                </div>
+                                <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider ml-1">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {reviews.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {reviews.map((review, i) => (
+                                <div key={i} className="bg-[#111] border border-white/5 rounded-3xl p-6 flex flex-col gap-4 hover:border-[#0df2a2]/20 transition-all hover:bg-white/[0.02]">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center">
+                                                <span className="text-zinc-400 font-bold text-sm tracking-tight">{review.reviewer_name?.charAt(0).toUpperCase() || '?'}</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white leading-none">{review.reviewer_name || 'Anonieme Bezoeker'}</p>
+                                                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">
+                                                    {new Date(review.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-0.5">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <span key={star} className={`material-symbols-outlined text-[16px] ${star <= review.rating ? 'text-[#0df2a2] fill-current font-variation-fill-1' : 'text-zinc-800'}`}>star</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-zinc-400 text-sm italic leading-relaxed">
+                                        "{review.feedback_text}"
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-[#111] border border-white/5 rounded-3xl p-12 text-center">
+                            <div className="size-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <span className="material-symbols-outlined text-zinc-600">reviews</span>
+                            </div>
+                            <h4 className="text-zinc-400 font-bold mb-1">Geen beoordelingen gevonden</h4>
+                            <p className="text-zinc-600 text-sm">Er zijn nog geen openbare reviews geplaatst voor deze woning.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Bezichtiging CTA */}
+                <div className="mt-20 bg-gradient-to-br from-[#0df2a2]/10 to-transparent border border-[#0df2a2]/20 rounded-3xl p-10 text-center">
+                    <h3 className="text-xl font-bold text-white mb-2">Interesse in deze woning?</h3>
+                    <p className="text-gray-400 text-sm mb-6">Plan een bezichtiging of stel direct een vraag aan onze AI Makelaar.</p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                            onClick={isVoiceActive ? stopSession : startSession}
+                            className="flex items-center justify-center gap-2 bg-[#0df2a2] hover:bg-emerald-400 text-black font-bold px-8 py-3.5 rounded-2xl transition-all shadow-[0_0_30px_rgba(13,242,162,0.2)]"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">mic</span>
+                            {isVoiceActive ? 'Gesprek Beëindigen' : 'Stel een Vraag via AI'}
+                        </button>
+                        {isAdmin && (
+                            <Link
+                                href={`/properties/${property.id}`}
+                                className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold px-8 py-3.5 rounded-2xl transition-all"
+                            >
+                                <span className="material-symbols-outlined text-[20px] text-[#0df2a2]">edit</span>
+                                Woning Bewerken
+                            </Link>
+                        )}
                     </div>
                 </div>
             </main>
@@ -409,100 +482,105 @@ export default function PublicPropertyLiveView({ property, isAdmin = false }: Pu
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
 
             {/* ── FULLSCREEN LIGHTBOX GALLERY ── */}
-            {showGallery && (
-                <div className="fixed inset-0 z-[100] flex bg-black/95 backdrop-blur-sm">
-                    {/* Left: vertical thumbnail strip */}
-                    <div className="hidden md:flex flex-col gap-2 p-4 overflow-y-auto w-28 bg-black/60 border-r border-white/5 shrink-0">
-                        {allImages.map((img, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setActiveIndex(i)}
-                                className={`rounded-xl overflow-hidden border-2 aspect-[4/3] w-full shrink-0 transition-all ${i === activeIndex ? 'border-[#0df2a2] ring-2 ring-[#0df2a2]/20' : 'border-transparent opacity-40 hover:opacity-80'
-                                    }`}
-                            >
-                                <img src={img} alt="" className="w-full h-full object-cover" />
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Right: main image area */}
-                    <div className="flex-1 flex flex-col">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-                            <span className="text-sm font-bold text-white">{activeIndex + 1} / {allImages.length}</span>
-                            <span className="text-sm text-gray-400 hidden sm:block">{property.address}</span>
-                            <button onClick={() => setShowGallery(false)} className="size-10 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white transition-colors">
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-
-                        {/* Image + arrows */}
-                        <div className="flex-1 relative flex items-center justify-center p-4">
-                            <img
-                                src={allImages[activeIndex]}
-                                alt={`Foto ${activeIndex + 1}`}
-                                className="max-h-full max-w-full object-contain rounded-2xl"
-                            />
-                            {activeIndex > 0 && (
-                                <button
-                                    onClick={() => setActiveIndex(i => i - 1)}
-                                    className="absolute left-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
-                                >
-                                    <span className="material-symbols-outlined">chevron_left</span>
-                                </button>
-                            )}
-                            {activeIndex < allImages.length - 1 && (
-                                <button
-                                    onClick={() => setActiveIndex(i => i + 1)}
-                                    className="absolute right-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
-                                >
-                                    <span className="material-symbols-outlined">chevron_right</span>
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Mobile thumbnails */}
-                        <div className="md:hidden flex gap-2 p-3 overflow-x-auto bg-black/40 border-t border-white/5">
+            {
+                showGallery && (
+                    <div className="fixed inset-0 z-[100] flex bg-black/95 backdrop-blur-sm">
+                        {/* Left: vertical thumbnail strip */}
+                        <div className="hidden md:flex flex-col gap-2 p-4 overflow-y-auto w-28 bg-black/60 border-r border-white/5 shrink-0">
                             {allImages.map((img, i) => (
-                                <button key={i} onClick={() => setActiveIndex(i)} className={`shrink-0 h-12 w-16 rounded-lg overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-[#0df2a2]' : 'border-transparent opacity-50'}`}>
+                                <button
+                                    key={i}
+                                    onClick={() => setActiveIndex(i)}
+                                    className={`rounded-xl overflow-hidden border-2 aspect-[4/3] w-full shrink-0 transition-all ${i === activeIndex ? 'border-[#0df2a2] ring-2 ring-[#0df2a2]/20' : 'border-transparent opacity-40 hover:opacity-80'
+                                        }`}
+                                >
                                     <img src={img} alt="" className="w-full h-full object-cover" />
                                 </button>
                             ))}
                         </div>
+
+                        {/* Right: main image area */}
+                        <div className="flex-1 flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                                <span className="text-sm font-bold text-white">{activeIndex + 1} / {allImages.length}</span>
+                                <span className="text-sm text-gray-400 hidden sm:block">{property.address}</span>
+                                <button onClick={() => setShowGallery(false)} className="size-10 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white transition-colors">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+
+                            {/* Image + arrows */}
+                            <div className="flex-1 relative flex items-center justify-center p-4">
+                                <img
+                                    src={allImages[activeIndex]}
+                                    alt={`Foto ${activeIndex + 1}`}
+                                    className="max-h-full max-w-full object-contain rounded-2xl"
+                                />
+                                {activeIndex > 0 && (
+                                    <button
+                                        onClick={() => setActiveIndex(i => i - 1)}
+                                        className="absolute left-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
+                                    >
+                                        <span className="material-symbols-outlined">chevron_left</span>
+                                    </button>
+                                )}
+                                {activeIndex < allImages.length - 1 && (
+                                    <button
+                                        onClick={() => setActiveIndex(i => i + 1)}
+                                        className="absolute right-6 size-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/10 flex items-center justify-center text-white transition-all"
+                                    >
+                                        <span className="material-symbols-outlined">chevron_right</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Mobile thumbnails */}
+                            <div className="md:hidden flex gap-2 p-3 overflow-x-auto bg-black/40 border-t border-white/5">
+                                {allImages.map((img, i) => (
+                                    <button key={i} onClick={() => setActiveIndex(i)} className={`shrink-0 h-12 w-16 rounded-lg overflow-hidden border-2 transition-all ${i === activeIndex ? 'border-[#0df2a2]' : 'border-transparent opacity-50'}`}>
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
 
             {/* ── MEDIA MODAL ── */}
-            {mediaModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-xl" onClick={() => setMediaModal(null)}>
-                    <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl border border-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                            <div className="flex items-center gap-3">
-                                <h3 className="text-sm font-bold text-white">{mediaModal.title}</h3>
-                                <a href={mediaModal.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#0df2a2] hover:underline flex items-center gap-1">
-                                    OPEN EXTERN <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                                </a>
+            {
+                mediaModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-xl" onClick={() => setMediaModal(null)}>
+                        <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl border border-white/10 overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-sm font-bold text-white">{mediaModal.title}</h3>
+                                    <a href={mediaModal.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#0df2a2] hover:underline flex items-center gap-1">
+                                        OPEN EXTERN <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                    </a>
+                                </div>
+                                <button onClick={() => setMediaModal(null)} className="size-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                                    <span className="material-symbols-outlined text-[20px]">close</span>
+                                </button>
                             </div>
-                            <button onClick={() => setMediaModal(null)} className="size-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-                                <span className="material-symbols-outlined text-[20px]">close</span>
-                            </button>
+                            <iframe
+                                src={isBlockedDomain(mediaModal.url) ? `/api/proxy?url=${encodeURIComponent(mediaModal.url)}` : mediaModal.url}
+                                className="w-full h-full border-none"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                title={mediaModal.title}
+                            />
                         </div>
-                        <iframe
-                            src={isBlockedDomain(mediaModal.url) ? `/api/proxy?url=${encodeURIComponent(mediaModal.url)}` : mediaModal.url}
-                            className="w-full h-full border-none"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title={mediaModal.title}
-                        />
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }

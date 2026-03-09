@@ -96,7 +96,8 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                     basePrice: data.base_price,
                     image: data.images ? data.images[0] : '',
                     images: data.images || [],
-                    options: normalizedOptions
+                    options: normalizedOptions,
+                    shippingCost: data.shipping_cost || 0
                 });
                 if (data.images && data.images.length > 0) {
                     setActiveImage(data.images[0]);
@@ -224,7 +225,8 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                 options: dynamicOptions,
                 customImages: customImages,
                 speed: deliverySpeed,
-                notes: notes
+                notes: notes,
+                shippingCost: productDef.shippingCost
             });
             router.push('/shop/cart');
         } catch (err) {
@@ -367,13 +369,7 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                     {/* Right: Product Intro */}
                     <div className="lg:pt-20 space-y-12">
                         <div className="space-y-6">
-                            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-[#10b77f]/10 text-[#10b77f] text-[9px] font-black uppercase tracking-[0.3em] border border-[#10b77f]/10">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b77f] opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b77f]"></span>
-                                </span>
-                                Handcrafted Selection
-                            </div>
+
                             <h2 className="text-4xl lg:text-7xl font-black text-white tracking-tighter leading-none uppercase italic selection:bg-[#10b77f] selection:text-black break-words max-w-full">
                                 {productDef.name}
                             </h2>
@@ -548,10 +544,7 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                         <div className="bg-zinc-900/40 rounded-[2.5rem] p-10 border border-white/5 glass-panel relative overflow-hidden group">
                             <div className="flex items-center justify-between mb-10 pb-6 border-b border-white/5 relative z-10">
                                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Configuratie Samenvatting</h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="animate-pulse w-2 h-2 rounded-full bg-[#10b77f]"></span>
-                                    <span className="text-[10px] font-black text-[#10b77f] uppercase tracking-widest italic">Live Berekening</span>
-                                </div>
+
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
@@ -593,10 +586,7 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                                                 <span className="text-5xl font-black text-white tracking-tighter italic">{calculateTotal().toFixed(2)}</span>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end gap-1 opacity-60">
-                                            <p className="text-[9px] text-zinc-400 font-bold italic uppercase tracking-widest">Gratis verzending binnen NL/BE</p>
-                                            <p className="text-[9px] text-zinc-400 font-bold italic uppercase tracking-widest">Inclusief kwaliteitscontrole</p>
-                                        </div>
+
                                     </div>
 
                                     <div className="pt-8 space-y-4">

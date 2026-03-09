@@ -40,12 +40,17 @@ export default async function VoiceInterfacePage({ params }: { params: Promise<{
         property = data;
     }
 
-    if (!property) {
-        return <div className="p-8 text-center text-white">Woning niet gevonden. Controleer de URL of probeer het later opnieuw.</div>
-    }
-
     const { data: { user } } = await supabase.auth.getUser()
     const isAdmin = user && user.id === property.user_id
 
-    return <PublicPropertyLiveView property={property} isAdmin={!!isAdmin} />
+    // Fetch reviews
+    const { data: reviews } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('property_id', propertyId)
+        .eq('is_hidden', false)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+
+    return <PublicPropertyLiveView property={property} isAdmin={!!isAdmin} reviews={reviews || []} />
 }

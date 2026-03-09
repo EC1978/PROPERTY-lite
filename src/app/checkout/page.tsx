@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Logo from '@/components/Logo'
 
 export default function CheckoutPage({
     searchParams,
@@ -19,10 +20,7 @@ export default function CheckoutPage({
         <div className="min-h-screen bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-white py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-center mb-8">
-                    <Link href="/settings/billing/packages" className="text-2xl font-black text-gray-900 dark:text-white tracking-widest flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#0df2a2] text-[28px]">real_estate_agent</span>
-                        VOICE<span className="text-[#0df2a2]">REALTY</span>
-                    </Link>
+                    <Logo iconSize="size-10" textClassName="text-2xl" />
                 </div>
 
                 <div className="bg-white dark:bg-[#1a1c23] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-100 dark:border-white/5">

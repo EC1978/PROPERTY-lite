@@ -71,9 +71,9 @@ export async function scrapeProperty(url: string) {
         const truncatedText = textContent.slice(0, 40000)
 
         // 3. AI Extraction via Google Gemini
-        const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY
+        const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY
         if (!GEMINI_API_KEY) {
-            throw new Error('Google AI API key niet geconfigureerd in GOOGLE_AI_API_KEY of NEXT_PUBLIC_GOOGLE_AI_API_KEY')
+            throw new Error('Google AI API key niet geconfigureerd in GOOGLE_AI_API_KEY, NEXT_PUBLIC_GOOGLE_AI_API_KEY of NEXT_PUBLIC_GOOGLE_API_KEY')
         }
 
         const geminiResponse = await fetch(

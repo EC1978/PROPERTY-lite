@@ -106,6 +106,7 @@ type Product = {
     images: string[]
     category: string | null
     options: OptionCategory[] | Record<string, ProductOption[]>
+    shipping_cost: number
 }
 
 export default function ProductManagementClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -124,7 +125,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
         base_price: '',
         category: '',
         images: [] as string[],
-        options: [] as OptionCategory[]
+        options: [] as OptionCategory[],
+        shipping_cost: '0'
     })
 
     const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null)
@@ -178,7 +180,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
             base_price: '',
             category: '',
             images: [],
-            options: []
+            options: [],
+            shipping_cost: '0'
         })
         setEditingProduct(null)
     }
@@ -197,7 +200,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
             base_price: product.base_price.toString(),
             category: product.category || '',
             images: product.images || [],
-            options: migrateOptions(product.options)
+            options: migrateOptions(product.options),
+            shipping_cost: (product.shipping_cost || 0).toString()
         })
         setIsModalOpen(true)
     }
@@ -211,7 +215,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                 ...formData,
                 base_price: parseFloat(formData.base_price) || 0,
                 images: formData.images.filter(img => img.trim() !== ''),
-                options: formData.options
+                options: formData.options,
+                shipping_cost: parseFloat(formData.shipping_cost) || 0
             }
 
             const result = editingProduct
@@ -239,7 +244,8 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
             base_price: product.base_price.toString(),
             category: product.category || '',
             images: product.images || [],
-            options: migrateOptions(product.options)
+            options: migrateOptions(product.options),
+            shipping_cost: (product.shipping_cost || 0).toString()
         })
         setIsModalOpen(true)
     }
@@ -672,7 +678,7 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                     onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
                                                     placeholder="0.00"
                                                     suppressHydrationWarning
-                                                    className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-[#0df2a2] font-black focus:border-[#0df2a2]/50 outline-none transition-all text-xl"
+                                                    className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-[#0df2a2] font-black focus:border-[#0df2a2]/50 outline-none transition-all text-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -685,6 +691,30 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
                                                     suppressHydrationWarning
                                                     className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-white focus:border-[#0df2a2]/50 outline-none transition-all font-bold"
                                                 />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1 flex items-center justify-between">
+                                                <span>Verzendkosten (€)</span>
+                                                <span className="text-[8px] text-[#0df2a2] normal-case font-bold opacity-60">Vul 0 in voor gratis verzending</span>
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={formData.shipping_cost}
+                                                    onChange={(e) => setFormData({ ...formData, shipping_cost: e.target.value })}
+                                                    placeholder="0.00"
+                                                    suppressHydrationWarning
+                                                    className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-5 text-white font-black focus:border-[#0df2a2]/50 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    {parseFloat(formData.shipping_cost) === 0 ? (
+                                                        <span className="text-[10px] font-black bg-[#0df2a2]/10 text-[#0df2a2] px-3 py-1.5 rounded-lg border border-[#0df2a2]/20 uppercase tracking-widest italic animate-in fade-in zoom-in duration-500">GRATIS</span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Vast bedrag</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="space-y-2">

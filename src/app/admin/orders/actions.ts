@@ -38,7 +38,8 @@ export async function createManualOrder(orderData: any) {
     const subtotal = orderData.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
     const isGuarantee = orderData.paymentMode === 'guarantee'
 
-    const totalAmount = isGuarantee ? 0 : subtotal
+    const shipping = orderData.shippingCost || 0
+    const totalAmount = isGuarantee ? 0 : subtotal + shipping
     const taxAmount = isGuarantee ? 0 : (totalAmount * 0.21)
     const finalTotal = totalAmount + taxAmount
 
@@ -56,7 +57,7 @@ export async function createManualOrder(orderData: any) {
             order_number: orderNumber,
             total_amount: finalTotal,
             tax_amount: taxAmount,
-            shipping_cost: 0,
+            shipping_cost: isGuarantee ? 0 : shipping,
             payment_method: isGuarantee ? 'guarantee' : 'ideal',
             billing_address: { name: 'Superadmin Manual Order', city: 'System' },
             shipping_address: { name: 'Superadmin Manual Order', city: 'System' },

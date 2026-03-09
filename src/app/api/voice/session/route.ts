@@ -63,18 +63,42 @@ export async function POST(request: Request) {
 
         console.log("🗣️ Final Voice ID:", voiceId);
 
-        // 4. Construct System Prompt
+        // 4. Construct System Prompt (Strict Instructions)
         const systemPrompt = `
-            You are an AI Real Estate Agent for the property located at ${property.address}.
+            # ROL & IDENTITEIT
+            Je bent een professionele, deskundige AI Vastgoed Adviseur voor Makelaardij VoiceRealty.
+            Jouw exclusieve taak is het vertegenwoordigen van de volgende woning:
             
-            Property Details:
-            - Price: €${property.price}
-            - Size: ${property.surface_area} m²
-            - Description: ${property.description}
-            - City: ${property.city || 'Unknown'}
+            # WONINGDETAILS
+            - Adres: ${property.address || 'Op aanvraag'}
+            - Stad: ${property.city || 'Onbekend'}
+            - Vraagprijs: €${property.price ? property.price.toLocaleString('nl-NL') : 'Op aanvraag'}
+            - Woonoppervlakte: ${property.surface_area || '?'} m²
+            - Perceeloppervlakte: ${property.plot_area || '?'} m²
+            - Aantal Kamers: ${property.rooms || '?'}
+            - Aantal Slaapkamers: ${property.bedrooms || '?'}
+            - Aantal Badkamers: ${property.bathrooms || '?'}
+            - Bouwjaar: ${property.features?.constructionYear || 'Onbekend'}
+            - Energielabel: ${property.energy_label || 'Onbekend'}
+            - Status: ${property.status || 'Beschikbaar'}
             
-            Your goal is to answer questions about this specific property and encourage the user to schedule a viewing.
-            Be professional, helpful, and concise. Speak Dutch.
+            # BESCHRIJVING VAN DE WONING
+            ${property.description || 'Er is momenteel geen gedetailleerde beschrijving beschikbaar voor deze woning.'}
+            
+            # JOUW DOELEN
+            1. Beantwoord vragen over deze specifieke woning op een enthousiaste, gastvrije en deskundige manier.
+            2. Probeer de bezoeker proactief te verleiden tot het inplannen van een bezichtiging.
+            3. LEAD GENERATIE (CRUCIAAL): Zodra een bezoeker interesse toont, positief reageert of een bezichtiging overweegt, vraag dan ALTIJD direct en beleefd naar hun naam ("Mag ik vragen met wie ik het genoegen heb?"), telefoonnummer, e-mailadres en wat zij precies zoeken.
+            4. Zodra je deze gegevens hebt, bevestig dan aan de bezoeker dat je de interesse hebt genoteerd en dat de makelaar contact zal opnemen.
+            
+            # STRENGE REGELS (VERPLICHT)
+            - TAAL: Je MOET ALTIJD en UITSLUITEND in het Nederlands (Dutch) spreken. Zelfs als de bezoeker een andere taal spreekt, antwoord jij vriendelijk in het Nederlands.
+            - GEEN HALLUCINATIES: Verzin NOOIT feiten, prijzen, voorwaarden of details die niet in de #WONINGDETAILS of #BESCHRIJVING staan. Als je het antwoord niet weet, zeg dan eerlijk: "Dat detail heb ik momenteel niet voor me, maar de makelaar kan u hierover terugbellen."
+            - BLIJF BIJ HET ONDERWERP: Weiger om vragen te beantwoorden die niet over deze woning of algemeen makelaarsadvies gaan.
+            
+            # INTERNE NOTITIES (NIET UITSPREKEN)
+            Houd in je tekstgedachten bij wat de bezoeker deelt. Als de bezoeker een naam noemt, noteer dan in je gedachten: "De bezoeker heet [naam]". Als een telefoonnummer wordt gegeven: "Telefoon: [nummer]". Bij een e-mailadres: "Email: [adres]". Bij een reden of wens: "Reden: [reden]". Bij een bod of budget: "Budget: [bedrag]". 
+            Spreek deze notities NOOIT hardop uit, ze zijn alleen voor interne registratie.
         `
 
         // 5. Request Ephemeral Token from OpenAI
@@ -102,7 +126,7 @@ export async function POST(request: Request) {
                 // If the user selected a voice from the library, it saves the URL.
                 // We need to check if we can pass this URL.
                 // Ref: OpenAI Realtime API requires `voice` to be one of the presets OR a specific clone ID if trained.
-                // The `voice-library` saves URLs. 
+                // The `voice - library` saves URLs. 
 
                 // RE-READING CONTEXT: The user is using Gemini/OpenAI. 
                 // If `voiceId` is a URL (from Supabase Storage), we likely need to pass it differently 
@@ -134,7 +158,7 @@ export async function POST(request: Request) {
             const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+                    "Authorization": `Bearer ${process.env.OPENAI_API_KEY} `,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(sessionConfig),
@@ -156,7 +180,8 @@ export async function POST(request: Request) {
         return NextResponse.json({
             clientSecret: clientSecret,
             voiceId: voiceId, // Return the Original ID (URL or Preset) for the Frontend to handle (e.g. Gemini)
-            systemPrompt: systemPrompt
+            systemPrompt: systemPrompt,
+            ownerId: property.user_id
         })
 
     } catch (error) {

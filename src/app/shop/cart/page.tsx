@@ -111,7 +111,9 @@ export default function ShoppingCartPage() {
                                     </div>
                                     <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                         <span>Verzending</span>
-                                        <span className="text-[#10b77f] not-italic">GRATIS</span>
+                                        <span className={shipping > 0 ? "text-white not-italic" : "text-[#10b77f] not-italic"}>
+                                            {shipping > 0 ? `€${shipping.toFixed(2)}` : 'GRATIS'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                         <span>BTW (21%)</span>
@@ -141,7 +143,7 @@ export default function ShoppingCartPage() {
                                             </div>
                                             <div className="flex items-center gap-4 text-[9px] text-zinc-500 font-black uppercase tracking-widest italic opacity-50">
                                                 <span className="material-symbols-outlined text-[#10b77f] text-[16px] font-black">local_shipping</span>
-                                                Gratis bezorging in heel NL & BE
+                                                {shipping === 0 ? 'Gratis bezorging in heel NL & BE' : 'Snelle bezorging in heel NL & BE'}
                                             </div>
                                         </div>
                                     </div>

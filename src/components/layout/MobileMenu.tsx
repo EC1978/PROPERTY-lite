@@ -1,5 +1,6 @@
 'use client'
 
+import Logo from '../Logo'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -111,12 +112,7 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                 <div className="flex flex-col h-full relative z-[10] overflow-hidden">
                     {/* Header */}
                     <div className="p-6 pb-2 flex items-center justify-between flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="size-9 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                                <span className="material-symbols-outlined text-white text-[22px]">graphic_eq</span>
-                            </div>
-                            <span className="font-extrabold text-xl text-gray-900 dark:text-white tracking-tight">VoiceRealty</span>
-                        </div>
+                        <Logo />
                         <button
                             onClick={() => setIsOpen(false)}
                             className="size-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400"

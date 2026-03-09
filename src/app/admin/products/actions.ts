@@ -48,6 +48,7 @@ export async function createProduct(formData: any) {
             category: formData.category,
             images: formData.images || [],
             options: formData.options || {},
+            shipping_cost: parseFloat(formData.shipping_cost) || 0,
             updated_at: new Date().toISOString()
         })
 
@@ -72,6 +73,7 @@ export async function updateProduct(id: string, formData: any) {
             category: formData.category,
             images: formData.images || [],
             options: formData.options || {},
+            shipping_cost: parseFloat(formData.shipping_cost) || 0,
             updated_at: new Date().toISOString()
         })
         .eq('id', id)

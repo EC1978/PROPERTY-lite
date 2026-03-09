@@ -42,6 +42,7 @@ interface Product {
     category: string
     images: string[]
     options: any // Raw options from DB
+    shipping_cost: number
 }
 
 interface AppUser {
@@ -58,6 +59,7 @@ interface OrderItem {
     price: number // Calculated price per unit after options
     options: any[] // Dynamic options selected
     selections: Record<string, number> // Internal selection indices
+    shippingCost: number
 }
 
 export default function NewOrderClient({ products, users }: { products: any[], users: AppUser[] }) {
@@ -178,7 +180,8 @@ export default function NewOrderClient({ products, users }: { products: any[], u
             quantity: configQuantity,
             price: currentUnitPrice,
             options: configuredOptions,
-            selections: activeSelections
+            selections: activeSelections,
+            shippingCost: activeConfigProduct.shipping_cost || 0
         }])
 
         // Reset
@@ -192,7 +195,8 @@ export default function NewOrderClient({ products, users }: { products: any[], u
     }
 
     const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const finalTotal = paymentMode === 'guarantee' ? 0 : subtotal * 1.21
+    const shipping = orderItems.reduce((max, item) => Math.max(max, item.shippingCost || 0), 0)
+    const finalTotal = paymentMode === 'guarantee' ? 0 : (subtotal + shipping) * 1.21
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -207,7 +211,8 @@ export default function NewOrderClient({ products, users }: { products: any[], u
             items: orderItems,
             paymentMode,
             designStatus,
-            designUrl: adminDesignUrl // Superadmin direct upload
+            designUrl: adminDesignUrl, // Superadmin direct upload
+            shippingCost: shipping
         }
 
         try {
@@ -394,7 +399,7 @@ export default function NewOrderClient({ products, users }: { products: any[], u
                                                     min="1"
                                                     value={configQuantity}
                                                     onChange={(e) => setConfigQuantity(parseInt(e.target.value) || 1)}
-                                                    className="w-32 bg-black border border-white/10 rounded-xl px-4 py-3 text-white font-black text-xl"
+                                                    className="w-32 bg-black border border-white/10 rounded-xl px-4 py-3 text-white font-black text-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                 />
                                                 <button
                                                     type="button"
@@ -609,9 +614,15 @@ export default function NewOrderClient({ products, users }: { products: any[], u
                                 <span>Subtotaal excl.</span>
                                 <span>€{subtotal.toFixed(2)}</span>
                             </div>
+                            <div className="flex justify-between items-center text-xs font-black tracking-widest uppercase text-zinc-500 italic">
+                                <span>Verzending</span>
+                                <span className={shipping > 0 ? "text-white not-italic" : "text-[#0df2a2] not-italic"}>
+                                    {shipping > 0 ? `€${shipping.toFixed(2)}` : 'GRATIS'}
+                                </span>
+                            </div>
                             <div className="flex justify-between items-center text-xs font-black tracking-widest uppercase text-zinc-500 pb-4 border-b border-white/10 italic">
                                 <span>BTW (21%)</span>
-                                <span>€{(subtotal * 0.21).toFixed(2)}</span>
+                                <span>€{((subtotal + shipping) * 0.21).toFixed(2)}</span>
                             </div>
 
                             <div className="flex justify-between items-end pt-2">

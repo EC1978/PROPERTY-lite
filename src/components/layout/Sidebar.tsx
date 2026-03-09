@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/auth/actions'
 import ThemeToggle from '../ThemeToggle'
+import Logo from '../Logo'
 import { createClient } from '@/utils/supabase/client'
 
 interface SidebarProps {
@@ -67,12 +68,7 @@ export default function Sidebar({ userEmail }: SidebarProps) {
     return (
         <aside className="hidden md:flex w-72 flex-col border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0A0A0A] fixed inset-y-0 left-0 z-50 transition-colors duration-300">
             <div className="p-6">
-                <div className="flex items-center gap-2 mb-8">
-                    <div className="size-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                        <span className="material-symbols-outlined text-white text-[20px]">graphic_eq</span>
-                    </div>
-                    <span className="font-bold text-lg tracking-tight font-display text-gray-900 dark:text-white">VoiceRealty AI</span>
-                </div>
+                <Logo className="mb-8" />
 
                 <div className="space-y-1">
                     <NavLink href="/dashboard" icon="dashboard" label="Dashboard" />

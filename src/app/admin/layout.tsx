@@ -1,3 +1,4 @@
+import Logo from '@/components/Logo'
 import Link from 'next/link'
 import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe, Wrench, History, AlertCircle } from 'lucide-react'
 
@@ -20,11 +21,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar */}
             <aside className="w-64 bg-[#0A0A0A] border-r border-[#222] flex flex-col">
                 <div className="p-6">
-                    <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-gradient-to-br from-[#0df2a2] to-emerald-900 flex items-center justify-center text-black font-black text-sm">VR</div>
-                        VOICEREALTY
-                    </h1>
-                    <p className="text-[10px] text-[#0df2a2] uppercase tracking-widest font-bold mt-1">Superadmin</p>
+                    <Logo isUppercase={false} textClassName="text-xl" />
+                    <p className="text-[10px] text-[#10b77f] uppercase tracking-widest font-bold mt-1">Superadmin</p>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 mt-4">

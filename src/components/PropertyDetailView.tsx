@@ -670,9 +670,9 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                     onCancel={cancelEditing}
                                     onSave={saveField}
                                 >
-                                    <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-white">
+                                    <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-gray-500 mb-1 block italic opacity-70">
                                         {features.type || 'Woning'}
-                                    </h1>
+                                    </span>
                                 </EditableField>
 
                                 <EditableField
@@ -688,10 +688,13 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                     onCancel={cancelEditing}
                                     onSave={saveField}
                                 >
-                                    <h2 className="text-3xl md:text-4xl font-extrabold leading-tight text-[#0df2a2] mt-1">
-                                        {streetName}
-                                    </h2>
-                                    <p className="text-gray-400 text-sm mt-1 italic opacity-60 italic">{property.address}{property.city ? `, ${property.city}` : ''}</p>
+                                    <h1 className="text-2xl sm:text-3xl md:text-5xl font-black leading-[1.1] tracking-tighter text-[#0df2a2] uppercase italic drop-shadow-[0_0_20px_rgba(13,242,162,0.15)] break-words">
+                                        {streetName || 'Woning'}
+                                    </h1>
+                                    <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-2 font-bold uppercase tracking-widest">
+                                        <span className="material-symbols-outlined text-[#0df2a2] text-[16px]">location_on</span>
+                                        {property.address}{property.city ? `, ${property.city}` : ''}
+                                    </div>
                                 </EditableField>
 
                                 <EditableField
@@ -708,9 +711,11 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                     onCancel={cancelEditing}
                                     onSave={saveField}
                                 >
-                                    <p className="text-3xl font-bold text-[#0df2a2] mt-2">
-                                        € {property.price?.toLocaleString() || '0'} <span className="text-gray-400 text-base font-normal">k.k.</span>
-                                    </p>
+                                    <div className="mt-6 flex items-baseline gap-3">
+                                        <span className="text-4xl md:text-5xl font-black text-[#0df2a2] tracking-tighter">
+                                            € {property.price?.toLocaleString() || '0'}
+                                        </span>
+                                    </div>
                                 </EditableField>
                             </div>
 
@@ -732,9 +737,9 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                         onCancel={cancelEditing}
                                         onSave={saveField}
                                     >
-                                        <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 flex flex-col gap-1 w-full text-left h-full min-h-[90px] justify-between">
+                                        <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 flex flex-col gap-1 w-full text-left h-full min-h-[90px] justify-between overflow-hidden">
                                             <span className="text-[10px] uppercase text-gray-500 font-semibold tracking-widest leading-tight">{stat.label}</span>
-                                            <span className={`font-bold text-white mt-1 break-words leading-tight ${stat.value.toString().length > 20 ? 'text-sm' : 'text-xl'
+                                            <span className={`font-bold text-white mt-1 break-words leading-tight ${stat.value.toString().length > 10 ? 'text-sm' : 'text-xl'
                                                 }`}>
                                                 {stat.value}
                                             </span>

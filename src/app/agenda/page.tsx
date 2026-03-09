@@ -35,24 +35,19 @@ export default async function AgendaPage() {
     console.log("AGENDA PROPERTIES DATA:", properties);
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white p-6 md:p-10">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors group">
-                        <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-                        Terug naar Dashboard
+        <div className="min-h-screen bg-[#0A0A0A] text-white">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mb-0">
+                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-[#0df2a2] mb-6 transition-all group">
+                        <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                        Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                        Mijn Agenda
-                    </h1>
-                    <p className="text-gray-400 mt-2">
-                        Beheer al je aankomende bezichtigingen en afspraken.
-                    </p>
                 </div>
 
                 <AgendaClient
                     initialAppointments={appointments || []}
                     properties={properties || []}
+                    serverNow={new Date().toISOString()}
                 />
             </div>
         </div>

@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/client';
 
 export default function CheckoutPaymentPage() {
     const router = useRouter();
-    const { items, total, clearCart, designUrl, setDesignUrl } = useCart();
+    const { items, subtotal, shipping, total, clearCart, designUrl, setDesignUrl } = useCart();
     const [selectedPayment, setSelectedPayment] = useState('ideal');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const [userData, setUserData] = useState<any>(null);
@@ -61,7 +61,7 @@ export default function CheckoutPaymentPage() {
                     status: finalStatus,
                     total_amount: finalTotal,
                     tax_amount: tax,
-                    shipping_cost: 0,
+                    shipping_cost: shipping,
                     payment_method: selectedPayment,
                     billing_address: { name: billingName, city: 'Online Bestelling' },
                     shipping_address: { name: billingName, city: 'Online Bestelling' },
@@ -229,7 +229,9 @@ export default function CheckoutPaymentPage() {
                                 </div>
                                 <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>Verzending</span>
-                                    <span className="text-[#10b77f] not-italic font-black uppercase tracking-widest">Gratis</span>
+                                    <span className={shipping > 0 ? "text-white not-italic font-black text-right" : "text-[#10b77f] not-italic font-black uppercase tracking-widest"}>
+                                        {shipping > 0 ? `€ ${shipping.toFixed(2)}` : 'Gratis'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-zinc-500 font-black uppercase tracking-widest text-[10px] italic">
                                     <span>BTW (21%)</span>
