@@ -12,6 +12,8 @@ export default function CheckoutDeliveryPage() {
     const router = useRouter();
     const { total } = useCart();
     const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+    const [selectedBillingAddress, setSelectedBillingAddress] = useState<string | null>(null);
+    const [isBillingSame, setIsBillingSame] = useState(true);
     const [selectedTiming, setSelectedTiming] = useState('standaard');
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -39,8 +41,10 @@ export default function CheckoutDeliveryPage() {
                 const defaultAddr = data.find(a => a.is_default);
                 if (defaultAddr) {
                     setSelectedAddress(defaultAddr.id);
+                    setSelectedBillingAddress(defaultAddr.id);
                 } else if (data.length > 0) {
                     setSelectedAddress(data[0].id);
+                    setSelectedBillingAddress(data[0].id);
                 }
             }
             setIsLoading(false);
@@ -69,7 +73,7 @@ export default function CheckoutDeliveryPage() {
                 name: newAddr.bedrijf || `${newAddr.voornaam} ${newAddr.achternaam}`,
                 contact: `${newAddr.voornaam} ${newAddr.achternaam}`,
                 street: `${newAddr.straat} ${newAddr.nummer}`,
-                postcode: newAddr.postcode, // Note: I should use the correct column name from DB
+                postcode: newAddr.postcode,
                 zipcode: newAddr.postcode,
                 city: newAddr.plaats,
                 is_default: newAddr.is_default || false
@@ -79,9 +83,31 @@ export default function CheckoutDeliveryPage() {
 
         if (data) {
             setAddresses(prev => [data, ...prev.map(a => newAddr.is_default ? { ...a, is_default: false } : a)]);
-            setSelectedAddress(data.id);
+            if (!selectedAddress) setSelectedAddress(data.id);
+            if (!selectedBillingAddress) setSelectedBillingAddress(data.id);
             setShowAddressForm(false);
         }
+    };
+
+    const handleProceedToPayment = () => {
+        if (!selectedAddress) {
+            alert('Selecteer eerst een bezorgadres.');
+            return;
+        }
+        if (!isBillingSame && !selectedBillingAddress) {
+            alert('Selecteer eerst een factuuradres.');
+            return;
+        }
+
+        const checkoutData = {
+            shippingAddressId: selectedAddress,
+            billingAddressId: isBillingSame ? selectedAddress : selectedBillingAddress,
+            isBillingSame,
+            selectedTiming
+        };
+
+        localStorage.setItem('voicerealty_checkout', JSON.stringify(checkoutData));
+        router.push('/shop/checkout/payment');
     };
 
     return (
@@ -202,23 +228,60 @@ export default function CheckoutDeliveryPage() {
                         </section>
 
                         {/* Section 3: Extra Opties */}
-                        <section className="glass-panel border-white/5 rounded-[2rem] p-10 relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="flex items-center justify-between relative z-10">
-                                <div className="flex items-center gap-6">
-                                    <div className="size-14 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:border-[#10b77f]/30 transition-all">
-                                        <span className="material-symbols-outlined text-zinc-500 group-hover:text-[#10b77f] font-black text-[28px] transition-colors">person_pin</span>
+                        <section className="space-y-6">
+                            <div className="glass-panel border-white/5 rounded-[2rem] p-10 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div className="flex items-center justify-between relative z-10">
+                                    <div className="flex items-center gap-6">
+                                        <div className="size-14 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center shadow-inner group-hover:border-[#10b77f]/30 transition-all">
+                                            <span className="material-symbols-outlined text-zinc-500 group-hover:text-[#10b77f] font-black text-[28px] transition-colors">person_pin</span>
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-white text-lg uppercase tracking-tight italic">Factuuradres is gelijk</p>
+                                            <p className="text-[11px] text-zinc-500 font-bold uppercase italic opacity-60">Bespaar tijd bij het afrekenen</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-black text-white text-lg uppercase tracking-tight italic">Factuuradres is gelijk</p>
-                                        <p className="text-[11px] text-zinc-500 font-bold uppercase italic opacity-60">Bespaar tijd bij het afrekenen</p>
-                                    </div>
-                                </div>
-                                <div className="relative inline-flex items-center cursor-pointer scale-110">
-                                    <input defaultChecked type="checkbox" className="sr-only peer" />
-                                    <div className="w-14 h-7 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0A0A0A] after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-zinc-800 after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-[#10b77f] peer-checked:after:bg-[#0A0A0A] shadow-inner"></div>
+                                    <label className="relative inline-flex items-center cursor-pointer scale-110">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={isBillingSame}
+                                            onChange={(e) => setIsBillingSame(e.target.checked)}
+                                        />
+                                        <div className="w-14 h-7 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0A0A0A] after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-zinc-800 after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-[#10b77f] peer-checked:after:bg-[#0A0A0A] shadow-inner"></div>
+                                    </label>
                                 </div>
                             </div>
+
+                            {/* Billing Address Selection (when not same) */}
+                            {!isBillingSame && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="size-8 rounded-lg bg-[#10b77f]/10 border border-[#10b77f]/20 flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-[#10b77f] text-sm">receipt_long</span>
+                                        </div>
+                                        <h3 className="text-lg font-extrabold tracking-tight italic uppercase">Kies uw <span className="text-[#10b77f]">factuuradres</span></h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {addresses.map((addr) => (
+                                            <label key={addr.id} className={`group relative flex cursor-pointer rounded-[2rem] border p-6 transition-all duration-500 overflow-hidden ${selectedBillingAddress === addr.id ? 'glass-panel border-[#10b77f]/50 bg-[#10b77f]/5' : 'glass-panel border-white/5 hover:border-white/10'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="billing_address"
+                                                    checked={selectedBillingAddress === addr.id}
+                                                    onChange={() => setSelectedBillingAddress(addr.id)}
+                                                    className="mt-1 h-5 w-5 appearance-none rounded-full border-2 border-zinc-700 bg-transparent checked:border-[#10b77f] checked:bg-[#10b77f] focus:ring-0 relative before:content-[''] before:absolute before:inset-[3px] before:rounded-full before:bg-[#0A0A0A] before:opacity-0 checked:before:opacity-100 transition-all cursor-pointer z-10"
+                                                />
+                                                <div className="ml-4 flex flex-1 flex-col z-10">
+                                                    <span className="block text-sm font-black text-white tracking-tighter uppercase italic">{addr.name}</span>
+                                                    <span className="block text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic mt-1">{addr.street}, {addr.city}</span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     </div>
 
@@ -253,10 +316,13 @@ export default function CheckoutDeliveryPage() {
                                 </div>
                             </div>
 
-                            <Link href="/shop/checkout/payment" className="w-full bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] font-black py-6 rounded-2xl shadow-[0_20px_40px_rgba(16,183,127,0.2)] flex items-center justify-center gap-4 transition-all uppercase tracking-widest text-[11px] group/btn italic">
+                            <button
+                                onClick={handleProceedToPayment}
+                                className="w-full bg-[#10b77f] hover:bg-[#10b77f]/90 text-[#0A0A0A] font-black py-6 rounded-2xl shadow-[0_20px_40px_rgba(16,183,127,0.2)] flex items-center justify-center gap-4 transition-all uppercase tracking-widest text-[11px] group/btn italic"
+                            >
                                 NAAR BETALING
                                 <span className="material-symbols-outlined font-black transition-transform group-hover/btn:translate-x-2">payments</span>
-                            </Link>
+                            </button>
 
                             <div className="mt-8 pt-6 border-t border-white/5 space-y-6 relative z-10">
                                 <div className="flex items-start gap-3 opacity-30">

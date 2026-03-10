@@ -9,6 +9,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { label: 'Makelaars', path: '/admin/users', icon: Users },
         { label: 'Pakket Builder', path: '/admin/packages', icon: CreditCard },
         { label: 'Bestellingen', path: '/admin/orders', icon: ShoppingCart },
+        { label: 'Betaalmethodes', path: '/admin/payments', icon: CreditCard },
         { label: 'Reclamaties', path: '/admin/complaints', icon: AlertCircle },
         { label: 'Producten', path: '/admin/products', icon: Package },
         { label: 'Systeemonderhoud', path: '/admin/system', icon: Wrench },

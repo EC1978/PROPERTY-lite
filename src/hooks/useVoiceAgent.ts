@@ -53,6 +53,13 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
         const leadId = leadIdRef.current;
         const rawTexts = [...rawTextRef.current];
 
+        console.log("📊 stopSession diagnostics:", {
+            leadId,
+            rawTextChunks: rawTexts.length,
+            firstChunk: rawTexts[0]?.substring(0, 100) || '(empty)',
+            lastChunk: rawTexts[rawTexts.length - 1]?.substring(0, 100) || '(empty)'
+        });
+
         // POST-SESSION EXTRACTION
         if (leadId && rawTexts.length > 0) {
             const allRawText = rawTexts.join('\n');
@@ -85,12 +92,16 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                     });
                     const updateResult = await updateRes.json();
                     console.log("✅ Lead PATCH result:", JSON.stringify(updateResult));
+                } else {
+                    console.error("❌ Extraction returned error:", extracted.error, extracted.details);
                 }
             } catch (err) {
                 console.error("❌ Post-session extraction failed:", err);
             }
         } else {
             console.warn("⚠️ No extraction possible. leadId:", leadId, "rawText chunks:", rawTexts.length);
+            console.warn("⚠️ This means transcription events were NEVER received from Gemini.");
+            console.warn("⚠️ Check if the model supports inputAudioTranscription/outputAudioTranscription.");
         }
 
         // Close WebSocket
@@ -242,10 +253,11 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                 }
 
                 // Setup: AUDIO-only + enable transcription for both input and output
-                // Transcription events give us text of what was said without affecting audio generation
+                // IMPORTANT: Use gemini-2.0-flash-live-001 which reliably supports transcription.
+                // The native-audio model may NOT send transcription events.
                 const setupMsg = {
                     setup: {
-                        model: "models/gemini-2.5-flash-native-audio-latest",
+                        model: "models/gemini-2.0-flash-live-001",
                         generationConfig: {
                             responseModalities: ["AUDIO"]
                         },
@@ -254,7 +266,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                         tools: []
                     }
                 };
-                console.log("📤 Sending Setup (AUDIO + transcription enabled)");
+                console.log("📤 Sending Setup (AUDIO + transcription enabled, model: gemini-2.0-flash-live-001)");
                 ws.send(JSON.stringify(setupMsg));
 
                 // Send the system prompt
@@ -329,6 +341,10 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                     data = JSON.parse(event.data);
                 }
 
+                // DEBUG: Log ALL top-level keys in every single message
+                const topKeys = Object.keys(data);
+                console.log("📦 WS Message keys:", topKeys.join(', '));
+
                 // Intercept tool calls
                 if (data.toolCall) {
                     isToolExecutingRef.current = true;
@@ -349,8 +365,13 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                 }
 
                 if (data.serverContent) {
-                    if (data.serverContent.modelTurn) {
-                        const parts = data.serverContent.modelTurn.parts;
+                    const sc = data.serverContent;
+
+                    // DEBUG: log all keys inside serverContent
+                    console.log("📦 serverContent keys:", Object.keys(sc).join(', '));
+
+                    if (sc.modelTurn) {
+                        const parts = sc.modelTurn.parts;
                         for (const part of parts) {
                             if (part.inlineData && part.inlineData.mimeType.startsWith('audio')) {
                                 handleAudioData(part.inlineData.data);
@@ -374,27 +395,27 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                             if (part.text) {
                                 const txt = part.text.trim();
                                 if (txt.length > 0) {
-                                    console.log("📝 Text received:", txt.substring(0, 200));
+                                    console.log("📝 [modelTurn] Text part received:", txt.substring(0, 200));
                                     rawTextRef.current.push(txt);
                                 }
                             }
                         }
                     }
-                    if (data.serverContent.turnComplete) {
+                    if (sc.turnComplete) {
                         console.log("✅ Turn Complete. Raw text chunks so far:", rawTextRef.current.length);
                     }
-                    // Capture user's speech transcription
-                    if (data.serverContent.inputTranscription) {
-                        const userText = data.serverContent.inputTranscription.text;
+                    // Capture user's speech transcription (inside serverContent)
+                    if (sc.inputTranscription) {
+                        const userText = sc.inputTranscription.text;
                         if (userText) {
-                            console.log("👤 User said:", userText);
+                            console.log("👤 [serverContent] User said:", userText);
                             rawTextRef.current.push(`[BEZOEKER ZEGT]: ${userText}`);
                         }
                     }
-                    if (data.serverContent.outputTranscription) {
-                        const aiText = data.serverContent.outputTranscription.text;
+                    if (sc.outputTranscription) {
+                        const aiText = sc.outputTranscription.text;
                         if (aiText) {
-                            console.log("🤖 AI said:", aiText);
+                            console.log("🤖 [serverContent] AI said:", aiText);
                             rawTextRef.current.push(`[AI ZEGT]: ${aiText}`);
                         }
                     }
@@ -414,12 +435,6 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                         console.log("🤖 [TOP] AI said:", aiText);
                         rawTextRef.current.push(`[AI ZEGT]: ${aiText}`);
                     }
-                }
-
-                // Debug: log all top-level keys in every message
-                const keys = Object.keys(data);
-                if (!keys.includes('serverContent') || keys.length > 1) {
-                    console.log("📦 Message keys:", keys.join(', '));
                 }
             };
 

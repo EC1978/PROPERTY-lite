@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useState, useEffect } from 'react';
 import { CheckoutStepper } from '@/components/shop/CheckoutStepper';
 import { createClient } from '@/utils/supabase/client';
+import { createCheckoutSession } from '../actions';
 
 export default function CheckoutPaymentPage() {
     const router = useRouter();
@@ -13,11 +14,15 @@ export default function CheckoutPaymentPage() {
     const [selectedPayment, setSelectedPayment] = useState('ideal');
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const [userData, setUserData] = useState<any>(null);
+    const [addresses, setAddresses] = useState<{ shipping: any, billing: any } | null>(null);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
-    // Fetch user details on mount
+    // Fetch user details and addresses on mount
     useEffect(() => {
-        const fetchUserData = async () => {
+        const fetchCheckoutData = async () => {
             const supabase = createClient();
+
+            // 1. Get user
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 const { data: profile } = await supabase
@@ -26,9 +31,31 @@ export default function CheckoutPaymentPage() {
                     .eq('id', user.id)
                     .single();
                 setUserData({ ...user, ...profile });
+
+                // 2. Get checkout choices from localStorage
+                const saved = localStorage.getItem('voicerealty_checkout');
+                if (saved) {
+                    try {
+                        const { shippingAddressId, billingAddressId } = JSON.parse(saved);
+
+                        // Fetch the actual address objects
+                        const { data: addrList } = await supabase
+                            .from('user_addresses')
+                            .select('*')
+                            .in('id', [shippingAddressId, billingAddressId]);
+
+                        if (addrList) {
+                            const shipping = addrList.find(a => a.id === shippingAddressId);
+                            const billing = addrList.find(a => a.id === billingAddressId);
+                            setAddresses({ shipping, billing: billing || shipping });
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse checkout data", e);
+                    }
+                }
             }
         };
-        fetchUserData();
+        fetchCheckoutData();
     }, []);
 
     // Assume standard 21% VAT and arbitrary shipping rules defined in previous steps
@@ -37,68 +64,57 @@ export default function CheckoutPaymentPage() {
 
     const handlePlaceOrder = async () => {
         setIsPlacingOrder(true);
+        setPaymentError(null);
         const supabase = createClient();
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                alert('U moet ingelogd zijn om een bestelling te plaatsen.');
+                setPaymentError('U moet ingelogd zijn om een bestelling te plaatsen.');
                 setIsPlacingOrder(false);
                 return;
             }
 
-            // Create order
-            const billingName = userData?.full_name || user.email || 'Klant';
+            const billingName = addresses?.billing?.contact || userData?.full_name || user.email || 'Klant';
+            const shippingName = addresses?.shipping?.contact || userData?.full_name || user.email || 'Klant';
 
-            // Determine status based on simulated choice
-            // iDEAL = Paid (Demo), Bank = Pending (Later)
-            const finalStatus = selectedPayment === 'ideal' ? 'paid' : 'pending';
-
-            const { data: order, error: orderError } = await supabase
-                .from('shop_orders')
-                .insert({
-                    user_id: user.id,
-                    status: finalStatus,
-                    total_amount: finalTotal,
-                    tax_amount: tax,
-                    shipping_cost: shipping,
-                    payment_method: selectedPayment,
-                    billing_address: { name: billingName, city: 'Online Bestelling' },
-                    shipping_address: { name: billingName, city: 'Online Bestelling' },
-                    design_url: designUrl
+            const orderData = {
+                userId: user.id,
+                totalAmount: finalTotal,
+                taxAmount: tax,
+                shippingCost: shipping,
+                paymentMethod: selectedPayment,
+                billingAddress: addresses?.billing || { name: billingName, city: 'Online Bestelling' },
+                shippingAddress: addresses?.shipping || { name: shippingName, city: 'Online Bestelling' },
+                designUrl: designUrl,
+                items: items.map(item => {
+                    const itemOptionsTotal = item.options.reduce((sum, opt) => sum + (opt.price || 0), 0);
+                    const unitPrice = item.basePrice + itemOptionsTotal;
+                    return {
+                        productId: item.dbId,
+                        quantity: item.quantity,
+                        unitPrice: unitPrice,
+                        totalPrice: unitPrice * item.quantity,
+                        selectedOptions: item.options
+                    };
                 })
-                .select()
-                .single();
+            }
 
-            if (orderError || !order) throw orderError || new Error('Order creation failed');
+            const result = await createCheckoutSession(orderData);
 
-            // Create order items
-            const orderItems = items.map(item => {
-                const itemOptionsTotal = item.options.reduce((sum, opt) => sum + (opt.price || 0), 0);
-                const unitPrice = item.basePrice + itemOptionsTotal;
-                return {
-                    order_id: order.id,
-                    product_id: item.dbId,
-                    quantity: item.quantity,
-                    unit_price: unitPrice,
-                    total_price: unitPrice * item.quantity,
-                    selected_options: item.options
-                };
-            });
+            if (result.success && result.checkoutUrl) {
+                clearCart();
+                setDesignUrl(null);
+                // Redirect to Mollie checkout
+                window.location.href = result.checkoutUrl;
+            } else {
+                setPaymentError(result.error || 'Er is een fout opgetreden bij het starten van de betaling.');
+                setIsPlacingOrder(false);
+            }
 
-            const { error: itemsError } = await supabase
-                .from('shop_order_items')
-                .insert(orderItems);
-
-            if (itemsError) throw itemsError;
-
-            clearCart();
-            setDesignUrl(null);
-            router.push(`/shop/checkout/success?order_id=${order.id}`);
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error placing order:', error);
-            alert('Er is een fout opgetreden bij het plaatsen van de bestelling.');
+            setPaymentError(error.message || 'Er is een onverwachte fout opgetreden.');
             setIsPlacingOrder(false);
         }
     };
@@ -120,10 +136,13 @@ export default function CheckoutPaymentPage() {
                                     </div>
                                     <h3 className="text-2xl font-black tracking-tighter uppercase italic">Factuur <span className="text-[#10b77f]">Gegevens</span></h3>
                                 </div>
-                                <button className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[9px] font-black tracking-[0.2em] uppercase transition-all flex items-center gap-3 italic">
+                                <Link
+                                    href="/shop/checkout/delivery"
+                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[9px] font-black tracking-[0.2em] uppercase transition-all flex items-center gap-3 italic"
+                                >
                                     <span className="material-symbols-outlined text-[18px] font-black">edit_note</span>
                                     Wijzigen
-                                </button>
+                                </Link>
                             </div>
 
                             <div className="glass-panel border-white/5 rounded-[2.5rem] p-8 md:p-10 flex flex-col md:flex-row gap-10 items-center group hover:border-[#10b77f]/30 transition-all duration-700 relative overflow-hidden shadow-2xl">
@@ -131,12 +150,14 @@ export default function CheckoutPaymentPage() {
 
                                 <div className="flex-1 relative z-10 w-full md:w-auto">
                                     <div className="flex items-center gap-4 mb-3">
-                                        <p className="font-black text-white text-2xl tracking-tighter uppercase italic">{userData?.full_name || 'Uw Naam'}</p>
+                                        <p className="font-black text-white text-2xl tracking-tighter uppercase italic">
+                                            {addresses?.billing?.contact || userData?.full_name || 'Uw Naam'}
+                                        </p>
                                         <span className="px-3 py-1 rounded-lg bg-[#10b77f]/10 border border-[#10b77f]/20 text-[8px] font-black text-[#10b77f] uppercase tracking-[0.2em] italic">GEAUTO-RISEERD</span>
                                     </div>
                                     <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic opacity-60 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-[16px]">alternate_email</span>
-                                        {userData?.email || 'uw-email@adres.nl'}
+                                        <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                        {addresses?.billing ? `${addresses.billing.street}, ${addresses.billing.city}` : userData?.email || 'uw-email@adres.nl'}
                                     </p>
 
                                     <div className="mt-8 flex items-center gap-4 pt-8 border-t border-white/5">
@@ -172,8 +193,7 @@ export default function CheckoutPaymentPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {[
-                                    { id: 'ideal', name: 'iDEAL', icon: 'account_balance', desc: 'Directe veilige betaling' },
-                                    { id: 'bank', name: 'Handmatige overschrijving', icon: 'payments', desc: 'Overboeking via bank' },
+                                    { id: 'ideal', name: 'iDEAL / Wero', icon: 'account_balance', desc: 'Secure direct payment via your bank' },
                                 ].map((method) => (
                                     <label key={method.id} className={`group relative flex items-center p-8 rounded-[2.5rem] cursor-pointer transition-all duration-700 hover:scale-[1.02] border-2 overflow-hidden ${selectedPayment === method.id ? 'glass-panel border-[#10b77f] shadow-[0_20px_50px_rgba(16,183,127,0.1)]' : 'glass-panel border-white/5 hover:border-white/20'}`}>
                                         <input type="radio" name="payment" className="hidden" checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} />

@@ -43,6 +43,7 @@ REGELS:
 - Geef null terug als een veld niet gevonden kan worden
 - Verzin NOOIT informatie
 - Let op: [BEZOEKER ZEGT] bevat wat de bezoeker zei, [AI ZEGT] bevat het AI-antwoord
+- BELANGRIJK: Jouw antwoord MAG ALLEEN uit één geldig JSON object bestaan. Gebruik GEEN markdown (zoals \`\`\`json) en voeg GEEN tekst toe buiten de accolades.
 
 Antwoord in dit JSON formaat:
 {"naam":null,"telefoon":null,"email":null,"reden":null,"budget":null,"transcript":"...","score":10}
@@ -100,19 +101,24 @@ ${rawText}
 
                 // Parse the JSON response
                 let extracted
+                let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim()
                 try {
-                    extracted = JSON.parse(text)
+                    extracted = JSON.parse(cleanText)
                 } catch (parseErr) {
                     console.error('❌ JSON parse failed, trying regex extraction:', text.substring(0, 300))
-                    const jsonMatch = text.match(/\{[\s\S]*\}/)
+                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/)
                     if (jsonMatch) {
                         try {
-                            extracted = JSON.parse(jsonMatch[0])
+                            // Let's try to fix trailing commas or common bad json issues
+                            let fixedJson = jsonMatch[0]
+                                .replace(/,\s*([\}\]])/g, '$1') // remove trailing commas
+                                .replace(/[\x00-\x1F\x7F-\x9F]/g, " ") // replace literal newlines/control chars with space
+                            extracted = JSON.parse(fixedJson)
                         } catch {
-                            extracted = { transcript: text, score: 10 }
+                            extracted = { transcript: `(DEBUG Regex Fail) AI response was: ${cleanText.substring(0, 250)}...`, score: 10 }
                         }
                     } else {
-                        extracted = { transcript: text, score: 10 }
+                        extracted = { transcript: `(DEBUG Parse Fail) AI response was: ${cleanText.substring(0, 250)}...`, score: 10 }
                     }
                 }
 

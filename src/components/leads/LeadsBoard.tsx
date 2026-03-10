@@ -148,7 +148,7 @@ export default function LeadsBoard({ leads: initialLeads }: LeadsBoardProps) {
 
                 <section className="grid grid-cols-2 gap-3 w-full">
                     {/* Profile Card */}
-                    <div className="col-span-2 relative overflow-hidden rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 p-5 shadow-sm backdrop-blur-sm">
+                    <div className="col-span-2 relative z-20 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 p-5 shadow-sm backdrop-blur-sm">
                         <div className="flex items-center gap-4">
                             <div className="relative shrink-0">
                                 <div className="w-16 h-16 rounded-full bg-cover bg-center border-2 border-[#0df2a2]/30" style={{ backgroundImage: `url('${selectedLead.image}')` }}></div>
@@ -306,7 +306,7 @@ export default function LeadsBoard({ leads: initialLeads }: LeadsBoardProps) {
                     return (
                         <div
                             key={lead.id}
-                            className="bg-white/40 dark:bg-[#0A0A0A]/40 backdrop-blur-xl border border-gray-200 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden group hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer"
+                            className="bg-white/40 dark:bg-[#0A0A0A]/40 backdrop-blur-xl border border-gray-200 dark:border-white/5 rounded-2xl p-4 flex flex-col gap-4 relative group hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all duration-300 cursor-pointer"
                         >
                             <div className="flex justify-between items-start" onClick={() => setSelectedLead(lead)}>
                                 <div className="flex gap-4">

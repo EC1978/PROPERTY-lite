@@ -1,0 +1,76 @@
+import { createAdminClient } from '@/utils/supabase/server'
+import { NextResponse } from 'next/server'
+import { createMollieClient } from '@mollie/api-client'
+
+export async function POST(req: Request) {
+    try {
+        const formData = await req.formData()
+        const paymentId = formData.get('id') as string
+
+        if (!paymentId) {
+            return new Response('Missing payment ID', { status: 400 })
+        }
+
+        console.log(`Received Mollie webhook for payment: ${paymentId}`)
+
+        const supabase = await createAdminClient()
+
+        // 1. Fetch Mollie Settings to get the correct API Key
+        const { data: settings } = await supabase
+            .from('platform_settings')
+            .select('mollie_test_api_key, mollie_live_api_key, mollie_is_test_mode')
+            .eq('id', 1)
+            .single()
+
+        if (!settings) throw new Error('Could not retrieve Mollie settings from database')
+
+        const apiKey = settings.mollie_is_test_mode ? settings.mollie_test_api_key : settings.mollie_live_api_key
+
+        if (!apiKey) throw new Error('No Mollie API key configured')
+
+        // 2. Initialize Mollie
+        const mollieClient = createMollieClient({ apiKey })
+
+        // 3. Fetch current payment status from Mollie
+        const payment = await mollieClient.payments.get(paymentId) as any // Bypass strict typings for ease of access
+
+        const orderId = payment.metadata?.order_id
+        if (!orderId) {
+            console.error('Payment missing order_id metadata', paymentId)
+            return NextResponse.json({ received: true }) // Don't block Mollie with 500 error for unlinked payments
+        }
+
+        // 4. Map Mollie status to our DB status
+        let newStatus = 'pending'
+        const mollieStatus = payment.status
+
+        if (mollieStatus === 'paid') {
+            newStatus = 'paid'
+        } else if (mollieStatus === 'failed') {
+            newStatus = 'failed'
+        } else if (mollieStatus === 'canceled' || mollieStatus === 'cancelled') {
+            newStatus = 'cancelled'
+        } else if (mollieStatus === 'expired') {
+            newStatus = 'expired'
+        }
+
+        console.log(`Updating order ${orderId} to status: ${newStatus} (Mollie status: ${mollieStatus})`)
+
+        // 5. Update Order in DB
+        await supabase
+
+            .from('shop_orders')
+            .update({
+                status: newStatus,
+                payment_intent_id: paymentId,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', orderId)
+
+        return NextResponse.json({ received: true })
+
+    } catch (error) {
+        console.error('Webhook processing error:', error)
+        return new Response('Webhook Error', { status: 500 })
+    }
+}
