@@ -64,15 +64,27 @@ export async function POST(req: Request) {
         console.log(`Updating order ${orderId} to status: ${newStatus} (Mollie status: ${mollieStatus})`)
 
         // 5. Update Order in DB
-        await supabase
-
+        // We update by orderId (from metadata) OR by payment_intent_id as fallback
+        const { error: updateError } = await supabase
             .from('shop_orders')
             .update({
                 status: newStatus,
                 payment_intent_id: paymentId,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', orderId)
+            .or(`id.eq.${orderId},payment_intent_id.eq.${paymentId}`)
+
+        if (updateError) {
+            console.error('Database update error:', updateError)
+            throw new Error(`DB Update failed: ${updateError.message}`)
+        }
+
+        // Log Success
+        await supabase.from('audit_logs').insert({
+            admin_email: 'SYSTEM_WEBHOOK',
+            action: 'MOLLIE_WEBHOOK_SUCCESS',
+            details: { orderId, paymentId, newStatus, mollieStatus }
+        })
 
         return NextResponse.json({ received: true })
 
