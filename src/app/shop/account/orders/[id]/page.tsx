@@ -146,31 +146,18 @@ export default function OrderDetailPage() {
         setIsPaying(true)
 
         try {
-            const targetStatus = selectedPayment === 'ideal' ? 'paid' : 'pending'
-            const { updateOrderStatus } = await import('../actions')
+            const { getOrderPaymentUrl } = await import('../actions')
+            const result = await getOrderPaymentUrl(order.id)
 
-            await updateOrderStatus(order.id, targetStatus)
-
-            // Show success only if we actually "paid"
-            if (targetStatus === 'paid') {
-                setPaymentSuccess(true)
-                setTimeout(() => {
-                    setShowPaymentModal(false)
-                    setIsPaying(false)
-                    setPaymentSuccess(false)
-                    fetchOrder()
-                }, 2000)
+            if (result.success && result.checkoutUrl) {
+                // Redirect user to Mollie
+                window.location.href = result.checkoutUrl
             } else {
-                // Just close for pending
-                setTimeout(() => {
-                    setShowPaymentModal(false)
-                    setIsPaying(false)
-                    fetchOrder()
-                }, 500)
+                throw new Error(result.error || 'Kon geen betaallink genereren')
             }
         } catch (error: any) {
-            console.error('Payment error object:', error)
-            alert(`Er is een fout opgetreden bij de betaling: ${error.message || 'Onbekende fout'}`)
+            console.error('Payment error:', error)
+            toast.error(`Fout bij betalen: ${error.message}`)
             setIsPaying(false)
         }
     }
@@ -426,8 +413,8 @@ export default function OrderDetailPage() {
                                                 <div>
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 block mb-2">Status</span>
                                                     <div className={`px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 border ${c.status === 'Opgelost' ? 'bg-[#0df2a2]/10 border-[#0df2a2]/20 text-[#0df2a2]' :
-                                                            c.status === 'Afgewezen' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                                                                'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                                                        c.status === 'Afgewezen' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                                                            'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
                                                         }`}>
                                                         {c.status !== 'Opgelost' && c.status !== 'Afgewezen' && (
                                                             <span className="size-2 rounded-full bg-yellow-500 animate-pulse"></span>
@@ -587,49 +574,46 @@ export default function OrderDetailPage() {
                 </div>
             )}
 
-            {/* Payment Modal */}
             {showPaymentModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
                     <div className="bg-[#1A1D1C] border border-white/10 rounded-[40px] w-full max-w-lg overflow-hidden shadow-[0_0_100px_rgba(13,242,162,0.1)]">
                         <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                            <h3 className="text-2xl font-black text-white tracking-tight">Afrekenen</h3>
+                            <h3 className="text-2xl font-black text-white tracking-tight">Bestelling afrekenen</h3>
                             <button onClick={() => setShowPaymentModal(false)} className="size-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10">
                                 <span className="material-symbols-outlined text-white">close</span>
                             </button>
                         </div>
                         <div className="p-8 space-y-8">
-                            {paymentSuccess ? (
-                                <div className="text-center py-10 animate-in zoom-in duration-500">
-                                    <div className="size-20 bg-[#0df2a2]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <span className="material-symbols-outlined text-[#0df2a2] text-4xl">check_circle</span>
+                            <div className="space-y-6">
+                                <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Totaalbedrag</span>
+                                        <span className="text-2xl font-black text-[#0df2a2]">€ {Number(order.total_amount).toFixed(2)}</span>
                                     </div>
-                                    <h4 className="text-xl font-black text-white mb-2">Betaling geslaagd</h4>
-                                    <p className="text-gray-500 text-sm">Uw bestelling wordt nu verwerkt.</p>
+                                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                                        U wordt doorgestuurd naar de beveiligde betaalomgeving van Mollie.
+                                    </p>
                                 </div>
-                            ) : (
-                                <div className="space-y-8">
-                                    <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Bedrag</span>
-                                            <span className="text-2xl font-black text-[#0df2a2]">€ {Number(order.total_amount).toFixed(2)}</span>
-                                        </div>
+                                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-center gap-4">
+                                    <div className="size-10 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center text-[#0df2a2]">
+                                        <span className="material-symbols-outlined text-[20px]">verified_user</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div onClick={() => setSelectedPayment('ideal')} className={`bg-white/[0.03] border p-5 rounded-2xl flex flex-col items-center gap-2 transition-all cursor-pointer ${selectedPayment === 'ideal' ? 'border-[#0df2a2] bg-[#0df2a2]/10' : 'border-white/10'}`}>
-                                            <span className="material-symbols-outlined text-3xl">account_balance</span>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">iDEAL (Demo)</span>
-                                        </div>
-                                        <div onClick={() => setSelectedPayment('bank')} className={`bg-white/[0.03] border p-5 rounded-2xl flex flex-col items-center gap-2 transition-all cursor-pointer ${selectedPayment === 'bank' ? 'border-[#0df2a2] bg-[#0df2a2]/10' : 'border-white/10'}`}>
-                                            <span className="material-symbols-outlined text-3xl">payments</span>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Bank (Demo)</span>
-                                        </div>
-                                    </div>
-                                    <button onClick={processPayment} disabled={isPaying} className="w-full bg-[#0df2a2] text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">
-                                        {isPaying ? 'Verwerken...' : 'Nu betalen'}
-                                        {isPaying && <div className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>}
-                                    </button>
+                                    <p className="text-[10px] font-black text-white uppercase tracking-widest leading-normal">
+                                        Veilig & Vertrouwd betalen via Mollie
+                                    </p>
                                 </div>
-                            )}
+                                <button
+                                    onClick={processPayment}
+                                    disabled={isPaying}
+                                    className="w-full bg-[#0df2a2] text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                                >
+                                    {isPaying ? 'Betaalomgeving laden...' : 'Nu betalen via Mollie'}
+                                    {isPaying && <div className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>}
+                                </button>
+                                <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+                                    iDEAL / Wero • Creditcard • Bancontact
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
