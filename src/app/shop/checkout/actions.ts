@@ -74,6 +74,15 @@ export async function createCheckoutSession(orderData: any) {
         const protocol = host?.includes('localhost') ? 'http' : 'https'
         const domain = `${protocol}://${host}`
 
+        const webhookUrl = `${domain}/api/payments/webhook`
+
+        // Log for debugging
+        await supabase.from('audit_logs').insert({
+            admin_email: 'SYSTEM_CHECKOUT',
+            action: 'MOLLIE_URL_GENERATED',
+            details: { orderId: order.id, webhookUrl, domain }
+        })
+
         const payment = await (mollieClient.payments.create({
             amount: {
                 value: orderData.totalAmount.toFixed(2),
@@ -81,7 +90,7 @@ export async function createCheckoutSession(orderData: any) {
             },
             description: `Order #${order.id.slice(0, 8)} - VoiceRealty`,
             redirectUrl: `${domain}/shop/checkout/success?order_id=${order.id}`,
-            webhookUrl: `${domain}/api/payments/webhook`,
+            webhookUrl: webhookUrl,
             metadata: {
                 order_id: order.id,
             },

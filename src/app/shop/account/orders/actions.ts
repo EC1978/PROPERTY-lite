@@ -54,6 +54,15 @@ export async function getOrderPaymentUrl(orderId: string) {
         const protocol = host?.includes('localhost') ? 'http' : 'https'
         const domain = `${protocol}://${host}`
 
+        const webhookUrl = `${domain}/api/payments/webhook`
+
+        // Log for debugging
+        await supabase.from('audit_logs').insert({
+            admin_email: 'SYSTEM_PAYMENT_RECOVERY',
+            action: 'MOLLIE_URL_GENERATED',
+            details: { orderId: order.id, webhookUrl, domain }
+        })
+
         // 4. Create Mollie Payment
         const payment = await (mollieClient.payments.create({
             amount: {
@@ -62,7 +71,7 @@ export async function getOrderPaymentUrl(orderId: string) {
             },
             description: `Order #${order.order_number || order.id.slice(0, 8)} - VoiceRealty`,
             redirectUrl: `${domain}/shop/checkout/success?order_id=${order.id}`,
-            webhookUrl: `${domain}/api/payments/webhook`,
+            webhookUrl: webhookUrl,
             metadata: {
                 order_id: order.id,
             },
