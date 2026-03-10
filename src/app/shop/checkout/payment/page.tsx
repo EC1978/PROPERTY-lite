@@ -193,28 +193,33 @@ export default function CheckoutPaymentPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {[
-                                    { id: 'ideal', name: 'iDEAL / Wero', icon: 'account_balance', desc: 'Secure direct payment via your bank' },
+                                    { id: 'ideal', name: 'iDEAL / Wero', icon: 'https://www.mollie.com/external/icons/payment-methods/ideal.svg', desc: 'Betalen via uw eigen bank' },
                                 ].map((method) => (
-                                    <label key={method.id} className={`group relative flex items-center p-8 rounded-[2.5rem] cursor-pointer transition-all duration-700 hover:scale-[1.02] border-2 overflow-hidden ${selectedPayment === method.id ? 'glass-panel border-[#10b77f] shadow-[0_20px_50px_rgba(16,183,127,0.1)]' : 'glass-panel border-white/5 hover:border-white/20'}`}>
-                                        <input type="radio" name="payment" className="hidden" checked={selectedPayment === method.id} onChange={() => setSelectedPayment(method.id)} />
-
-                                        {selectedPayment === method.id && (
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#10b77f]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                                        )}
-
-                                        <div className={`size-16 rounded-[1.5rem] flex items-center justify-center mr-8 transition-all duration-700 border ${selectedPayment === method.id ? 'bg-[#10b77f] text-[#0A0A0A] border-[#10b77f] shadow-[0_0_25px_rgba(16,183,127,0.3)]' : 'bg-white/5 text-zinc-600 border-white/5 group-hover:border-white/10'}`}>
-                                            <span className="material-symbols-outlined text-[32px] font-black">{method.icon}</span>
+                                    <div
+                                        key={method.id}
+                                        onClick={() => setSelectedPayment(method.id)}
+                                        className={`group relative p-8 rounded-[2.5rem] border-2 transition-all duration-700 cursor-pointer flex items-center gap-6 overflow-hidden ${selectedPayment === method.id ? 'glass-panel border-[#10b77f] shadow-[0_20px_50px_rgba(16,183,127,0.1)]' : 'glass-panel border-white/5 hover:border-white/20'}`}
+                                    >
+                                        <div className="size-16 rounded-[1.5rem] bg-white flex items-center justify-center p-3 shadow-lg shrink-0 transition-transform group-hover:scale-110 duration-500">
+                                            <img src={method.icon} alt={method.name} className="w-full h-auto" />
                                         </div>
                                         <div className="flex-1">
-                                            <span className={`block text-xl font-black uppercase tracking-tighter italic ${selectedPayment === method.id ? 'text-white' : 'text-zinc-400'}`}>{method.name}</span>
-                                            <span className="block text-[10px] text-zinc-500 font-black uppercase tracking-widest italic mt-1.5 opacity-60 leading-none">{method.id === 'ideal' ? 'VOORKEUR' : 'BESCHIKBAAR'} • {method.desc}</span>
-                                        </div>
-                                        {selectedPayment === method.id && (
-                                            <div className="absolute top-6 right-6 text-[#10b77f] animate-in zoom-in duration-500">
-                                                <span className="material-symbols-outlined font-black text-[24px] drop-shadow-[0_0_10px_rgba(16,183,127,0.5)]">verified</span>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className={`text-xl font-black uppercase tracking-tighter italic ${selectedPayment === method.id ? 'text-white' : 'text-zinc-400'}`}>
+                                                    {method.name}
+                                                </span>
+                                                {method.id === 'ideal' && (
+                                                    <span className="px-2 py-0.5 rounded-md bg-[#10b77f] text-[#0A0A0A] text-[8px] font-black uppercase tracking-widest italic group-hover:scale-110 transition-transform">POPULAIR</span>
+                                                )}
                                             </div>
-                                        )}
-                                    </label>
+                                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest italic opacity-60 leading-none">
+                                                {method.desc}
+                                            </p>
+                                        </div>
+                                        <div className={`size-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${selectedPayment === method.id ? 'border-[#10b77f] bg-[#10b77f]' : 'border-white/20'}`}>
+                                            {selectedPayment === method.id && <span className="material-symbols-outlined text-[20px] text-black font-black">check</span>}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </section>
