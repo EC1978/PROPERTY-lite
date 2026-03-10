@@ -11,9 +11,16 @@ export async function POST(req: Request) {
             return new Response('Missing payment ID', { status: 400 })
         }
 
-        console.log(`Received Mollie webhook for payment: ${paymentId}`)
-
         const supabase = await createAdminClient()
+
+        // Debug Log
+        await supabase.from('audit_logs').insert({
+            admin_email: 'SYSTEM_WEBHOOK',
+            action: 'MOLLIE_WEBHOOK_RECEIVED',
+            details: { paymentId }
+        })
+
+        console.log(`Received Mollie webhook for payment: ${paymentId}`)
 
         // 1. Fetch Mollie Settings to get the correct API Key
         const { data: settings } = await supabase
@@ -69,8 +76,17 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ received: true })
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Webhook processing error:', error)
+
+        // Error Log
+        const supabase = await createAdminClient()
+        await supabase.from('audit_logs').insert({
+            admin_email: 'SYSTEM_WEBHOOK',
+            action: 'MOLLIE_WEBHOOK_ERROR',
+            details: { error: error.message, stack: error.stack }
+        })
+
         return new Response('Webhook Error', { status: 500 })
     }
 }
