@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
     '/review',
     '/shop',
     '/api/voice',
+    '/api/payments',
     '/maintenance',
 ]
 
