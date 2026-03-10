@@ -3,6 +3,8 @@ import { getAdminProducts } from '../../products/actions'
 import { getUsersForOrder } from '../actions'
 import { AlertCircle } from 'lucide-react'
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
     title: 'Nieuwe Bestelling | Superadmin',
     description: 'Handmatig een nieuwe bestelling of garantie aanmaken'

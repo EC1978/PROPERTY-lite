@@ -2,6 +2,8 @@ import { getAdminComplaints } from './actions'
 import ComplaintsManagementClient from './ComplaintsManagementClient'
 import { AlertCircle } from 'lucide-react'
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
     title: 'Reclamaties | Superadmin',
     description: 'Beheer alle klantreclamaties en klachten'
