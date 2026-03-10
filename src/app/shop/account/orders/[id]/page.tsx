@@ -578,41 +578,62 @@ export default function OrderDetailPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
                     <div className="bg-[#1A1D1C] border border-white/10 rounded-[40px] w-full max-w-lg overflow-hidden shadow-[0_0_100px_rgba(13,242,162,0.1)]">
                         <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                            <h3 className="text-2xl font-black text-white tracking-tight">Bestelling afrekenen</h3>
-                            <button onClick={() => setShowPaymentModal(false)} className="size-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10">
+                            <h3 className="text-2xl font-black text-white tracking-tight">Betaalmethode</h3>
+                            <button onClick={() => setShowPaymentModal(false)} className="size-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
                                 <span className="material-symbols-outlined text-white">close</span>
                             </button>
                         </div>
                         <div className="p-8 space-y-8">
                             <div className="space-y-6">
-                                <div className="bg-white/5 rounded-3xl p-6 border border-white/5">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Totaalbedrag</span>
+                                <div className="bg-white/5 rounded-3xl p-6 border border-white/5 flex justify-between items-center group">
+                                    <div>
+                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest block mb-1">Te betalen</span>
                                         <span className="text-2xl font-black text-[#0df2a2]">€ {Number(order.total_amount).toFixed(2)}</span>
                                     </div>
-                                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
-                                        U wordt doorgestuurd naar de beveiligde betaalomgeving van Mollie.
-                                    </p>
-                                </div>
-                                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-center gap-4">
-                                    <div className="size-10 bg-[#0df2a2]/10 rounded-xl flex items-center justify-center text-[#0df2a2]">
-                                        <span className="material-symbols-outlined text-[20px]">verified_user</span>
+                                    <div className="text-right">
+                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest block mb-1">Order</span>
+                                        <span className="text-sm font-bold text-white">#{order.order_number || order.id.slice(0, 8)}</span>
                                     </div>
-                                    <p className="text-[10px] font-black text-white uppercase tracking-widest leading-normal">
-                                        Veilig & Vertrouwd betalen via Mollie
+                                </div>
+
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-2">Kies uw betaalmethode</p>
+
+                                    {/* iDEAL / Wero Option */}
+                                    <div
+                                        onClick={() => setSelectedPayment('ideal')}
+                                        className={`group relative p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 ${selectedPayment === 'ideal' ? 'bg-[#0df2a2]/10 border-[#0df2a2]/40 shadow-[0_0_20px_rgba(13,242,162,0.05)]' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                                    >
+                                        <div className="size-12 rounded-xl bg-white flex items-center justify-center p-2 shadow-sm shrink-0">
+                                            <img src="https://www.mollie.com/external/icons/payment-methods/ideal.svg" alt="iDEAL" className="w-full h-auto" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-black text-white uppercase tracking-tight">iDEAL / Wero</span>
+                                                <span className="text-[8px] bg-[#0df2a2] text-black px-1.5 py-0.5 rounded font-black">POPULAIR</span>
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 font-medium">Betalen via uw eigen bank</p>
+                                        </div>
+                                        <div className={`size-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedPayment === 'ideal' ? 'border-[#0df2a2] bg-[#0df2a2]' : 'border-white/20'}`}>
+                                            {selectedPayment === 'ideal' && <span className="material-symbols-outlined text-[14px] text-black font-black">check</span>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <button
+                                        onClick={processPayment}
+                                        disabled={isPaying || !selectedPayment}
+                                        className="w-full bg-[#0df2a2] text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                                    >
+                                        {isPaying ? 'Betaalomgeving laden...' : 'Nu afrekenen'}
+                                        {isPaying && <div className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>}
+                                    </button>
+                                    <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-widest mt-4 flex items-center justify-center gap-2">
+                                        <span className="material-symbols-outlined text-[12px]">verified_user</span>
+                                        Beveiligde betaling via Mollie
                                     </p>
                                 </div>
-                                <button
-                                    onClick={processPayment}
-                                    disabled={isPaying}
-                                    className="w-full bg-[#0df2a2] text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
-                                >
-                                    {isPaying ? 'Betaalomgeving laden...' : 'Nu betalen via Mollie'}
-                                    {isPaying && <div className="size-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>}
-                                </button>
-                                <p className="text-center text-[9px] text-gray-600 font-bold uppercase tracking-widest">
-                                    iDEAL / Wero • Creditcard • Bancontact
-                                </p>
                             </div>
                         </div>
                     </div>
