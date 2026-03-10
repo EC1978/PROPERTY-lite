@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 function SuccessContent() {
     const searchParams = useSearchParams();
@@ -11,13 +12,58 @@ function SuccessContent() {
     const { total, clearCart } = useCart();
     const [orderTotal, setOrderTotal] = useState(0);
 
-    // Use a ref to ensure we only capture the total once and avoid loops
+    const [status, setStatus] = useState<string>('verwerken...');
+
+    // 1. Clear Cart & Set Initial Total
     useEffect(() => {
         if (total > 0) {
             setOrderTotal(total * 1.21);
             clearCart();
+        } else {
+            // Even if total is 0 (already cleared), ensure we have a fallback for the UI
+            // However, it's better to get the real total from the order if possible
         }
-    }, [total, clearCart]);
+    }, []); // Run once on mount
+
+    // 2. Poll for Order Status (Webhook sync)
+    useEffect(() => {
+        if (!orderId) return;
+
+        const supabase = createClient();
+        let pollCount = 0;
+        const maxPolls = 10; // Poll for 20 seconds maximum (2s intervals)
+
+        const checkStatus = async () => {
+            const { data, error } = await supabase
+                .from('shop_orders')
+                .select('status, total_amount')
+                .eq('id', orderId)
+                .single();
+
+            if (data) {
+                if (data.status === 'paid') {
+                    setStatus('betaald');
+                    setOrderTotal(Number(data.total_amount));
+                    return true; // Stop polling
+                }
+                setOrderTotal(Number(data.total_amount));
+            }
+            return false;
+        };
+
+        // Initial check
+        checkStatus();
+
+        const interval = setInterval(async () => {
+            pollCount++;
+            const isPaid = await checkStatus();
+            if (isPaid || pollCount >= maxPolls) {
+                clearInterval(interval);
+            }
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [orderId]);
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-[#F8FAFC] font-sans flex flex-col items-center">
@@ -108,7 +154,7 @@ function SuccessContent() {
                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] italic mb-4 opacity-50">
                                     <span>Status</span>
                                     <span className="text-[#10b77f] flex items-center gap-2 not-italic">
-                                        VOLTOOID <span className="material-symbols-outlined text-[16px] font-black">verified</span>
+                                        {status.toUpperCase()} <span className="material-symbols-outlined text-[16px] font-black">{status === 'betaald' ? 'verified' : 'sync'}</span>
                                     </span>
                                 </div>
                                 <div className="text-4xl font-black italic tracking-tighter text-[#10b77f] drop-shadow-[0_0_20px_rgba(16,183,127,0.3)]">€ {orderTotal.toFixed(2)}</div>
