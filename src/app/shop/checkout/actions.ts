@@ -11,7 +11,7 @@ export async function createCheckoutSession(orderData: any) {
         // 1. Fetch Mollie Settings
         const { data: settings, error: settingsError } = await supabase
             .from('platform_settings')
-            .select('mollie_test_api_key, mollie_live_api_key, mollie_is_test_mode')
+            .select('mollie_test_api_key, mollie_live_api_key, mollie_is_test_mode, mollie_webhook_url')
             .eq('id', 1)
             .single()
 
@@ -74,13 +74,21 @@ export async function createCheckoutSession(orderData: any) {
         const protocol = host?.includes('localhost') ? 'http' : 'https'
         const domain = `${protocol}://${host}`
 
-        const webhookUrl = `${domain}/api/payments/webhook`
+        const isLocal = host?.includes('localhost')
+        let webhookUrl: string | undefined = `${domain}/api/payments/webhook`
+
+        // Override or disable on localhost
+        if (settings.mollie_webhook_url) {
+            webhookUrl = settings.mollie_webhook_url
+        } else if (isLocal) {
+            webhookUrl = undefined // Mollie errors on localhost webhooks
+        }
 
         // Log for debugging
         await supabase.from('audit_logs').insert({
             admin_email: 'SYSTEM_CHECKOUT',
             action: 'MOLLIE_URL_GENERATED',
-            details: { orderId: order.id, webhookUrl, domain }
+            details: { orderId: order.id, webhookUrl, domain, isLocal }
         })
 
         const payment = await (mollieClient.payments.create({

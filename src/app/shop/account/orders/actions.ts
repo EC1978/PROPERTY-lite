@@ -54,13 +54,20 @@ export async function getOrderPaymentUrl(orderId: string) {
         const protocol = host?.includes('localhost') ? 'http' : 'https'
         const domain = `${protocol}://${host}`
 
-        const webhookUrl = `${domain}/api/payments/webhook`
+        const isLocal = host?.includes('localhost')
+        let webhookUrl: string | undefined = `${domain}/api/payments/webhook`
+
+        if (settings.mollie_webhook_url) {
+            webhookUrl = settings.mollie_webhook_url
+        } else if (isLocal) {
+            webhookUrl = undefined
+        }
 
         // Log for debugging
         await supabase.from('audit_logs').insert({
             admin_email: 'SYSTEM_PAYMENT_RECOVERY',
             action: 'MOLLIE_URL_GENERATED',
-            details: { orderId: order.id, webhookUrl, domain }
+            details: { orderId: order.id, webhookUrl, domain, isLocal }
         })
 
         // 4. Create Mollie Payment
