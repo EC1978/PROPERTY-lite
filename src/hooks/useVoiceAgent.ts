@@ -25,6 +25,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
     const isToolExecutingRef = useRef<boolean>(false);
     const isStoppingRef = useRef<boolean>(false); // Prevent double-stop race condition
     const userTranscriptRef = useRef<string[]>([]); // Track what user said (from audio input events)
+    const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null); // Track playing audio node for barge-in
 
     const fetchSessionDetails = async () => {
         const response = await fetch("/api/voice/session", {
@@ -123,6 +124,10 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             sourceRef.current.disconnect();
             sourceRef.current = null;
         }
+        if (currentAudioSourceRef.current) {
+            try { currentAudioSourceRef.current.stop(); } catch (e) { /* ignore */ }
+            currentAudioSourceRef.current = null;
+        }
         if (audioContextRef.current) {
             try { audioContextRef.current.close(); } catch (e) { /* ignore */ }
             audioContextRef.current = null;
@@ -144,6 +149,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
         if (audioQueueRef.current.length === 0 || !audioContextRef.current) {
             isPlayingRef.current = false;
             setIsSpeaking(false);
+            currentAudioSourceRef.current = null;
             return;
         }
 
@@ -163,8 +169,12 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
 
         source.start(startTime);
         nextStartTimeRef.current = startTime + buffer.duration;
+        currentAudioSourceRef.current = source;
 
         source.onended = () => {
+             if (currentAudioSourceRef.current === source) {
+                 currentAudioSourceRef.current = null;
+             }
             playNextChunk();
         };
     };
@@ -211,7 +221,7 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
             if (!API_KEY) throw new Error("Google API Key missing in environment");
 
             const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
-            console.log("🔗 Connecting to Gemini WebSocket...");
+            console.log("🔗 Connecting to Gemini WebSocket (v1beta)...");
             const ws = new WebSocket(url);
             wsRef.current = ws;
 
@@ -253,20 +263,17 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                 }
 
                 // Setup: AUDIO-only + enable transcription for both input and output
-                // IMPORTANT: Use gemini-2.0-flash-live-001 which reliably supports transcription.
-                // The native-audio model may NOT send transcription events.
+                // IMPORTANT: Use gemini-2.5-flash-native-audio-latest as it's the latest available Bidi model.
+                // Requesting both AUDIO and TEXT explicitly might cause 1007 Invalid Argument on this model.
                 const setupMsg = {
                     setup: {
-                        model: "models/gemini-2.0-flash-live-001",
+                        model: "models/gemini-2.5-flash-native-audio-latest",
                         generationConfig: {
                             responseModalities: ["AUDIO"]
-                        },
-                        inputAudioTranscription: {},
-                        outputAudioTranscription: {},
-                        tools: []
+                        }
                     }
                 };
-                console.log("📤 Sending Setup (AUDIO + transcription enabled, model: gemini-2.0-flash-live-001)");
+                console.log("📤 Sending Setup (AUDIO enabled)");
                 ws.send(JSON.stringify(setupMsg));
 
                 // Send the system prompt
@@ -339,6 +346,32 @@ export function useVoiceAgent({ propertyId }: UseVoiceAgentProps) {
                     data = JSON.parse(await event.data.text());
                 } else {
                     data = JSON.parse(event.data);
+                }
+
+                // Barge-in (interruption) detection
+                if (data.serverContent?.interrupted) {
+                    console.log("🛑 BARGE-IN DETECTED: Dropping audio queue and stopping current playback.");
+                    audioQueueRef.current = []; // Drop accumulated audio
+                    if (currentAudioSourceRef.current) {
+                        try { currentAudioSourceRef.current.stop(); } catch (e) { /* ignore */ }
+                        currentAudioSourceRef.current = null;
+                        isPlayingRef.current = false;
+                        setIsSpeaking(false);
+                    }
+                    return; // Skip further processing for this chunk
+                }
+
+                // Barge-in (interruption) detection
+                if (data.serverContent?.interrupted) {
+                    console.log("🛑 BARGE-IN DETECTED: Dropping audio queue and stopping current playback.");
+                    audioQueueRef.current = []; // Drop accumulated audio
+                    if (currentAudioSourceRef.current) {
+                        try { currentAudioSourceRef.current.stop(); } catch (e) { /* ignore */ }
+                        currentAudioSourceRef.current = null;
+                        isPlayingRef.current = false;
+                        setIsSpeaking(false);
+                    }
+                    return; // Skip further processing for this chunk
                 }
 
                 // DEBUG: Log ALL top-level keys in every single message
