@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from './layout/Sidebar'
 import MobileNav from './layout/MobileNav'
 import MobileMenu from './layout/MobileMenu'
+import NotificationBell from './layout/NotificationBell'
 
 interface Property {
     id: string
@@ -203,10 +204,7 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
                         <h2 className="text-lg font-bold leading-none tracking-tight">Dashboard</h2>
                     </div>
                 </div>
-                <button className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-white">
-                    <span className="material-symbols-outlined text-[24px]">notifications</span>
-                    <span className="absolute top-2 right-2 size-2 bg-[#0df2a2] rounded-full" />
-                </button>
+                <NotificationBell />
             </div>
 
             {/* ===== MAIN CONTENT ===== */}

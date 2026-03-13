@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { ToastProvider } from "@/providers/ToastProvider";
 
 export default function RootLayout({
   children,
@@ -50,7 +51,9 @@ export default function RootLayout({
         className={`${inter.variable} ${manrope.variable} antialiased bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white transition-colors duration-300`}
       >
         <ThemeProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

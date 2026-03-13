@@ -72,11 +72,11 @@ export default async function SupportPage() {
                         <form className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">Onderwerp</label>
-                                <select className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:ring-emerald-500 outline-none">
-                                    <option>Technische Ondersteuning</option>
-                                    <option>Facturatie Vraag</option>
-                                    <option>Feature Request</option>
-                                    <option>Anders</option>
+                                <select className="w-full bg-gray-50 dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-emerald-500 outline-none">
+                                    <option className="bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white">Technische Ondersteuning</option>
+                                    <option className="bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white">Facturatie Vraag</option>
+                                    <option className="bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white">Feature Request</option>
+                                    <option className="bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white">Anders</option>
                                 </select>
                             </div>
 

@@ -5,21 +5,22 @@ import { usePathname } from 'next/navigation'
 
 interface SettingsNavProps {
     isSuperadmin?: boolean
+    isAdmin?: boolean
 }
 
 interface NavItem {
     name: string
     href: string
     icon: string
+    adminOnly?: boolean
 }
 
 interface NavGroup {
     label: string
     items: NavItem[]
-    adminOnly?: boolean
 }
 
-export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) {
+export default function SettingsNav({ isSuperadmin = false, isAdmin = false }: SettingsNavProps) {
     const pathname = usePathname()
 
     const groups: NavGroup[] = [
@@ -34,8 +35,8 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
         {
             label: 'Kantoorinstellingen',
             items: [
-                { name: 'Team Beheer', href: '/settings/team', icon: 'group' },
-                { name: 'Geautomatiseerde E-mails', href: '/settings/emails', icon: 'mail' },
+                { name: 'Team Beheer', href: '/settings/team', icon: 'group', adminOnly: true },
+                { name: 'Geautomatiseerde E-mails', href: '/settings/emails', icon: 'mail', adminOnly: true },
             ],
         },
         {
@@ -47,13 +48,21 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
         },
     ]
 
-    const visibleGroups = groups.filter(g => !g.adminOnly || isSuperadmin)
+    const filteredGroups = groups.map((group: NavGroup) => ({
+        ...group,
+        items: group.items.filter((item: NavItem) => !item.adminOnly || isAdmin)
+    }))
+    .filter(group => {
+        // Hide 'Kantoorinstellingen' for superadmins because they manage this globally in /admin
+        if (isSuperadmin && group.label === 'Kantoorinstellingen') return false;
+        return group.items.length > 0;
+    })
 
     return (
         <aside className="w-full md:w-64 flex-shrink-0 flex flex-col gap-4 sticky top-[72px] md:top-0 z-30">
             {/* Horizontal scroll on mobile */}
             <div className="flex md:hidden gap-2 overflow-x-auto hide-scrollbar pb-3">
-                {visibleGroups.flatMap(g => g.items).map((item) => {
+                {filteredGroups.flatMap(g => g.items).map((item) => {
                     const isActive = pathname === item.href || (item.href === '/settings/profile' && pathname === '/settings')
                     return (
                         <Link
@@ -73,10 +82,9 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
 
             {/* Grouped vertical list on desktop */}
             <div className="hidden md:flex flex-col gap-5">
-                {visibleGroups.map((group) => (
+                {filteredGroups.map((group) => (
                     <div key={group.label}>
-                        <p className={`text-[10px] uppercase tracking-widest font-black px-3 mb-1.5 ${group.adminOnly ? 'text-[#0df2a2]' : 'text-gray-400 dark:text-gray-600'}`}>
-                            {group.adminOnly && <span className="mr-1">⚡</span>}
+                        <p className="text-[10px] uppercase tracking-widest font-black px-3 mb-1.5 text-gray-400 dark:text-gray-600">
                             {group.label}
                         </p>
                         <div className="flex flex-col gap-1">
@@ -88,7 +96,7 @@ export default function SettingsNav({ isSuperadmin = false }: SettingsNavProps) 
                                         href={item.href}
                                         className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all font-semibold text-[13px] border duration-200 ${isActive
                                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-sm'
-                                            : group.adminOnly
+                                            : item.adminOnly
                                                 ? 'bg-[#0df2a2]/5 text-[#0df2a2]/70 border-[#0df2a2]/10 hover:bg-[#0df2a2]/10 hover:text-[#0df2a2]'
                                                 : 'bg-white dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                                             }`}

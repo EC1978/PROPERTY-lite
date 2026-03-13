@@ -1,12 +1,15 @@
 import Logo from '@/components/Logo'
 import Link from 'next/link'
-import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe, Wrench, History, AlertCircle } from 'lucide-react'
+import { LayoutDashboard, Users, ShoppingCart, Settings, LogOut, Package, CreditCard, Globe, Wrench, History, AlertCircle, Mail, Server } from 'lucide-react'
+import NotificationBell from '@/components/layout/NotificationBell'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const defaultNavItems = [
         { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
         { label: 'Landingspagina', path: '/admin/landing', icon: Globe },
         { label: 'Makelaars', path: '/admin/users', icon: Users },
+        { label: 'Template Manager', path: '/admin/emails', icon: Mail },
+        { label: 'SMTP Server', path: '/admin/smtp', icon: Server },
         { label: 'Pakket Builder', path: '/admin/packages', icon: CreditCard },
         { label: 'Bestellingen', path: '/admin/orders', icon: ShoppingCart },
         { label: 'Betaalmethodes', path: '/admin/payments', icon: CreditCard },
@@ -51,8 +54,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
-                <div className="p-8">
+            <main className="flex-1 overflow-y-auto flex flex-col">
+                {/* Top Header */}
+                <header className="h-16 border-b border-[#222] bg-[#0A0A0A] flex items-center justify-end px-8 shrink-0 relative z-40">
+                    <NotificationBell isAdminView={true} />
+                </header>
+
+                <div className="p-8 flex-1">
                     {children}
                 </div>
             </main>

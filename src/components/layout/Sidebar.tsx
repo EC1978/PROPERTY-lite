@@ -7,6 +7,7 @@ import { signOut } from '@/app/auth/actions'
 import ThemeToggle from '../ThemeToggle'
 import Logo from '../Logo'
 import { createClient } from '@/utils/supabase/client'
+import NotificationBell from './NotificationBell'
 
 interface SidebarProps {
     userEmail?: string
@@ -97,6 +98,7 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
+                        <NotificationBell />
                         <ThemeToggle />
                         <button
                             onClick={() => signOut()}

@@ -1,8 +1,27 @@
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getEmailSettings } from './actions';
 import EmailSettingsList from './EmailSettingsList';
 
 export default async function EmailSettingsPage() {
+    const supabase = await createClient();
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData?.user) redirect('/login');
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userData.user.id)
+        .single();
+
+    const isAdmin = profile?.role === 'Beheerder' || profile?.role === 'owner' || profile?.role === 'superadmin';
+
+    if (!isAdmin) {
+        redirect('/settings/profile');
+    }
+
     const { settings, error } = await getEmailSettings();
 
     return (
