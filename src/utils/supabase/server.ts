@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 
-export async function createClient() {
+export async function createClient(options?: { ignoreCodeVerifier?: boolean }) {
     const { cookies } = await import('next/headers')
     const cookieStore = await cookies()
 
@@ -10,7 +10,11 @@ export async function createClient() {
         {
             cookies: {
                 getAll() {
-                    return cookieStore.getAll()
+                    const allCookies = cookieStore.getAll()
+                    if (options?.ignoreCodeVerifier) {
+                        return allCookies.filter(c => !c.name.endsWith('-code-verifier'))
+                    }
+                    return allCookies
                 },
                 setAll(cookiesToSet) {
                     try {

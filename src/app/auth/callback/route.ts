@@ -19,8 +19,19 @@ export async function GET(request: Request) {
     const safeOrigin = await getURL()
 
     if (code) {
-        console.log('[Auth Callback] Attempting code exchange for code:', code.substring(0, 10) + '...')
-        const supabase = await createClient()
+        const forwardedHost = request.headers.get('x-forwarded-host')
+        const isLocalEnv = process.env.NODE_ENV === 'development'
+
+        // Check if this is an impersonation request
+        const isImpersonate = searchParams.get('impersonate') === 'true'
+
+        console.log('[Auth Callback] Attempting code exchange for code:', code.substring(0, 10) + '...', { isImpersonate })
+        
+        // When impersonating, the ghost login api (`admin.generateLink`) did not generate a client-side PKCE code verifier.
+        // Therefore, we tell the auth client to ignore any existing code_verifier cookie from the admin's own session
+        // to prevent 406 Not Acceptable (PKCE mismatch).
+        const supabase = await createClient({ ignoreCodeVerifier: isImpersonate })
+        
         const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (error) {
@@ -33,12 +44,6 @@ export async function GET(request: Request) {
         }
 
         console.log('[Auth Callback] Code exchange successful. User set:', exchangeData.user?.email)
-
-        const forwardedHost = request.headers.get('x-forwarded-host')
-        const isLocalEnv = process.env.NODE_ENV === 'development'
-
-        // Check if this is an impersonation request
-        const isImpersonate = searchParams.get('impersonate') === 'true'
 
         // If impersonating, always go to next. Otherwise, recovery goes to reset-password.
         const redirectPath = (type === 'recovery' && !isImpersonate) ? '/reset-password' : next

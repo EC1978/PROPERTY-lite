@@ -1,4 +1,4 @@
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createClient as createVanillaClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -23,20 +23,15 @@ export async function POST(request: Request) {
 
         console.log('[Ghost Login API] Detected Admin User ID:', adminUser.id)
 
-        // 2. Initialiseer de Admin Client (beide voor rol-check en impersonatie)
-        const supabaseServiceRole = createAdminClient(
+        // 2. Initialiseer de Service Role Client
+        const supabaseAdmin = createVanillaClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
+            { auth: { autoRefreshToken: false, persistSession: false } }
         )
 
-        // 3. Controleer of de gebruiker een superadmin is (via Service Role om RLS te omzeilen)
-        const { data: profile, error: profileError } = await supabaseServiceRole
+        // 3. Controleer of de gebruiker een superadmin is
+        const { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('role')
             .eq('id', adminUser.id)
@@ -50,57 +45,81 @@ export async function POST(request: Request) {
         }
 
         // 4. Haal email van target user op
-        const { data: targetUserData, error: userError } = await supabaseServiceRole.auth.admin.getUserById(targetUserId)
+        const { data: targetUserData, error: userError } = await supabaseAdmin.auth.admin.getUserById(targetUserId)
         if (userError || !targetUserData.user) {
             console.error('[Ghost Login API] Target user fetch error:', userError)
             return NextResponse.json({ error: 'Makelaar niet gevonden' }, { status: 404 })
         }
 
-        // 5. Genereer Link (we gebruiken 'recovery' omdat dit vaak stabieler is voor server-side validatie)
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-        console.log('[Ghost Login API] Generating recovery link for:', targetUserData.user.email)
+        const targetEmail = targetUserData.user.email!
+        console.log('[Ghost Login API] Generating magiclink for:', targetEmail)
 
-        const { data: linkData, error: linkError } = await supabaseServiceRole.auth.admin.generateLink({
-            type: 'recovery',
-            email: targetUserData.user.email || '',
-            options: {
-                redirectTo: `${siteUrl}/auth/callback?next=/dashboard&impersonate=true`
-            }
+        // 5. Genereer een magiclink via admin API
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: targetEmail,
         })
 
-        if (linkError || !linkData?.properties?.action_link) {
+        if (linkError || !linkData) {
             console.error('[Ghost Login API] Link generation error:', linkError)
-            return NextResponse.json({ 
-                error: 'Kon geen login link genereren: ' + (linkError?.message || 'Onbekende fout') 
+            return NextResponse.json({
+                error: 'Kon geen login link genereren: ' + (linkError?.message || 'Onbekende fout')
             }, { status: 500 })
         }
 
-        const actionLink = linkData.properties.action_link
-        
-        // Parse the link to extract either token or token_hash
-        const urlObj = new URL(actionLink)
-        const tokenHash = urlObj.searchParams.get('token_hash')
-        const linkType = urlObj.searchParams.get('type') || 'recovery'
-        
-        console.log('[Ghost Login API] Attempting server-side verification:', { linkType, hasHash: !!tokenHash })
+        // generateLink geeft properties terug met hashed_token en verification_type
+        const hashedToken = linkData.properties?.hashed_token
+        const verificationType = linkData.properties?.verification_type || 'magiclink'
 
-        // Exchange the token directly on the server to establish the session cookies
-        // This avoids the PKCE mismatch that happens when sending the link to the browser
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-            type: linkType as any,
-            email: targetUserData.user.email,
-            token_hash: tokenHash || undefined,
-        } as any)
+        console.log('[Ghost Login API] Link generated. hashed_token present:', !!hashedToken, 'type:', verificationType)
 
-        if (verifyError) {
-            console.error('[Ghost Login API] Verify OTP failed:', verifyError)
-            return NextResponse.json({ error: 'Sessie token validatie mislukt: ' + verifyError.message }, { status: 500 })
+        if (!hashedToken) {
+            console.error('[Ghost Login API] Geen hashed_token in generateLink response:', JSON.stringify(linkData.properties))
+            return NextResponse.json({ error: 'Supabase heeft geen geldig token teruggegeven' }, { status: 500 })
         }
 
-        console.log('[Ghost Login API] Session established successfully via verifyOtp')
-        
-        // The cookies are automatically set in the response headers by createClient() (setAll method).
-        // Return the dashboard URL so the client can redirect.
+        // 6. Verifieer het token met een vanilla (niet-SSR) client om PKCE te omzeilen
+        const authClient = createVanillaClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+        )
+
+        console.log('[Ghost Login API] Calling verifyOtp with token_hash...')
+
+        const { data: otpData, error: verifyError } = await authClient.auth.verifyOtp({
+            type: verificationType as 'magiclink',
+            token_hash: hashedToken,
+        })
+
+        if (verifyError) {
+            console.error('[Ghost Login API] verifyOtp FAILED:', verifyError.message)
+            return NextResponse.json({
+                error: 'Token verificatie mislukt: ' + verifyError.message
+            }, { status: 500 })
+        }
+
+        if (!otpData.session) {
+            console.error('[Ghost Login API] verifyOtp returned no session')
+            return NextResponse.json({ error: 'Geen sessie ontvangen na verificatie' }, { status: 500 })
+        }
+
+        console.log('[Ghost Login API] verifyOtp SUCCESS. User:', otpData.session.user.email)
+
+        // 7. Zet de sessie in de SSR client (dit schrijft de cookies naar de browser)
+        const supabaseSsr = await createClient()
+        const { error: sessionError } = await supabaseSsr.auth.setSession({
+            access_token: otpData.session.access_token,
+            refresh_token: otpData.session.refresh_token,
+        })
+
+        if (sessionError) {
+            console.error('[Ghost Login API] setSession FAILED:', sessionError.message)
+            return NextResponse.json({ error: 'Kon sessie cookies niet instellen' }, { status: 500 })
+        }
+
+        console.log('[Ghost Login API] Session cookies set. Redirecting to dashboard.')
+
         return NextResponse.json({ url: '/dashboard' })
 
     } catch (error: any) {
