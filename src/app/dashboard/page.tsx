@@ -34,6 +34,15 @@ export default async function DashboardPage() {
         .eq('user_id', user.id)
         .single()
 
+    // Fetch profile for trial expiration
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('trial_expires_at')
+        .eq('id', user.id)
+        .single()
+
+    console.log('DashboardPage: trial_expires_at for user', user.id, 'is', profile?.trial_expires_at)
+
     return (
         <DashboardLiveView
             userEmail={user.email || ''}
@@ -41,6 +50,7 @@ export default async function DashboardPage() {
             initialProperties={properties || []}
             initialActiveCount={activeCount || 0}
             initialFeatures={features || { has_agenda: false, has_leads: false, has_webshop: false }}
+            trialExpiresAt={profile?.trial_expires_at || null}
         />
     )
 }

@@ -151,8 +151,8 @@ export default function SecuritySettings() {
                                     type={showPassword ? "text" : "password"}
                                     value={newPassword}
                                     onChange={e => setNewPassword(e.target.value)}
-                                    placeholder="Minimaal 6 karakters..."
-                                    className="w-full bg-[#0A0A0A] border border-white/10 focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2] text-white text-sm rounded-xl py-2 px-3 pr-10 outline-none transition-colors"
+                                    placeholder="Nieuw wachtwoord..."
+                                    className={`w-full bg-[#0A0A0A] border ${newPassword && newPassword.length < 6 ? 'border-red-500/50' : 'border-white/10'} focus:border-[#0df2a2] focus:ring-1 focus:ring-[#0df2a2] text-white text-sm rounded-xl py-2 px-3 pr-10 outline-none transition-colors`}
                                 />
                                 <button
                                     type="button"
@@ -162,6 +162,11 @@ export default function SecuritySettings() {
                                     <span className="material-symbols-outlined text-[18px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                                 </button>
                             </div>
+                            {newPassword && newPassword.length < 6 && (
+                                <p className="text-[10px] text-red-500 mt-1 ml-1 animate-in fade-in slide-in-from-top-1">
+                                    Minimaal 6 tekens vereist
+                                </p>
+                            )}
                         </div>
                         <div className="flex sm:flex-row flex-col-reverse justify-end gap-2 mt-4">
                             <button

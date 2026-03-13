@@ -90,15 +90,15 @@ function RegisterForm() {
                     <form action={handleSubmit} className="flex flex-col gap-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-[0.15em]">Volledige Naam</label>
-                            <div className="relative group">
-                                <input name="fullName" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal" placeholder="John Doe" type="text" required />
+                            <div className="relative group" suppressHydrationWarning>
+                                <input name="fullName" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal" placeholder="John Doe" type="text" required suppressHydrationWarning />
                                 <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-primary transition-colors duration-300" style={{ fontSize: '22px' }}>person</span>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-[0.15em]">E-mailadres</label>
-                            <div className="relative group">
-                                <input name="email" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal" placeholder="agent@voicerealty.ai" type="email" required />
+                            <div className="relative group" suppressHydrationWarning>
+                                <input name="email" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal" placeholder="agent@voicerealty.ai" type="email" required suppressHydrationWarning />
                                 <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-primary transition-colors duration-300" style={{ fontSize: '22px' }}>mail</span>
                             </div>
                         </div>
@@ -106,8 +106,8 @@ function RegisterForm() {
                             <div className="flex justify-between items-center ml-1">
                                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">Wachtwoord</label>
                             </div>
-                            <div className="relative group">
-                                <input name="password" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal pr-14" placeholder="••••••••" type={showPassword ? "text" : "password"} required />
+                            <div className="relative group" suppressHydrationWarning>
+                                <input name="password" className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal pr-14" placeholder="••••••••" type={showPassword ? "text" : "password"} required suppressHydrationWarning />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}

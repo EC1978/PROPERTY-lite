@@ -10,15 +10,22 @@ import { createClient } from '@/utils/supabase/server'
 // ─────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────
-async function getURL() {
+export async function getURL() {
     let url = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
     // Try to get from headers for dynamic detection (local vs production)
     try {
         const headerList = await headers()
-        const host = headerList.get('host')
+        let host = headerList.get('host')
         if (host) {
-            const protocol = host.includes('localhost') ? 'http' : 'https'
+            // Fix for 0.0.0.0 or [::] which are invalid on Windows browsers
+            if (host.includes('0.0.0.0')) {
+                host = host.replace('0.0.0.0', 'localhost')
+            } else if (host.includes('[::]')) {
+                host = host.replace('[::]', 'localhost')
+            }
+            
+            const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https'
             url = `${protocol}://${host}`
             console.log('Dynamic URL detected:', url)
         }
@@ -90,8 +97,28 @@ export async function login(formData: FormData) {
         }
     }
 
+    // Haal role op voor juiste redirect
+    let redirectPath = '/dashboard'
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        // Check DB role OR env variable fallback
+        const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
+        const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
+        const isEmailAdmin = user.email ? adminEmails.includes(user.email.toLowerCase()) : false
+        const isDbAdmin = profile?.role === 'superadmin'
+
+        if (isDbAdmin || isEmailAdmin) {
+            redirectPath = '/admin'
+        }
+    }
+
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect(redirectPath)
 }
 
 // ─────────────────────────────────────────────
@@ -278,8 +305,29 @@ export async function verifyTotp(formData: FormData) {
             return { error: 'Onjuiste code. Probeer het opnieuw.' }
         }
 
+        // Haal role op voor juiste redirect na MFA
+        const { data: { user: mfaUser } } = await supabase.auth.getUser()
+        let mfaRedirectPath = '/dashboard'
+        if (mfaUser) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', mfaUser.id)
+                .single()
+            
+            // Check DB role OR env variable fallback
+            const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
+            const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
+            const isEmailAdmin = mfaUser.email ? adminEmails.includes(mfaUser.email.toLowerCase()) : false
+            const isDbAdmin = profile?.role === 'superadmin'
+
+            if (isDbAdmin || isEmailAdmin) {
+                mfaRedirectPath = '/admin'
+            }
+        }
+
         revalidatePath('/', 'layout')
-        redirect('/dashboard')
+        redirect(mfaRedirectPath)
     }
 
     // Enrollment flow: create a new challenge and verify

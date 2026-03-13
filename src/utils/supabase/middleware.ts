@@ -108,19 +108,33 @@ export async function updateSession(request: NextRequest) {
     // --- ADMIN ROUTE SECURITY ---
     if (pathname.startsWith('/admin')) {
         if (!user) {
+            console.log('[Middleware] No user found for /admin, redirecting to /login')
             const url = request.nextUrl.clone()
             url.pathname = '/login'
             return NextResponse.redirect(url)
         }
 
         // Fetch user role
-        const { data: userData } = await supabase
-            .from('users')
+        const { data: userData, error: roleError } = await supabase
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single()
 
-        if (userData?.role !== 'superadmin') {
+        if (roleError) {
+            console.error('[Middleware] Error fetching role for /admin:', roleError)
+        }
+
+        // Check if user is admin via DB role OR via env variable fallback
+        const adminEmailsConfig = process.env.ADMIN_EMAILS || ''
+        const adminEmails = adminEmailsConfig.split(',').map(e => e.trim().toLowerCase())
+        const isEmailAdmin = user.email ? adminEmails.includes(user.email.toLowerCase()) : false
+        const isDbAdmin = userData?.role === 'superadmin'
+
+        console.log(`[Middleware] Admin check: email=${user.email} | isEmailAdmin=${isEmailAdmin} | isDbAdmin=${isDbAdmin} | pathname=${pathname}`)
+
+        if (!isDbAdmin && !isEmailAdmin) {
+            console.log('[Middleware] User is not a superadmin, redirecting to /dashboard')
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
             return NextResponse.redirect(url)
@@ -165,6 +179,32 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
     }
+
+    // --- SUPERADMIN REDIRECT ---
+    // Als een ingelogde superadmin naar / of /dashboard gaat, stuur naar /admin
+    if (user && (pathname === '/' || pathname.startsWith('/dashboard'))) {
+        const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        // 🐛 DEBUG: tijdelijk — verwijder na verificatie
+        console.log(`[Middleware] user.email=${user.email} | user.id=${user.id} | role=${profileData?.role} | pathname=${pathname}`)
+
+        if (profileData?.role === 'superadmin') {
+            // Safety check: Demo User should never be redirected to /admin
+            if (user.email === 'demo@voicerealty.ai') {
+                console.warn('[Middleware] Safety: Demo User has superadmin role? Staying at dashboard.')
+                return supabaseResponse
+            }
+
+            const url = request.nextUrl.clone()
+            url.pathname = '/admin'
+            return NextResponse.redirect(url)
+        }
+    }
+    // ---------------------------
 
     return supabaseResponse
 }

@@ -3,22 +3,14 @@
 import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { cookies, headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { isAdmin } from '@/utils/admin'
 
 // This uses the service role to generate a session for another user
 export async function impersonateUser(targetUserId: string) {
     const supabase = await createClient()
 
     // 1. Verify caller is superadmin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Niet ingelogd' }
-
-    const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (userData?.role !== 'superadmin') {
+    if (!(await isAdmin())) {
         return { error: 'Geen toegang' }
     }
 
@@ -31,6 +23,9 @@ export async function impersonateUser(targetUserId: string) {
     if (authCookies.length > 0) {
         // Save it in a return cookie
         cookieStore.set('admin_return_token', JSON.stringify(authCookies), { path: '/', maxAge: 60 * 60 * 24 })
+        
+        // Clear existing auth cookies to ensure magiclink takes over cleanly
+        authCookies.forEach(c => cookieStore.delete(c.name))
     }
 
     // 3. Generate Link / impersonate via Admin API
@@ -48,12 +43,19 @@ export async function impersonateUser(targetUserId: string) {
     // `impersonated_user_id` cookie, and updating the local supabase client to pass it 
     // as a custom header, which is then picked up by RLS... but that's complex.
 
-    // Another approach: Using `generateLink` type: 'magiclink'
     const supabaseAdmin = await createAdminClient()
 
+    const { getURL } = await import('@/app/auth/actions')
+    const appUrl = await getURL()
+
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
+        type: 'recovery',
         email: (await supabaseAdmin.auth.admin.getUserById(targetUserId)).data.user?.email || '',
+        options: {
+            // Must go through /auth/callback so the code can be exchanged for a session
+            // We add impersonate=true to distinguish this from a real password recovery
+            redirectTo: `${appUrl}/auth/callback?next=/dashboard&impersonate=true`
+        }
     })
 
     if (linkError || !linkData.properties?.action_link) {
@@ -88,16 +90,7 @@ export async function updateTenantFeature(userId: string, featureKey: string, ne
     const supabase = await createClient()
 
     // 1. Verify caller is superadmin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Niet ingelogd' }
-
-    const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (userData?.role !== 'superadmin') {
+    if (!(await isAdmin())) {
         return { error: 'Geen toegang' }
     }
 
@@ -128,16 +121,7 @@ export async function updateTenantPackage(userId: string, pkgId: string) {
     const supabase = await createClient()
 
     // 1. Verify caller is superadmin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Niet ingelogd' }
-
-    const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (userData?.role !== 'superadmin') {
+    if (!(await isAdmin())) {
         return { error: 'Geen toegang' }
     }
 
@@ -202,16 +186,7 @@ export async function getAdminUserDetail(userId: string) {
     const supabase = await createClient()
 
     // 1. Verify caller is superadmin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Niet ingelogd' }
-
-    const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (userData?.role !== 'superadmin') {
+    if (!(await isAdmin())) {
         return { error: 'Geen toegang' }
     }
 
@@ -234,6 +209,7 @@ export async function getAdminUserDetail(userId: string) {
 
     if (uErr || pErr || fErr || sErr || oErr) {
         console.error('SERVER [getAdminUserDetail]: One or more fetch errors occurred', { uErr, pErr, fErr, sErr, oErr })
+        return { error: `Fetch error: uErr=${uErr?.message}, fErr=${fErr?.message}, oErr=${oErr?.message}` }
     }
 
     // 3. Match package
@@ -276,8 +252,46 @@ export async function getAdminUserDetail(userId: string) {
                 has_billing: featureData?.has_billing ?? false,
                 has_voice: featureData?.has_voice ?? false,
                 planId: activePlanId,
+                trialExpiresAt: targetUser?.trial_expires_at || null
             },
             orders: orders || []
         }
     }
+}
+
+export async function updateTrialExpiration(userId: string, daysToAdd: number) {
+    const supabase = await createClient()
+
+    // 1. Verify caller is superadmin
+    if (!(await isAdmin())) {
+        return { error: 'Geen toegang' }
+    }
+
+    const supabaseAdmin = await createAdminClient()
+
+    // 2. Fetch current trial date
+    const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('trial_expires_at')
+        .eq('id', userId)
+        .single()
+
+    const currentExpiry = profile?.trial_expires_at ? new Date(profile.trial_expires_at) : new Date()
+    const newExpiry = new Date(currentExpiry.getTime() + (daysToAdd * 24 * 60 * 60 * 1000))
+
+    // 3. Update profile
+    const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({
+            trial_expires_at: newExpiry.toISOString()
+        })
+        .eq('id', userId)
+
+    if (error) {
+        console.error('Trial update error:', error)
+        return { error: 'Fout bij verlengen trial' }
+    }
+
+    revalidatePath(`/admin/users/${userId}`)
+    return { success: true, newDate: newExpiry.toLocaleDateString('nl-NL') }
 }

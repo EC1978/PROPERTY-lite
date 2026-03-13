@@ -49,7 +49,11 @@ export async function updatePassword(formData: FormData) {
     })
 
     if (error) {
-        return { error: 'Kon wachtwoord niet wijzigen. Mogelijk is de sessie verlopen of vereist het een hernieuwde login.' }
+        console.error('Password update error:', error)
+        if (error.message.includes('AuthApiError')) {
+            return { error: 'Je moet recent ingelogd zijn om je wachtwoord te wijzigen. Log uit en opnieuw in.' }
+        }
+        return { error: `Kon wachtwoord niet wijzigen: ${error.message}` }
     }
 
     return { success: true }

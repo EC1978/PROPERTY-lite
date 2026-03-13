@@ -64,13 +64,14 @@ export default function ForgotPasswordPage() {
                             <form action={handleSubmit} className="flex flex-col gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-[0.15em]">E-mailadres</label>
-                                    <div className="relative group">
+                                    <div className="relative group" suppressHydrationWarning>
                                         <input
                                             name="email"
                                             className="w-full bg-[#0a0c0b]/60 border border-white/5 rounded-2xl px-5 h-16 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300 font-normal"
                                             placeholder="agent@voicerealty.ai"
                                             type="email"
                                             required
+                                            suppressHydrationWarning
                                         />
                                         <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-primary transition-colors duration-300" style={{ fontSize: '22px' }}>mail</span>
                                     </div>

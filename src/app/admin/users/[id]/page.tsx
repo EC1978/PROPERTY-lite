@@ -9,7 +9,8 @@ import toast from 'react-hot-toast'
 import {
     UserSearch, Package, Puzzle, Eye, EyeOff, GripVertical,
     ChevronDown, Calendar, Users as UsersIcon, ShoppingCart,
-    Receipt, Mic, Home, Star, Archive, PackageSearch, BarChart2
+    Receipt, Mic, Home, Star, Archive, PackageSearch, BarChart2,
+    Clock, ShieldCheck
 } from 'lucide-react'
 
 const MODULE_CONFIG = [
@@ -58,7 +59,7 @@ type DbPackage = {
     has_voice: boolean
 }
 
-const defaultFeatures: TenantFeatures & { planId: string | null } = {
+const defaultFeatures: TenantFeatures & { planId: string | null, trialExpiresAt: string | null } = {
     has_properties: true,
     has_agenda: false,
     has_materials: false,
@@ -70,6 +71,7 @@ const defaultFeatures: TenantFeatures & { planId: string | null } = {
     has_billing: false,
     has_voice: false,
     planId: null,
+    trialExpiresAt: null,
 }
 
 export default function AdminUserDetailPage() {
@@ -78,7 +80,7 @@ export default function AdminUserDetailPage() {
     const supabase = createClient()
 
     const [user, setUser] = useState<any>(null)
-    const [features, setFeatures] = useState<TenantFeatures & { planId: string | null }>(defaultFeatures)
+    const [features, setFeatures] = useState<TenantFeatures & { planId: string | null, trialExpiresAt: string | null }>(defaultFeatures)
     const [packages, setPackages] = useState<DbPackage[]>([])
     const [loading, setLoading] = useState(true)
     const [orders, setOrders] = useState<any[]>([])
@@ -107,13 +109,30 @@ export default function AdminUserDetailPage() {
     }, [userId])
 
     async function handleImpersonate() {
+        console.log('CLICK [handleImpersonate]: starting fetch for user', userId)
         const loadingToast = toast.loading('Ghost login voorbereiden...')
-        const result = await impersonateUser(userId)
-        if (result?.error) {
-            toast.error(result.error, { id: loadingToast })
-        } else if (result?.url) {
-            toast.success('Inloggen als klant...', { id: loadingToast })
-            window.location.href = result.url
+        try {
+            const response = await fetch('/api/admin/ghost-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUserId: userId })
+            })
+            
+            console.log('FETCH [handleImpersonate]: response status', response.status)
+            const result = await response.json()
+            console.log('FETCH [handleImpersonate]: result', result)
+
+            if (result?.error) {
+                toast.error(result.error, { id: loadingToast })
+            } else if (result?.url) {
+                toast.success('Overschakelen naar makelaar account...', { id: loadingToast })
+                window.location.href = result.url
+            } else {
+                toast.error('Onbekend antwoord van server', { id: loadingToast })
+            }
+        } catch (e: any) {
+            toast.error('Er is een fout opgetreden bij het schakelen.', { id: loadingToast })
+            console.error('ERROR [handleImpersonate]:', e)
         }
     }
 
@@ -153,6 +172,22 @@ export default function AdminUserDetailPage() {
                 planId: pkg.id
             }))
             toast.success(`Pakket gewijzigd naar ${pkg.name}`, { id: loadingToast })
+        }
+    }
+
+    async function handleExtendTrial() {
+        // Reuse current action or direct call
+        const { updateTrialExpiration } = await import('@/app/admin/actions')
+        const loadingToast = toast.loading('Trial verlengen...')
+        const result = await updateTrialExpiration(userId, 30)
+
+        if (result.error) {
+            toast.error(result.error, { id: loadingToast })
+        } else {
+            setFeatures(prev => ({ ...prev, trialExpiresAt: result.newDate || prev.trialExpiresAt }))
+            toast.success(`Trial verlengd! Nieuwe datum: ${result.newDate}`, { id: loadingToast })
+            // Re-fetch user to be sure
+            window.location.reload()
         }
     }
 
@@ -233,6 +268,43 @@ export default function AdminUserDetailPage() {
                         ))}
                     </div>
                     <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest">Pakket selecteren wijzigt de modules automatisch</p>
+                </section>
+
+                {/* Trial & Status */}
+                <section className="bg-[#1A1A1A]/80 backdrop-blur-md rounded-3xl p-6 border border-white/5 h-fit">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-white">Trial Status</h2>
+                        <Clock className="w-5 h-5 text-zinc-500" />
+                    </div>
+
+                    <div className="bg-[#252525] p-5 rounded-2xl border border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-zinc-400">Verloopt op</span>
+                            <span className="text-sm font-bold text-white">
+                                {features.trialExpiresAt ? new Date(features.trialExpiresAt).toLocaleDateString('nl-NL') : 'Geen datum'}
+                            </span>
+                        </div>
+                        
+                        <div className="h-px w-full bg-white/5"></div>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-full bg-[#0df2a2]/10 flex items-center justify-center text-[#0df2a2]">
+                                <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-white">Elite Functies</p>
+                                <p className="text-[10px] text-zinc-500">Trial status is momenteel actief</p>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={handleExtendTrial}
+                            className="w-full py-2.5 bg-white/5 hover:bg-[#0df2a2]/10 border border-white/10 hover:border-[#0df2a2]/30 text-white hover:text-[#0df2a2] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+                        >
+                            <Calendar className="w-4 h-4" />
+                            +30 Dagen Verlengen
+                        </button>
+                    </div>
                 </section>
 
                 {/* Module Licenties */}

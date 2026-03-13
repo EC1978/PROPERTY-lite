@@ -8,6 +8,9 @@ import Sidebar from './layout/Sidebar'
 import MobileNav from './layout/MobileNav'
 import MobileMenu from './layout/MobileMenu'
 import NotificationBell from './layout/NotificationBell'
+import TrialBanner from './layout/TrialBanner'
+import { extractPropertyFromPdf } from '@/app/properties/upload-actions'
+import { scrapeProperty } from '@/app/actions/scrape-property'
 
 interface Property {
     id: string
@@ -28,9 +31,10 @@ interface DashboardLiveViewProps {
         has_leads: boolean
         has_webshop: boolean
     }
+    trialExpiresAt: string | null
 }
 
-export default function DashboardLiveView({ userEmail, userId, initialProperties, initialActiveCount, initialFeatures }: DashboardLiveViewProps) {
+export default function DashboardLiveView({ userEmail, userId, initialProperties, initialActiveCount, initialFeatures, trialExpiresAt }: DashboardLiveViewProps) {
     const [properties, setProperties] = useState<Property[]>(initialProperties)
     const [activeCount, setActiveCount] = useState(initialActiveCount)
     const [features] = useState(initialFeatures)
@@ -144,7 +148,6 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
             const formData = new FormData()
             formData.append('file', file)
 
-            const { extractPropertyFromPdf } = await import('@/app/properties/upload-actions')
             const extractedData = await extractPropertyFromPdf(formData)
 
             await createPropertyAndRedirect(extractedData)
@@ -164,7 +167,6 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
         setProcessingStatus('De Agent bezoekt de website...')
 
         try {
-            const { scrapeProperty } = await import('@/app/actions/scrape-property')
             const result = await scrapeProperty(urlInput)
 
             if (!result.success) {
@@ -210,6 +212,9 @@ export default function DashboardLiveView({ userEmail, userId, initialProperties
             {/* ===== MAIN CONTENT ===== */}
             <main className="flex-1 md:ml-72 p-6 pt-24 md:p-10 md:pt-10 pb-32 md:pb-10 bg-[#f5f8f7] dark:bg-[#050505]">
                 <div className="max-w-5xl mx-auto">
+
+                    {/* Trial Banner */}
+                    <TrialBanner trialExpiresAt={trialExpiresAt} />
 
                     {/* Processing Overlay */}
                     {isProcessing && (

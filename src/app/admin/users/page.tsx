@@ -1,12 +1,12 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Users, ChevronRight, UserCircle2 } from 'lucide-react'
 
 export default async function AdminUsersPage() {
-    const supabase = await createClient()
+    const supabaseAdmin = await createAdminClient()
 
-    // Retrieve users (makelaars)
-    const { data: users, error } = await supabase
+    // Retrieve ALL users (makelaars), bypassing RLS
+    const { data: users, error } = await supabaseAdmin
         .from('users')
         .select('*')
         .order('created_at', { ascending: false })

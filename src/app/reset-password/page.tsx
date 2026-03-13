@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
                         {/* New password */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-[0.15em]">Nieuw Wachtwoord</label>
-                            <div className="relative group">
+                            <div className="relative group" suppressHydrationWarning>
                                 <input
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
@@ -84,6 +84,7 @@ export default function ResetPasswordPage() {
                                     placeholder="••••••••"
                                     type={showPassword ? 'text' : 'password'}
                                     required
+                                    suppressHydrationWarning
                                 />
                                 <button
                                     type="button"
@@ -116,7 +117,7 @@ export default function ResetPasswordPage() {
                         {/* Confirm password */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 ml-1 uppercase tracking-[0.15em]">Bevestig Wachtwoord</label>
-                            <div className="relative group">
+                            <div className="relative group" suppressHydrationWarning>
                                 <input
                                     value={confirm}
                                     onChange={e => setConfirm(e.target.value)}
@@ -124,6 +125,7 @@ export default function ResetPasswordPage() {
                                     placeholder="••••••••"
                                     type={showConfirm ? 'text' : 'password'}
                                     required
+                                    suppressHydrationWarning
                                 />
                                 <button
                                     type="button"
