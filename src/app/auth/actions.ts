@@ -158,20 +158,64 @@ export async function signup(formData: FormData) {
     const plan = formData.get('plan') as string
 
     if (plan && user) {
-        try {
-            const { createCheckoutSession } = await import('@/utils/stripe')
-            const origin = await getURL()
-            const session = await createCheckoutSession({
-                plan,
-                userId: user.id,
-                userEmail: user.email,
-                origin,
-            })
-            if (session.url) {
-                redirect(session.url)
+        if (plan === 'trial') {
+            // ── TRIAL: 30 dagen Elite trial zonder betaling ──
+            try {
+                const { createClient: createVanillaClient } = await import('@supabase/supabase-js')
+                const adminClient = createVanillaClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                    { auth: { persistSession: false } }
+                )
+
+                const trialEnd = new Date()
+                trialEnd.setDate(trialEnd.getDate() + 30)
+
+                // Stel trial + tier in op profiel
+                await adminClient.from('profiles').upsert({
+                    id: user.id,
+                    trial_expires_at: trialEnd.toISOString(),
+                    subscription_tier: 'Elite',
+                    full_name: fullName,
+                    role: 'makelaar',
+                }, { onConflict: 'id' })
+
+                // Alle Elite features activeren
+                await adminClient.from('tenant_features').upsert({
+                    user_id: user.id,
+                    has_properties: true,
+                    has_agenda: true,
+                    has_materials: true,
+                    has_archive: true,
+                    has_leads: true,
+                    has_statistics: true,
+                    has_reviews: true,
+                    has_webshop: true,
+                    has_billing: true,
+                    has_voice: true,
+                }, { onConflict: 'user_id' })
+
+                console.log('[Signup] Trial provisioned for', user.email, 'until', trialEnd.toISOString())
+            } catch (e) {
+                console.error('[Signup] Failed to provision trial:', e)
             }
-        } catch (e) {
-            console.error('Failed to create checkout session during signup:', e)
+        } else {
+            // ── BETAALD PLAN: Stripe checkout ──
+            try {
+                const { createCheckoutSession } = await import('@/utils/stripe')
+                const checkoutOrigin = await getURL()
+                const session = await createCheckoutSession({
+                    plan,
+                    userId: user.id,
+                    userEmail: user.email,
+                    origin: checkoutOrigin,
+                })
+                if (session.url) {
+                    redirect(session.url)
+                }
+            } catch (e) {
+                console.error('Failed to create checkout session during signup:', e)
+            }
         }
     }
 

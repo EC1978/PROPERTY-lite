@@ -195,21 +195,28 @@ export async function getAdminUserDetail(userId: string) {
     // 2. Fetch all data in parallel
     const [
         { data: targetUser, error: uErr },
+        { data: profileData, error: profErr },
         { data: packages, error: pErr },
         { data: featureData, error: fErr },
         { data: subData, error: sErr },
         { data: orders, error: oErr }
     ] = await Promise.all([
         supabaseAdmin.from('users').select('*').eq('id', userId).single(),
+        supabaseAdmin.from('profiles').select('*').eq('id', userId).maybeSingle(),
         supabaseAdmin.from('packages').select('*').order('sort_order'),
         supabaseAdmin.from('tenant_features').select('*').eq('user_id', userId).maybeSingle(),
         supabaseAdmin.from('subscriptions').select('plan').eq('user_id', userId).maybeSingle(),
         supabaseAdmin.from('shop_orders').select(`*, shop_order_items (*, shop_products (*))`).eq('user_id', userId).order('created_at', { ascending: false })
     ])
 
-    if (uErr || pErr || fErr || sErr || oErr) {
-        console.error('SERVER [getAdminUserDetail]: One or more fetch errors occurred', { uErr, pErr, fErr, sErr, oErr })
-        return { error: `Fetch error: uErr=${uErr?.message}, fErr=${fErr?.message}, oErr=${oErr?.message}` }
+    if (uErr || profErr || pErr || fErr || sErr || oErr) {
+        console.error('SERVER [getAdminUserDetail]: One or more fetch errors occurred', { uErr, profErr, pErr, fErr, sErr, oErr })
+        return { error: `Fetch error: uErr=${uErr?.message}, profErr=${profErr?.message}, oErr=${oErr?.message}` }
+    }
+
+    // Merge profile data into targetUser
+    if (targetUser && profileData) {
+        Object.assign(targetUser, profileData)
     }
 
     // 3. Match package

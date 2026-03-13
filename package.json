@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npx vercel --prod --yes",
-    "sync": "git pull origin main && npx vercel --prod --yes",
     "up": "git pull && npm install && vercel env pull .env.local",
-    "down": "git add . && git commit -m \"Update van locatie\" && git push",
+    "down": "git add . && git commit -m \"Sync van locatie\" && git push origin dev",
+    "sync": "npm run down",
+    "release": "git checkout main && git merge dev && git push origin main && git checkout dev",
+    "deploy": "npx vercel --prod --yes",
     "reset": "git fetch --all && git reset --hard origin/main && git clean -fd && npm install"
   },
   "dependencies": {

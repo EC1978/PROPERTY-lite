@@ -80,10 +80,27 @@ function RegisterForm() {
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-12 w-full max-w-[480px] mx-auto">
                 <div className="w-full glass-card rounded-[2.5rem] p-10 relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                    {plan === 'trial' && (
+                        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#10b77f]/10 to-emerald-900/10 border border-[#10b77f]/20">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#10b77f]/20 flex items-center justify-center flex-shrink-0">
+                                    <span className="material-symbols-outlined text-[#10b77f]" style={{ fontSize: '22px' }}>stars</span>
+                                </div>
+                                <div>
+                                    <p className="text-[#10b77f] font-bold text-sm">30 dagen gratis Elite trial</p>
+                                    <p className="text-gray-400 text-xs">Alle functies beschikbaar. Geen creditcard nodig.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="text-center mb-10">
                         <h1 className="text-3xl font-bold tracking-tight text-white mb-3">Account aanmaken</h1>
                         <p className="text-gray-400 text-sm font-medium leading-relaxed">
-                            Start direct met het transformeren van je woningaanbod.
+                            {plan === 'trial'
+                                ? 'Maak een account aan en ontdek 30 dagen gratis alle mogelijkheden.'
+                                : 'Start direct met het transformeren van je woningaanbod.'}
                         </p>
                     </div>
 

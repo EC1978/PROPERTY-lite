@@ -41,8 +41,6 @@ export default async function DashboardPage() {
         .eq('id', user.id)
         .single()
 
-    console.log('DashboardPage: trial_expires_at for user', user.id, 'is', profile?.trial_expires_at)
-
     return (
         <DashboardLiveView
             userEmail={user.email || ''}
