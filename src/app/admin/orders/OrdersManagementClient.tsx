@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
     ShoppingCart, Search, Eye, Filter,
     Calendar, User, CreditCard, Clock,
     CheckCircle2, AlertCircle, Package,
     ChevronRight, X, Truck, ExternalLink,
-    Save, Settings, FileCheck, FileX, Upload, AlertTriangle, Plus
+    Save, Settings, FileCheck, FileX, Upload, AlertTriangle, Plus, Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 import { updateOrderStatus, updateOrderTracking, updateOrderDesignStatus, updateOrderDesignUrl, updateOrderDeliveryDate } from '../products/actions'
@@ -51,6 +52,7 @@ const STATUS_CONFIG: Record<string, { label: string, color: string, icon: any }>
 }
 
 export default function OrdersManagementClient({ initialOrders }: { initialOrders: Order[] }) {
+    const searchParams = useSearchParams()
     const [orders, setOrders] = useState(initialOrders)
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('Alle')
@@ -60,6 +62,16 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
     const [designRemarks, setDesignRemarks] = useState('')
     const [deliveryDate, setDeliveryDate] = useState('')
     const [isUploading, setIsUploading] = useState(false)
+
+    useEffect(() => {
+        const orderId = searchParams.get('orderId')
+        if (orderId && orders.length > 0) {
+            const order = orders.find(o => o.id === orderId)
+            if (order) {
+                openOrderDetails(order)
+            }
+        }
+    }, [searchParams, orders])
 
     const filteredOrders = orders.filter(o => {
         const matchesSearch = o.users.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -159,7 +171,25 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
             toast.error('Upload mislukt: ' + error.message, { id: loadingToast })
         } finally {
             setIsUploading(false)
-            e.target.value = ''
+            if (e.target) e.target.value = ''
+        }
+    }
+
+    const handleDeleteDesign = async () => {
+        if (!selectedOrder) return
+        if (!confirm('Weet je zeker dat je dit ontwerp wilt verwijderen?')) return
+        const loadingToast = toast.loading('Ontwerp verwijderen...')
+        try {
+            const result = await updateOrderDesignUrl(selectedOrder.id, null)
+            if (result.success) {
+                setOrders(orders.map(o => o.id === selectedOrder.id ? { ...o, design_url: null } : o))
+                setSelectedOrder({ ...selectedOrder, design_url: null })
+                toast.success('Ontwerp verwijderd', { id: loadingToast })
+            } else {
+                toast.error(result.error || 'Fout bij verwijderen', { id: loadingToast })
+            }
+        } catch (error) {
+            toast.error('Er is een fout opgetreden', { id: loadingToast })
         }
     }
 
@@ -341,282 +371,272 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
             {/* Order Detail Modal */}
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl overflow-hidden">
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#111] z-10">
+                    <div className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#111] z-10">
                             <div>
                                 <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                                     Bestelling <span className="text-[#0df2a2]">#{selectedOrder.id.slice(0, 8)}</span>
                                 </h3>
                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Gedetailleerd overzicht van makelaar bestelling</p>
                             </div>
-                            <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all">
-                                <X className="w-6 h-6" />
-                            </button>
+                            <div className="flex items-center gap-4">
+                                {(() => {
+                                    const StatusIcon = STATUS_CONFIG[selectedOrder.status]?.icon
+                                    return (
+                                        <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${STATUS_CONFIG[selectedOrder.status]?.color || 'bg-zinc-800 text-zinc-500 border-white/5'}`}>
+                                            {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
+                                            {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
+                                        </div>
+                                    )
+                                })()}
+                                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/5 rounded-xl text-zinc-500 hover:text-white transition-all">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="p-8 pb-0">
+                        {/* Scrollable Content Area */}
+                        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
                             {selectedOrder.shop_complaints && selectedOrder.shop_complaints.length > 0 && (
-                                <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-2xl p-5 flex items-start md:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center text-red-500 shrink-0">
+                                <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-red-500/20 rounded-xl flex items-center justify-center text-red-500 shrink-0">
                                             <AlertTriangle className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h4 className="text-white font-black text-sm">Let op: Deze bestelling heeft een actieve klacht</h4>
-                                            <p className="text-zinc-400 text-xs mt-0.5">Er is een reclamatie ingediend door de makelaar.</p>
+                                            <h4 className="text-white font-black text-xs">Bestelling heeft een actieve klacht</h4>
+                                            <p className="text-zinc-400 text-[10px] uppercase font-bold tracking-widest">Reclamatie ingediend door makelaar</p>
                                         </div>
                                     </div>
-                                    <Link
-                                        href="/admin/complaints"
-                                        className="whitespace-nowrap px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all"
-                                    >
+                                    <Link href="/admin/complaints" className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20">
                                         Klacht Bekijken
                                     </Link>
                                 </div>
                             )}
-                        </div>
 
-                        <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {/* Left: Customer & Main Info */}
-                            <div className="md:col-span-1 space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* COLUMN 1: CUSTOMER & ITEMS */}
                                 <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-                                        <User className="w-3 h-3" /> Makelaar Informatie
-                                    </h4>
-                                    <div className="bg-white/2 border border-white/5 p-4 rounded-xl space-y-2">
-                                        <div className="text-sm font-bold text-white">{selectedOrder.users?.full_name || 'Onbekende Makelaar'}</div>
-                                        <div className="text-[10px] text-zinc-500 font-mono">{selectedOrder.users?.email}</div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-                                        <Truck className="w-3 h-3" /> Track & Trace
-                                    </h4>
-                                    <div className="bg-white/2 border border-white/5 p-4 rounded-xl space-y-3">
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={trackingNumber}
-                                                onChange={(e) => setTrackingNumber(e.target.value)}
-                                                placeholder="Track & trace code..."
-                                                className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-[11px] text-white focus:outline-none focus:border-[#0df2a2]/50 font-mono"
-                                            />
+                                    {/* Customer Info */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">
+                                            <User className="w-3 h-3 text-[#0df2a2]" /> Makelaar
+                                        </h4>
+                                        <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-[#0df2a2]/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                            <div className="relative z-10">
+                                                <div className="text-sm font-black text-white mb-0.5">{selectedOrder.users?.full_name || 'Onbekende Makelaar'}</div>
+                                                <div className="text-[10px] text-zinc-500 font-mono tracking-tight">{selectedOrder.users?.email}</div>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={handleUpdateTracking}
-                                            className="w-full bg-[#0df2a2] hover:bg-[#0df2a2]/90 text-black py-2 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
-                                        >
-                                            <Save className="w-3 h-3" />
-                                            Code Opslaan
-                                        </button>
+                                    </div>
+
+                                    {/* Items List */}
+                                    <div className="space-y-2">
+                                        <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600">
+                                            <ShoppingCart className="size-3 text-[#0df2a2]" /> Bestelde Producten
+                                        </h4>
+                                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {selectedOrder.shop_order_items.map(item => (
+                                                <div key={item.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 group hover:border-white/10 transition-colors">
+                                                    <div className="flex gap-3">
+                                                        <div className="size-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                                                            <img
+                                                                src={(item.shop_products as any)?.images?.[0] || ''}
+                                                                alt="Product"
+                                                                className="size-full object-contain"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-[10px] font-black text-white truncate leading-tight">{item.shop_products?.name || 'Product'}</div>
+                                                            <div className="flex justify-between items-end mt-1">
+                                                                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Qty: {item.quantity}</span>
+                                                                <span className="text-[10px] font-black text-[#0df2a2]">€{(item.price_at_purchase * item.quantity).toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {item.options && Object.keys(item.options).length > 0 && (
+                                                        <div className="mt-2 pt-2 border-t border-white/5 flex flex-wrap gap-x-3 gap-y-1">
+                                                            {Object.entries(item.options).map(([key, value]: [string, any]) => (
+                                                                <div key={key} className="flex flex-col">
+                                                                    <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">{key}</span>
+                                                                    <span className="text-[8px] text-zinc-400 font-bold">{String(value)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
+                                {/* COLUMN 2: LOGISTICS & STATUS */}
                                 <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-                                        <Calendar className="w-3 h-3" /> Leverdatum
-                                    </h4>
-                                    <div className="bg-white/2 border border-white/5 p-4 rounded-xl space-y-3">
-                                        <input
-                                            type="date"
-                                            value={deliveryDate}
-                                            onClick={(e) => (e.target as any).showPicker?.()}
-                                            onChange={(e) => {
-                                                setDeliveryDate(e.target.value)
-                                                handleUpdateDeliveryDate(e.target.value)
-                                            }}
-                                            className="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-[11px] text-white focus:outline-none focus:border-[#0df2a2]/50 font-mono color-scheme-dark"
-                                        />
-                                        <p className="text-[9px] text-zinc-500 italic">Kies de dag waarop het pakket wordt geleverd.</p>
+                                    {/* Logistics Form */}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2 mb-3">
+                                                <Truck className="w-3 h-3 text-[#0df2a2]" /> Logistiek
+                                            </h4>
+                                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl space-y-4">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Track & Trace</label>
+                                                    <div className="relative group">
+                                                        <input
+                                                            type="text"
+                                                            value={trackingNumber}
+                                                            onChange={(e) => setTrackingNumber(e.target.value)}
+                                                            placeholder="Voer code in..."
+                                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-[11px] text-white focus:outline-none focus:border-[#0df2a2]/50 font-mono transition-all"
+                                                        />
+                                                        <button
+                                                            onClick={handleUpdateTracking}
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black rounded-lg transition-all"
+                                                        >
+                                                            <Save className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1">Leverdatum</label>
+                                                    <input
+                                                        type="date"
+                                                        value={deliveryDate}
+                                                        onClick={(e) => (e.target as any).showPicker?.()}
+                                                        onChange={(e) => {
+                                                            setDeliveryDate(e.target.value)
+                                                            handleUpdateDeliveryDate(e.target.value)
+                                                        }}
+                                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-[11px] text-white focus:outline-none focus:border-[#0df2a2]/50 font-mono color-scheme-dark transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-                                        <Package className="w-3 h-3" /> Status Beheren
-                                    </h4>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {Object.keys(STATUS_CONFIG).map(s => (
-                                            <button
-                                                key={s}
-                                                onClick={() => handleUpdateStatus(selectedOrder.id, s)}
-                                                className={`text-[10px] font-black uppercase tracking-widest p-3 rounded-lg border transition-all text-left flex items-center justify-between ${selectedOrder.status === s
-                                                    ? 'bg-[#0df2a2]/10 border-[#0df2a2] text-[#0df2a2]'
-                                                    : 'bg-white/2 border-white/5 text-zinc-500 hover:border-white/10 hover:text-white'
-                                                    }`}
-                                            >
-                                                {STATUS_CONFIG[s].label}
-                                                {selectedOrder.status === s && <CheckCircle2 className="w-3 h-3" />}
-                                            </button>
-                                        ))}
-
-                                        {/* Custom Status Input */}
-                                        <div className="pt-2 border-t border-white/5 mt-2 space-y-2">
-                                            <div className="flex gap-2">
+                                    {/* Status Toggles */}
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest flex items-center gap-2 mb-3">
+                                            <Clock className="w-3 h-3 text-[#0df2a2]" /> Status Beheren
+                                        </h4>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {Object.keys(STATUS_CONFIG).map(s => (
+                                                <button
+                                                    key={s}
+                                                    onClick={() => handleUpdateStatus(selectedOrder.id, s)}
+                                                    className={`text-[10px] font-black uppercase tracking-widest p-3 rounded-xl border transition-all text-left flex items-center justify-between ${selectedOrder.status === s
+                                                        ? 'bg-[#0df2a2]/10 border-[#0df2a2]/40 text-[#0df2a2] shadow-[0_5px_15px_rgba(13,242,162,0.1)]'
+                                                        : 'bg-white/[0.02] border-white/5 text-zinc-500 hover:border-white/10 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {STATUS_CONFIG[s].label}
+                                                    {selectedOrder.status === s && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                </button>
+                                            ))}
+                                            
+                                            <div className="mt-2 pt-3 border-t border-white/5 flex gap-2">
                                                 <input
                                                     type="text"
                                                     value={customStatus}
                                                     onChange={(e) => setCustomStatus(e.target.value)}
-                                                    placeholder="Eigen status..."
-                                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-[11px] text-zinc-300 focus:outline-none focus:border-[#0df2a2]/50"
+                                                    placeholder="Maatwerk status..."
+                                                    className="flex-1 bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-[11px] text-zinc-300 focus:outline-none focus:border-[#0df2a2]/50"
                                                 />
                                                 <button
                                                     onClick={() => handleUpdateStatus(selectedOrder.id, customStatus)}
                                                     disabled={!customStatus}
-                                                    className="px-3 bg-zinc-800 hover:bg-[#0df2a2]/20 text-[#0df2a2] rounded-lg border border-white/5 transition-all"
+                                                    className="p-2 bg-zinc-800 hover:bg-[#0df2a2]/20 text-[#0df2a2] rounded-xl border border-white/5 transition-all disabled:opacity-30"
                                                 >
                                                     <Save className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                            {!STATUS_CONFIG[selectedOrder.status] && (
-                                                <div className="px-3 py-1 bg-[#0df2a2]/5 border border-[#0df2a2]/20 rounded text-[9px] text-[#0df2a2] font-bold uppercase tracking-widest">
-                                                    Huidig: {selectedOrder.status}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* COLUMN 3: DESIGN & FEEDBACK */}
+                                <div className="space-y-4">
+                                    <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-3">
+                                        <FileCheck className="size-3 text-[#0df2a2]" /> Design Management
+                                    </h4>
+                                    
+                                    <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-5">
+                                        {/* Status & Preview Button */}
+                                        <div className="flex items-center justify-between">
+                                            <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                selectedOrder.design_status === 'approved' ? 'bg-[#0df2a2]/10 text-[#0df2a2]' :
+                                                selectedOrder.design_status === 'rejected' ? 'bg-red-500/10 text-red-500' :
+                                                'bg-orange-500/10 text-orange-500'
+                                            }`}>
+                                                {selectedOrder.design_status === 'approved' ? 'Design OK' :
+                                                 selectedOrder.design_status === 'rejected' ? 'Afgekeurd' : 'Wachten'}
+                                            </div>
+                                            {selectedOrder.design_url && (
+                                                <div className="flex items-center gap-2">
+                                                    <a href={selectedOrder.design_url} target="_blank" rel="noopener noreferrer" 
+                                                       className="text-[10px] font-black uppercase text-[#0df2a2] hover:underline flex items-center gap-1">
+                                                        Bekijken <ExternalLink className="size-3" />
+                                                    </a>
+                                                    <button 
+                                                        onClick={handleDeleteDesign}
+                                                        className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-all"
+                                                        title="Verwijder bestand"
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Right: Items & Files */}
-                            <div className="md:col-span-2 space-y-8">
-                                {/* Ordered Products First */}
-                                <div>
-                                    <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0df2a2] mb-4">
-                                        <ShoppingCart className="size-3" />
-                                        Bestelde Producten
-                                    </h4>
-                                    <div className="space-y-3">
-                                        {selectedOrder.shop_order_items.map(item => (
-                                            <div key={item.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="size-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center p-1.5 overflow-hidden shrink-0">
-                                                            <img
-                                                                src={(item.shop_products as any)?.images?.[0] || ''}
-                                                                alt="Product"
-                                                                className="size-full object-contain filter"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm font-black text-white">{item.shop_products?.name || 'Onbekend Product'}</div>
-                                                            <div className="text-[10px] text-[#0df2a2] font-mono mt-0.5 uppercase tracking-widest">Aantal: {item.quantity} st.</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-sm font-black text-white">€{(item.price_at_purchase * item.quantity).toFixed(2)}</div>
-                                                </div>
-
-                                                {item.options && (
-                                                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/5">
-                                                        {Object.entries(item.options).map(([key, value]: [string, any]) => (
-                                                            <div key={key} className="flex flex-col">
-                                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest leading-none mb-1">{key}</span>
-                                                                <span className="text-[10px] text-zinc-400 font-bold truncate">{String(value)}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Design View */}
-                                <div className="pt-6 border-t border-white/5 space-y-4">
-                                    <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#0df2a2] mb-4">
-                                        <FileCheck className="size-3" />
-                                        Design & Bestanden
-                                    </h4>
-                                    <div className="space-y-4">
-                                        {/* Status Badge */}
-                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit ${selectedOrder.design_status === 'approved' ? 'bg-[#0df2a2]/10 text-[#0df2a2]' :
-                                            selectedOrder.design_status === 'rejected' ? 'bg-red-500/10 text-red-500' :
-                                                selectedOrder.design_status === 'waiting' ? 'bg-orange-500/10 text-orange-500' :
-                                                    'bg-yellow-500/10 text-yellow-500'
-                                            }`}>
-                                            {selectedOrder.design_status === 'approved' ? 'Goedgekeurd' :
-                                                selectedOrder.design_status === 'rejected' ? 'Afgekeurd' :
-                                                    selectedOrder.design_status === 'waiting' ? 'Wacht op bestanden' :
-                                                        'In afwachting'
-                                            }
-                                        </div>
-
-                                        {/* Current File View */}
-                                        {selectedOrder.design_url ? (
-                                            <div className="flex items-center gap-3">
-                                                <a
-                                                    href={selectedOrder.design_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/10 transition-all text-nowrap"
-                                                >
-                                                    <ExternalLink className="size-4" />
-                                                    Bekijk Bestand
-                                                </a>
-                                                <button
-                                                    onClick={() => handleUpdateDesignUrl(null)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-bold text-red-500 hover:bg-red-500/20 transition-all text-nowrap"
-                                                    title="Bestand verwijderen"
-                                                >
-                                                    <X className="size-4" />
-                                                    Wissen
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 bg-white/[0.02] border border-white/5 border-dashed rounded-xl text-center">
-                                                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic">Geen bestand beschikbaar</p>
-                                            </div>
-                                        )}
-
-                                        {/* Remarks */}
+                                        {/* Feedback Field */}
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Opmerkingen / Feedback</label>
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 px-1">Feedback voor makelaar</label>
                                             <textarea
                                                 value={designRemarks}
                                                 onChange={(e) => setDesignRemarks(e.target.value)}
-                                                placeholder="Voer hier feedback in voor de makelaar..."
-                                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#0df2a2] transition-colors resize-none h-20"
+                                                placeholder="Bijv. waarom afgekeurd..."
+                                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-[11px] text-white focus:outline-none focus:border-[#0df2a2] transition-all h-28 resize-none shadow-inner"
                                             />
                                         </div>
 
-                                        {/* Primary Status Controls */}
-                                        <div className="flex flex-wrap gap-2">
+                                        {/* Controls Grid */}
+                                        <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 onClick={() => handleUpdateDesignStatus('approved')}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedOrder.design_status === 'approved' ? 'bg-[#0df2a2] text-black' : 'bg-[#0df2a2]/10 text-[#0df2a2] hover:bg-[#0df2a2]/20'}`}
+                                                className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedOrder.design_status === 'approved' ? 'bg-[#0df2a2] text-black' : 'bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/20'}`}
                                             >
-                                                <FileCheck className="size-3" /> Goedkeuren
-                                            </button>
-                                            <button
-                                                onClick={() => handleUpdateDesignStatus('waiting')}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedOrder.design_status === 'waiting' ? 'bg-orange-500 text-white' : 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20'}`}
-                                            >
-                                                <Upload className="size-3" /> Wacht op bestanden
+                                                Goedkeuren
                                             </button>
                                             <button
                                                 onClick={() => handleUpdateDesignStatus('rejected')}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedOrder.design_status === 'rejected' ? 'bg-red-500 text-white' : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'}`}
+                                                className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedOrder.design_status === 'rejected' ? 'bg-red-500 text-white' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}
                                             >
-                                                <FileX className="size-3" /> Afkeuren
+                                                Afkeuren
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateDesignStatus('waiting')}
+                                                className="col-span-2 py-3 bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/5 transition-all text-center"
+                                            >
+                                                Wachten op bestanden
                                             </button>
                                         </div>
 
-                                        {/* Upload Controls */}
-                                        <div className="pt-2 border-t border-white/5 space-y-3">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block">Bestand beheren (Admin)</label>
+                                        {/* Upload Logic */}
+                                        <div className="pt-3 border-t border-white/5">
                                             <div className="grid grid-cols-2 gap-2">
-                                                <label className="cursor-pointer">
-                                                    <div className={`flex items-center justify-center gap-2 py-2.5 px-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
-                                                        <Upload className="size-3" />
-                                                        {isUploading ? '...' : 'Uploaden'}
+                                                <label className="cursor-pointer group">
+                                                    <div className={`flex flex-col items-center justify-center p-2 h-14 bg-white/5 border border-white/10 rounded-xl group-hover:bg-white/10 transition-all ${isUploading ? 'opacity-50' : ''}`}>
+                                                        <Upload className="size-3.5 text-zinc-400 mb-0.5" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">Upload</span>
                                                     </div>
                                                     <input type="file" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
                                                 </label>
-                                                <label className="cursor-pointer">
-                                                    <div className={`flex items-center justify-center gap-2 py-2.5 px-3 bg-[#0df2a2]/10 border border-[#0df2a2]/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#0df2a2] hover:bg-[#0df2a2]/20 transition-all ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
-                                                        <FileCheck className="size-3" />
-                                                        {isUploading ? '...' : 'Upload & OK'}
+                                                <label className="cursor-pointer group">
+                                                    <div className={`flex flex-col items-center justify-center p-2 h-14 bg-[#0df2a2]/5 border border-[#0df2a2]/10 rounded-xl group-hover:bg-[#0df2a2]/10 transition-all ${isUploading ? 'opacity-50' : ''}`}>
+                                                        <FileCheck className="size-3.5 text-[#0df2a2] mb-0.5" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-widest text-[#0df2a2]">Upload & OK</span>
                                                     </div>
                                                     <input
                                                         type="file"
@@ -633,38 +653,29 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center px-4">
+                        {/* Sticky Footer */}
+                        <div className="p-6 border-t border-white/5 bg-[#141414] flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleCancelOrder}
+                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                                >
+                                    Bestelling Annuleren
+                                </button>
+                                <div className="h-10 w-px bg-white/5 hidden md:block" />
                                 <div>
-                                    <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Betaalstatus</div>
+                                    <div className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Betaalstatus</div>
                                     <div className={`text-xs font-black uppercase mt-0.5 ${(selectedOrder.status !== 'pending' && selectedOrder.status !== 'unpaid' && selectedOrder.status !== 'awaiting_payment') ? 'text-[#0df2a2]' : 'text-orange-400'}`}>
-                                        {(selectedOrder.status !== 'pending' && selectedOrder.status !== 'unpaid' && selectedOrder.status !== 'awaiting_payment') ? 'Betaald' : 'Openstaand'}
+                                        {(selectedOrder.status !== 'pending' && selectedOrder.status !== 'unpaid' && selectedOrder.status !== 'awaiting_payment') ? 'Betaald / Akkoord' : 'Wacht op betaling'}
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Annuleren & Terugbetalen Section */}
-                            <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 px-4 bg-white/[0.02] rounded-2xl pb-4">
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={handleCancelOrder}
-                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
-                                    >
-                                        <AlertCircle className="size-3" />
-                                        Bestelling Annuleren
-                                    </button>
-                                    <button
-                                        onClick={() => { }}
-                                        disabled
-                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-zinc-500 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed opacity-50"
-                                        title="Deze functionaliteit is nog niet beschikbaar"
-                                    >
-                                        Terugbetalen via Mollie
-                                    </button>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Totaalbedrag</div>
-                                    <div className="text-3xl font-black text-[#0df2a2]">€{Number(selectedOrder.total_amount).toFixed(2)}</div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-1">Totaalbedrag Bestelling</span>
+                                <div className="text-4xl font-black text-white leading-none">
+                                    €{Number(selectedOrder.total_amount).toFixed(2)}
                                 </div>
                             </div>
                         </div>

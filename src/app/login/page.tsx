@@ -145,7 +145,7 @@ function LoginForm() {
                                 const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
                                 if (emailInput && passwordInput) {
                                     emailInput.value = 'demo@voicerealty.ai';
-                                    passwordInput.value = '123456';
+                                    passwordInput.value = 'ErdemCelik';
                                     const form = emailInput.closest('form');
                                     if (form) form.requestSubmit();
                                 }

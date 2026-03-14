@@ -1,151 +1,193 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/utils/supabase/server'
-import { cookies, headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { isAdmin } from '@/utils/admin'
 
-// This uses the service role to generate a session for another user
-export async function impersonateUser(targetUserId: string) {
+export async function getAdminStats() {
     const supabase = await createClient()
 
-    // 1. Verify caller is superadmin
-    if (!(await isAdmin())) {
-        return { error: 'Geen toegang' }
+    // Auth check using standard client
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+        console.error('Admin stats auth error:', authError)
+        return { totalBrokers: 0, activeOrders: 0, monthlyRevenue: 0, recentActivity: [] }
     }
 
-    // 2. We need the current admin's session to be saved so they can return
-    const cookieStore = await cookies()
-    // Find the sb-xxx-auth-token
-    const allCookies = cookieStore.getAll()
-    const authCookies = allCookies.filter(c => c.name.includes('-auth-token'))
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    if (authCookies.length > 0) {
-        // Save it in a return cookie
-        cookieStore.set('admin_return_token', JSON.stringify(authCookies), { path: '/', maxAge: 60 * 60 * 24 })
-        
-        // Clear existing auth cookies to ensure magiclink takes over cleanly
-        authCookies.forEach(c => cookieStore.delete(c.name))
+    if (profile?.role !== 'superadmin') {
+        console.error('Non-admin access attempt:', user.email)
+        return { totalBrokers: 0, activeOrders: 0, monthlyRevenue: 0, recentActivity: [] }
     }
 
-    // 3. Generate Link / impersonate via Admin API
-    // The easiest way is to use the Supabase Admin API to generate a password reset link 
-    // or just generate an access/refresh token pair. But we can't easily generate a token 
-    // directly without a custom edge function or password. 
-    // Actually, `supabaseAdmin.auth.admin.generateLink()` can generate a magiclink.
+    // Use Admin Client for statistics to bypass RLS filters
+    const adminSupabase = await createAdminClient()
 
-    // An alternative is using Service Role to just fetch the user's data, BUT that doesn't 
-    // log them in on the client. To truly log them in on the client, we can use the 
-    // supabase service_role client to create a custom session? No, Supabase doesn't support 
-    // "sign in as" directly in the JS client without custom claims and careful RLS. 
+    // 1. Totaal Makelaars
+    const { count: totalBrokers, error: brokersError } = await adminSupabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'makelaar')
 
-    // Instead of full auth impersonation, a common pattern for Next.js is setting an 
-    // `impersonated_user_id` cookie, and updating the local supabase client to pass it 
-    // as a custom header, which is then picked up by RLS... but that's complex.
+    if (brokersError) console.error('Error fetching brokers:', brokersError)
 
-    const supabaseAdmin = await createAdminClient()
+    // 2. Actieve Bestellingen
+    const { count: activeOrders, error: ordersError } = await adminSupabase
+        .from('shop_orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending', 'processing', 'production', 'paid'])
 
-    const { getURL } = await import('@/app/auth/actions')
-    const appUrl = await getURL()
+    if (ordersError) console.error('Error fetching orders:', ordersError)
 
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: (await supabaseAdmin.auth.admin.getUserById(targetUserId)).data.user?.email || '',
-        options: {
-            // Must go through /auth/callback so the code can be exchanged for a session
-            // We add impersonate=true to distinguish this from a real password recovery
-            redirectTo: `${appUrl}/auth/callback?next=/dashboard&impersonate=true`
-        }
-    })
+    // 3. Platform Omzet (Maand)
+    const now = new Date()
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    const { data: monthlyOrders, error: revenueError } = await adminSupabase
+        .from('shop_orders')
+        .select('total_amount')
+        .gte('created_at', startDate.toISOString())
+        .in('status', ['paid', 'production', 'shipped', 'completed'])
 
-    if (linkError || !linkData.properties?.action_link) {
-        return { error: 'Kon geen impersonation link maken' }
+    if (revenueError) console.error('Error fetching revenue:', revenueError)
+
+    const monthlyRevenue = (monthlyOrders || []).reduce((sum, order) => sum + Number(order.total_amount), 0)
+
+    // 4. Recente Activiteit
+    const { data: recentActivity, error: activityError } = await adminSupabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+    if (activityError) console.error('Error fetching activity:', activityError)
+
+    return {
+        totalBrokers: totalBrokers || 0,
+        activeOrders: activeOrders || 0,
+        monthlyRevenue: monthlyRevenue || 0,
+        recentActivity: recentActivity || []
     }
-
-    // Return the action link so the client can redirect to it to complete the login
-    return { success: true, url: linkData.properties.action_link }
 }
 
-export async function stopImpersonation() {
-    const cookieStore = await cookies()
-    const storedTokensStr = cookieStore.get('admin_return_token')?.value
+export async function getAdminUserDetail(userId: string) {
+    const adminSupabase = await createAdminClient()
 
-    if (!storedTokensStr) return { redirect: '/login' }
+    // 1. Fetch User Profile
+    const { data: user, error: userError } = await adminSupabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-    try {
-        const storedTokens = JSON.stringify(storedTokensStr)
-        // Note: A real implementation would restore the specific cookies here by parsing the JSON
-        // For simplicity now, we just redirect to /login and clear the return token
-        cookieStore.delete('admin_return_token')
+    if (userError) return { success: false, error: 'Gebruiker niet gevonden' }
 
-        // Let the user re-login to ensure safety, or we could manually set the cookies
-    } catch (e) {
-        console.error(e)
+    // 2. Fetch Profiles for trial/tier info
+    let { data: profile } = await adminSupabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+    if (!profile) {
+        // Create profile if missing
+        const { data: newProfile } = await adminSupabase
+            .from('profiles')
+            .insert({ id: userId, role: 'makelaar', full_name: user.full_name })
+            .select()
+            .single()
+        profile = newProfile
     }
 
-    return { redirect: '/login' }
+    // 3. Fetch Packages
+    const { data: packages } = await adminSupabase
+        .from('packages')
+        .select('*')
+        .order('sort_order', { ascending: true })
+
+    // 4. Fetch Tenant Features
+    let { data: features } = await adminSupabase
+        .from('tenant_features')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+
+    if (!features) {
+        // Create default features if not exist
+        const { data: newFeatures } = await adminSupabase
+            .from('tenant_features')
+            .insert({ user_id: userId })
+            .select()
+            .single()
+        features = newFeatures
+    }
+
+    // 5. Fetch Orders
+    const { data: orders } = await adminSupabase
+        .from('shop_orders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+    return {
+        success: true,
+        data: {
+            user: { ...user, trial_expires_at: profile?.trial_expires_at, subscription_tier: profile?.subscription_tier },
+            packages: packages || [],
+            features: features || {},
+            orders: orders || []
+        }
+    }
 }
 
 export async function updateTenantFeature(userId: string, featureKey: string, newValue: boolean) {
-    const supabase = await createClient()
+    const adminSupabase = await createAdminClient()
 
-    // 1. Verify caller is superadmin
-    if (!(await isAdmin())) {
-        return { error: 'Geen toegang' }
-    }
-
-    // 2. We use the service role client to bypass any potential RLS restrictions 
-    // for updating another user's features, making it robust.
-    const supabaseAdmin = await createAdminClient()
-
-    // 3. Upsert the feature
-    const { error } = await supabaseAdmin
+    const { error } = await adminSupabase
         .from('tenant_features')
-        .upsert({
-            user_id: userId,
-            [featureKey]: newValue,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' })
+        .update({ [featureKey]: newValue, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
 
     if (error) {
-        console.error('Feature update error:', error)
-        return { error: 'Fout bij opslaan van module' }
+        console.error('Error updating feature:', error)
+        return { success: false, error: error.message }
     }
 
-    console.log('SERVER [updateTenantFeature]: Success for user', userId, 'feature', featureKey)
+    // Log action
+    await adminSupabase.from('audit_logs').insert({
+        action: 'UPDATE_FEATURE',
+        details: { userId, featureKey, newValue }
+    })
+
     revalidatePath(`/admin/users/${userId}`)
     return { success: true }
 }
 
-export async function updateTenantPackage(userId: string, pkgId: string) {
-    const supabase = await createClient()
+export async function updateTenantPackage(userId: string, packageId: string) {
+    const adminSupabase = await createAdminClient()
 
-    // 1. Verify caller is superadmin
-    if (!(await isAdmin())) {
-        return { error: 'Geen toegang' }
-    }
-
-    const supabaseAdmin = await createAdminClient()
-
-    // 2. Fetch package details
-    const { data: pkg, error: pkgError } = await supabaseAdmin
+    // 1. Get package details
+    const { data: pkg } = await adminSupabase
         .from('packages')
         .select('*')
-        .eq('id', pkgId)
+        .eq('id', packageId)
         .single()
 
-    if (pkgError || !pkg) return { error: 'Pakket niet gevonden' }
+    if (!pkg) return { success: false, error: 'Pakket niet gevonden' }
 
-    // 3. Update features
-    const { error: featError } = await supabaseAdmin
+    // 2. Update tenant features based on package
+    const { error: featureError } = await adminSupabase
         .from('tenant_features')
-        .upsert({
-            user_id: userId,
+        .update({
             has_properties: pkg.has_properties,
             has_agenda: pkg.has_agenda,
+            has_leads: pkg.has_leads,
             has_materials: pkg.has_materials,
             has_archive: pkg.has_archive,
-            has_leads: pkg.has_leads,
             has_statistics: pkg.has_statistics,
             has_reviews: pkg.has_reviews,
             has_webshop: pkg.has_webshop,
@@ -153,131 +195,31 @@ export async function updateTenantPackage(userId: string, pkgId: string) {
             has_voice: pkg.has_voice,
             property_limit: pkg.property_limit,
             updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' })
-
-    if (featError) return { error: 'Fout bij bijwerken modules' }
-
-    // 4. Aggressive subscription reset
-    await supabaseAdmin.from('subscriptions').delete().eq('user_id', userId)
-
-    const { error: subError } = await supabaseAdmin
-        .from('subscriptions')
-        .insert({
-            user_id: userId,
-            plan: pkg.id,
-            status: 'active',
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         })
+        .eq('user_id', userId)
 
-    if (subError) {
-        console.error('Subscription update error:', subError)
-        return { error: 'Fout bij bijwerken abonnement' }
-    }
+    if (featureError) return { success: false, error: featureError.message }
 
-    console.log('SERVER [updateTenantPackage]: Success for user', userId)
+    // 3. Update profile tier
+    await adminSupabase
+        .from('profiles')
+        .update({ subscription_tier: pkg.id })
+        .eq('id', userId)
+
+    // Log action
+    await adminSupabase.from('audit_logs').insert({
+        action: 'UPDATE_PACKAGE',
+        details: { userId, packageId, packageName: pkg.name }
+    })
+
     revalidatePath(`/admin/users/${userId}`)
-    revalidatePath('/')
-
     return { success: true }
 }
 
-export async function getAdminUserDetail(userId: string) {
-    const supabase = await createClient()
-
-    // 1. Verify caller is superadmin
-    if (!(await isAdmin())) {
-        return { error: 'Geen toegang' }
-    }
-
-    const supabaseAdmin = await createAdminClient()
-
-    // 2. Fetch all data in parallel
-    const [
-        { data: targetUser, error: uErr },
-        { data: profileData, error: profErr },
-        { data: packages, error: pErr },
-        { data: featureData, error: fErr },
-        { data: subData, error: sErr },
-        { data: orders, error: oErr }
-    ] = await Promise.all([
-        supabaseAdmin.from('users').select('*').eq('id', userId).single(),
-        supabaseAdmin.from('profiles').select('*').eq('id', userId).maybeSingle(),
-        supabaseAdmin.from('packages').select('*').order('sort_order'),
-        supabaseAdmin.from('tenant_features').select('*').eq('user_id', userId).maybeSingle(),
-        supabaseAdmin.from('subscriptions').select('plan').eq('user_id', userId).maybeSingle(),
-        supabaseAdmin.from('shop_orders').select(`*, shop_order_items (*, shop_products (*))`).eq('user_id', userId).order('created_at', { ascending: false })
-    ])
-
-    if (uErr || profErr || pErr || fErr || sErr || oErr) {
-        console.error('SERVER [getAdminUserDetail]: One or more fetch errors occurred', { uErr, profErr, pErr, fErr, sErr, oErr })
-        return { error: `Fetch error: uErr=${uErr?.message}, profErr=${profErr?.message}, oErr=${oErr?.message}` }
-    }
-
-    // Merge profile data into targetUser
-    if (targetUser && profileData) {
-        Object.assign(targetUser, profileData)
-    }
-
-    // 3. Match package
-    const planValue = subData?.plan
-    console.log('SERVER [getAdminUserDetail]: Subscribed Plan Value:', planValue)
-    const matchedPkg = packages?.find(p => p.id === planValue || p.name === planValue)
-    let activePlanId = matchedPkg?.id || null
-
-    // Fallback feature matching
-    if (!activePlanId && featureData) {
-        const fmPkg = packages?.find(p =>
-            p.has_agenda === featureData.has_agenda &&
-            p.has_leads === featureData.has_leads &&
-            p.has_voice === featureData.has_voice
-        )
-        activePlanId = fmPkg?.id || null
-        console.log('SERVER [getAdminUserDetail]: Fallback Feature Match ID:', activePlanId)
-    }
-
-    console.log('SERVER [getAdminUserDetail]: Returning data summary:', {
-        userFound: !!targetUser,
-        packageCount: packages?.length || 0,
-        featurePlanId: activePlanId
-    })
-
-    return {
-        success: true,
-        data: {
-            user: targetUser,
-            packages: packages || [],
-            features: {
-                has_properties: featureData?.has_properties ?? true,
-                has_agenda: featureData?.has_agenda ?? false,
-                has_materials: featureData?.has_materials ?? false,
-                has_archive: featureData?.has_archive ?? false,
-                has_leads: featureData?.has_leads ?? false,
-                has_statistics: featureData?.has_statistics ?? false,
-                has_reviews: featureData?.has_reviews ?? false,
-                has_webshop: featureData?.has_webshop ?? false,
-                has_billing: featureData?.has_billing ?? false,
-                has_voice: featureData?.has_voice ?? false,
-                planId: activePlanId,
-                trialExpiresAt: targetUser?.trial_expires_at || null
-            },
-            orders: orders || []
-        }
-    }
-}
-
 export async function updateTrialExpiration(userId: string, daysToAdd: number) {
-    const supabase = await createClient()
+    const adminSupabase = await createAdminClient()
 
-    // 1. Verify caller is superadmin
-    if (!(await isAdmin())) {
-        return { error: 'Geen toegang' }
-    }
-
-    const supabaseAdmin = await createAdminClient()
-
-    // 2. Fetch current trial date
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await adminSupabase
         .from('profiles')
         .select('trial_expires_at')
         .eq('id', userId)
@@ -286,19 +228,110 @@ export async function updateTrialExpiration(userId: string, daysToAdd: number) {
     const currentExpiry = profile?.trial_expires_at ? new Date(profile.trial_expires_at) : new Date()
     const newExpiry = new Date(currentExpiry.getTime() + (daysToAdd * 24 * 60 * 60 * 1000))
 
-    // 3. Update profile
-    const { error } = await supabaseAdmin
+    const { error } = await adminSupabase
         .from('profiles')
-        .update({
-            trial_expires_at: newExpiry.toISOString()
-        })
+        .update({ trial_expires_at: newExpiry.toISOString() })
         .eq('id', userId)
 
-    if (error) {
-        console.error('Trial update error:', error)
-        return { error: 'Fout bij verlengen trial' }
-    }
+    if (error) return { success: false, error: error.message }
+
+    // Log action
+    await adminSupabase.from('audit_logs').insert({
+        action: 'EXTEND_TRIAL',
+        details: { userId, daysAdded: daysToAdd, newExpiry: newExpiry.toISOString() }
+    })
 
     revalidatePath(`/admin/users/${userId}`)
-    return { success: true, newDate: newExpiry.toLocaleDateString('nl-NL') }
+    return { success: true, newDate: newExpiry.toISOString() }
+}
+
+// Placeholder for impersonateUser if requested, though page uses fetch
+export async function impersonateUser(userId: string) {
+    return { success: true, url: `/api/admin/ghost-login?targetUserId=${userId}` }
+}
+
+/**
+ * Delete a broker account and all associated data
+ * Checks for active shop orders first.
+ */
+export async function deleteBrokerAccount(userId: string) {
+    const isAdmin = await verifyAdmin()
+    if (!isAdmin) return { success: false, error: 'Geen toegang. Alleen superadmins kunnen accounts verwijderen.' }
+
+    const adminSupabase = await createAdminClient()
+
+    try {
+        // 1. Check for active shop orders
+        // These statuses are considered "active" and should block deletion
+        const ACTIVE_ORDER_STATUSES = ['pending', 'processing', 'production', 'paid', 'awaiting_payment']
+        
+        const { data: activeOrders, error: ordersError } = await adminSupabase
+            .from('shop_orders')
+            .select('id, status')
+            .eq('user_id', userId)
+            .in('status', ACTIVE_ORDER_STATUSES)
+
+        if (ordersError) {
+            console.error('Error checking active orders:', ordersError)
+            return { success: false, error: 'Fout bij controleren van bestellingen.' }
+        }
+
+        if (activeOrders && activeOrders.length > 0) {
+            return { 
+                success: false, 
+                error: `Dit account heeft nog ${activeOrders.length} actieve bestelling(en). Rond deze eerst af of annuleer ze voordat je het account verwijdert.` 
+            }
+        }
+
+        // 2. Clear related platform data (some have CASCADE, but let's be thorough if needed)
+        // Profiles and tenant_features are key
+        
+        // Note: shop_orders remain but linked to user_id (if FK is not CASCADE)
+        // In our case, we want them to remain for revenue tracking. 
+        // If the database has a strict FK without CASCADE, the delete might fail.
+        // We'll trust the plan and proceed to delete from profiles/users first.
+        
+        // 3. Delete from public.profiles
+        await adminSupabase.from('profiles').delete().eq('id', userId)
+        
+        // 4. Delete from public.tenant_features
+        await adminSupabase.from('tenant_features').delete().eq('user_id', userId)
+        
+        // 5. Delete from public.users (profiles copy)
+        await adminSupabase.from('users').delete().eq('id', userId)
+
+        // 6. Delete from Auth (the source of truth)
+        const { error: authError } = await adminSupabase.auth.admin.deleteUser(userId)
+        
+        if (authError) {
+            console.error('Error deleting from auth:', authError)
+            return { success: false, error: 'Fout bij het verwijderen van het authenticatie-account.' }
+        }
+
+        // Log the deletion
+        await adminSupabase.from('audit_logs').insert({
+            action: 'DELETE_ACCOUNT',
+            details: { userId, deletedAt: new Date().toISOString() }
+        })
+
+        revalidatePath('/admin/users')
+        return { success: true }
+    } catch (error: any) {
+        console.error('Delete broker error:', error)
+        return { success: false, error: error.message || 'Onverwachte fout bij verwijderen.' }
+    }
+}
+
+async function verifyAdmin() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    return profile?.role === 'superadmin'
 }

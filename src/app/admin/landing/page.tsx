@@ -13,37 +13,59 @@ export default async function LandingSettingsPage({
     const errorParam = params.error
     const supabase = await createClient()
 
-    // Fetch current hero image setting
-    const { data: setting, error: fetchError } = await supabase
+    // Fetch all landing page settings
+    const { data: settings } = await supabase
         .from('app_settings')
-        .select('value')
-        .eq('key', 'hero_image')
-        .maybeSingle()
+        .select('key, value')
+        .in('key', ['hero_image', 'landing_trusted_title', 'landing_trusted_logos'])
 
-    // Handle JSONB data types robustly
+    const getSetting = (key: string) => settings?.find(s => s.key === key)?.value || null
+
+    // Get hero image
+    const heroImageRaw = getSetting('hero_image')
     let currentImage = null
-    if (setting?.value) {
-        if (typeof setting.value === 'string') {
-            currentImage = setting.value
-        } else if (typeof setting.value === 'object') {
-            currentImage = (setting.value as any).url || (setting.value as any).image_url || null
+    if (heroImageRaw) {
+        if (typeof heroImageRaw === 'string') {
+            currentImage = heroImageRaw
+        } else if (typeof heroImageRaw === 'object') {
+            currentImage = (heroImageRaw as any).url || (heroImageRaw as any).image_url || null
         }
     }
 
-    async function updateHeroImage(formData: FormData) {
+    // Get trusted by settings
+    const trustedTitle = getSetting('landing_trusted_title') as string || 'VERTROUWD DOOR'
+    const trustedLogosRaw = getSetting('landing_trusted_logos')
+    let trustedLogos: string[] = ['REMAX', 'ERA', 'C21']
+    if (trustedLogosRaw) {
+        if (Array.isArray(trustedLogosRaw)) {
+            trustedLogos = trustedLogosRaw
+        } else if (typeof trustedLogosRaw === 'string') {
+            trustedLogos = trustedLogosRaw.split(',').map(s => s.trim())
+        }
+    }
+
+    async function updateLandingSettings(formData: FormData) {
         'use server'
         const imageUrl = formData.get('image_url') as string
+        const trustedTitle = formData.get('trusted_title') as string
+        const trustedLogosStr = formData.get('trusted_logos') as string
+        const trustedLogos = trustedLogosStr.split(',').map(s => s.trim()).filter(Boolean)
+
         const supabase = await createClient()
 
-        // Attempt upsert
-        const { error } = await supabase.from('app_settings').upsert({
-            key: 'hero_image',
-            value: imageUrl
-        }, { onConflict: 'key' })
+        const settingsToUpdate = [
+            { key: 'hero_image', value: imageUrl },
+            { key: 'landing_trusted_title', value: trustedTitle },
+            { key: 'landing_trusted_logos', value: trustedLogos }
+        ]
 
-        if (error) {
-            console.error('FAILED to update app_settings:', error)
-            redirect(`/admin/landing?error=${encodeURIComponent(error.message)}`)
+        // Update each setting
+        for (const item of settingsToUpdate) {
+            const { error } = await supabase.from('app_settings').upsert(item, { onConflict: 'key' })
+            if (error) {
+                console.error(`FAILED to update ${item.key}:`, error)
+                redirect(`/admin/landing?error=${encodeURIComponent(error.message)}`)
+            }
         }
 
         revalidatePath('/')
@@ -76,9 +98,12 @@ export default async function LandingSettingsPage({
             <div className="bg-[#111] rounded-3xl border border-white/5 p-8 shadow-sm mt-6">
                 <LandingSettingsForm
                     currentImage={currentImage}
-                    updateAction={updateHeroImage}
+                    trustedTitle={trustedTitle}
+                    trustedLogos={trustedLogos}
+                    updateAction={updateLandingSettings}
                 />
             </div>
         </div>
     )
 }
+
