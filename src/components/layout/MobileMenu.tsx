@@ -155,13 +155,15 @@ export default function MobileMenu({ userEmail }: MobileMenuProps) {
                             </div>
                             <ThemeToggle />
                         </div>
-                        <button
-                            onClick={() => signOut()}
-                            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-500 font-extrabold transition-all border border-red-100 dark:border-red-500/20 shadow-sm"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">logout</span>
-                            Uitloggen
-                        </button>
+                        <form action={signOut} className="w-full">
+                            <button
+                                type="submit"
+                                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-500 font-extrabold transition-all border border-red-100 dark:border-red-500/20 shadow-sm"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">logout</span>
+                                Uitloggen
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -68,13 +68,15 @@ export default function ShopAccountSidebar() {
                         <NavLink key={item.href} {...item} />
                     ))}
 
-                    <button
-                        onClick={() => signOut()}
-                        className="w-full mt-4 flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-400/5 transition-all duration-300"
-                    >
-                        <span className="material-symbols-outlined text-[20px]">logout</span>
-                        <span className="font-bold text-sm tracking-tight">Uitloggen</span>
-                    </button>
+                    <form action={signOut} className="w-full mt-4">
+                        <button
+                            type="submit"
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-400/5 transition-all duration-300"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">logout</span>
+                            <span className="font-bold text-sm tracking-tight">Uitloggen</span>
+                        </button>
+                    </form>
                 </div>
             </div>
 

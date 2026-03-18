@@ -100,13 +100,15 @@ export default function Sidebar({ userEmail }: SidebarProps) {
                     <div className="flex items-center gap-1">
                         <NotificationBell />
                         <ThemeToggle />
-                        <button
-                            onClick={() => signOut()}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
-                            title="Uitloggen"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">logout</span>
-                        </button>
+                        <form action={signOut}>
+                            <button
+                                type="submit"
+                                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                                title="Uitloggen"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
