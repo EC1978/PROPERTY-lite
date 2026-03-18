@@ -261,43 +261,25 @@ export async function deleteBrokerAccount(userId: string) {
     const adminSupabase = await createAdminClient()
 
     try {
-        // 1. Check for active shop orders
-        // These statuses are considered "active" and should block deletion
-        const ACTIVE_ORDER_STATUSES = ['pending', 'processing', 'production', 'paid', 'awaiting_payment']
+        // 1. Delete all shop-related test data so it cascades completely
+        await adminSupabase.from('shop_complaints').delete().eq('user_id', userId)
+        await adminSupabase.from('shop_quotes').delete().eq('user_id', userId)
         
-        const { data: activeOrders, error: ordersError } = await adminSupabase
-            .from('shop_orders')
-            .select('id, status')
-            .eq('user_id', userId)
-            .in('status', ACTIVE_ORDER_STATUSES)
-
-        if (ordersError) {
-            console.error('Error checking active orders:', ordersError)
-            return { success: false, error: 'Fout bij controleren van bestellingen.' }
+        // Find orders to delete items first, though cascade should ideally handle this. Let's be explicit for safety.
+        const { data: ordersIds } = await adminSupabase.from('shop_orders').select('id').eq('user_id', userId)
+        if (ordersIds && ordersIds.length > 0) {
+            const idsList = ordersIds.map(o => o.id)
+            await adminSupabase.from('shop_order_items').delete().in('order_id', idsList)
+            await adminSupabase.from('shop_orders').delete().eq('user_id', userId)
         }
 
-        if (activeOrders && activeOrders.length > 0) {
-            return { 
-                success: false, 
-                error: `Dit account heeft nog ${activeOrders.length} actieve bestelling(en). Rond deze eerst af of annuleer ze voordat je het account verwijdert.` 
-            }
-        }
+        // 2. Delete properties/leads that belong to this user
+        await adminSupabase.from('leads').delete().eq('broker_id', userId)
+        await adminSupabase.from('properties').delete().eq('owner', userId)
 
-        // 2. Clear related platform data (some have CASCADE, but let's be thorough if needed)
-        // Profiles and tenant_features are key
-        
-        // Note: shop_orders remain but linked to user_id (if FK is not CASCADE)
-        // In our case, we want them to remain for revenue tracking. 
-        // If the database has a strict FK without CASCADE, the delete might fail.
-        // We'll trust the plan and proceed to delete from profiles/users first.
-        
-        // 3. Delete from public.profiles
+        // 3. Clear from public tables
         await adminSupabase.from('profiles').delete().eq('id', userId)
-        
-        // 4. Delete from public.tenant_features
         await adminSupabase.from('tenant_features').delete().eq('user_id', userId)
-        
-        // 5. Delete from public.users (profiles copy)
         await adminSupabase.from('users').delete().eq('id', userId)
 
         // 6. Delete from Auth (the source of truth)

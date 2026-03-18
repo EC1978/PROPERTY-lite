@@ -7,10 +7,10 @@ import {
     Calendar, User, CreditCard, Clock,
     CheckCircle2, AlertCircle, Package,
     ChevronRight, X, Truck, ExternalLink,
-    Save, Settings, FileCheck, FileX, Upload, AlertTriangle, Plus, Trash2
+    Save, Settings, FileCheck, FileX, Upload, AlertTriangle, Plus, Trash2, Archive, ArchiveRestore
 } from 'lucide-react'
 import Link from 'next/link'
-import { updateOrderStatus, updateOrderTracking, updateOrderDesignStatus, updateOrderDesignUrl, updateOrderDeliveryDate } from '../products/actions'
+import { updateOrderStatus, updateOrderTracking, updateOrderDesignStatus, updateOrderDesignUrl, updateOrderDeliveryDate, archiveOrder } from '../products/actions'
 import { createClient } from '@/utils/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -21,10 +21,12 @@ type Order = {
     status: string
     payment_status: string
     tracking_number: string | null
+    order_number: string | null
     design_url: string | null
     design_status: string | null
     design_remarks: string | null
     delivery_date: string | null
+    is_archived: boolean
     shop_complaints?: any[] | null
     users: {
         email: string
@@ -56,6 +58,7 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
     const [orders, setOrders] = useState(initialOrders)
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('Alle')
+    const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active')
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
     const [trackingNumber, setTrackingNumber] = useState('')
     const [customStatus, setCustomStatus] = useState('')
@@ -78,7 +81,8 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
             (o.users.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
             o.id.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesStatus = statusFilter === 'Alle' || o.status === statusFilter
-        return matchesSearch && matchesStatus
+        const matchesTab = activeTab === 'archived' ? o.is_archived : !o.is_archived
+        return matchesSearch && matchesStatus && matchesTab
     })
 
     const handleUpdateStatus = async (orderId: string, status: string) => {
@@ -226,6 +230,24 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
         }
     }
 
+    const handleArchiveOrder = async (orderId: string, archive: boolean) => {
+        const loadingToast = toast.loading(archive ? 'Bestelling archiveren...' : 'Bestelling herstellen...')
+        try {
+            const result = await archiveOrder(orderId, archive)
+            if (result.success) {
+                setOrders(orders.map(o => o.id === orderId ? { ...o, is_archived: archive } : o))
+                if (selectedOrder?.id === orderId) {
+                    setSelectedOrder({ ...selectedOrder, is_archived: archive })
+                }
+                toast.success(archive ? 'Bestelling gearchiveerd' : 'Bestelling hersteld', { id: loadingToast })
+            } else {
+                toast.error(result.error || 'Fout bij actie', { id: loadingToast })
+            }
+        } catch (error) {
+            toast.error('Er is een fout opgetreden', { id: loadingToast })
+        }
+    }
+
     const openOrderDetails = (order: Order) => {
         setSelectedOrder(order)
         setTrackingNumber(order.tracking_number || '')
@@ -263,9 +285,25 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                     </h2>
                     <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-bold font-mono">Monitor en beheer alle shop transacties</p>
                 </div>
-                <Link href="/admin/orders/new" className="bg-[#0df2a2] hover:bg-white text-black font-black px-6 py-3 rounded-xl uppercase tracking-widest text-xs transition-all shadow-[0_0_20px_rgba(13,242,162,0.15)] flex items-center gap-2 italic w-fit">
-                    <Plus className="w-4 h-4" /> Nieuwe Bestelling
-                </Link>
+                <div className="flex items-center gap-3">
+                    <div className="bg-[#1A1A1A] p-1 rounded-xl border border-white/5 flex">
+                        <button
+                            onClick={() => setActiveTab('active')}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'active' ? 'bg-[#0df2a2] text-black' : 'text-zinc-500 hover:text-white'}`}
+                        >
+                            Actief ({orders.filter(o => !o.is_archived).length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('archived')}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'archived' ? 'bg-[#0df2a2] text-black' : 'text-zinc-500 hover:text-white'}`}
+                        >
+                            Archief ({orders.filter(o => o.is_archived).length})
+                        </button>
+                    </div>
+                    <Link href="/admin/orders/new" className="bg-[#0df2a2] hover:bg-white text-black font-black px-6 py-3 rounded-xl uppercase tracking-widest text-xs transition-all shadow-[0_0_20px_rgba(13,242,162,0.15)] flex items-center gap-2 italic w-fit">
+                        <Plus className="w-4 h-4" /> Nieuwe Bestelling
+                    </Link>
+                </div>
             </div>
 
             {/* Filters */}
@@ -343,7 +381,25 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                                             <div className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">{order.payment_status}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex justify-end">
+                                            <div className="flex justify-end items-center gap-2">
+                                                {!order.is_archived && order.status === 'completed' && (
+                                                    <button
+                                                        onClick={() => handleArchiveOrder(order.id, true)}
+                                                        className="p-2 rounded-lg bg-zinc-800 hover:bg-[#0df2a2]/20 text-zinc-400 hover:text-[#0df2a2] transition-all"
+                                                        title="Archiveren"
+                                                    >
+                                                        <Archive className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {order.is_archived && (
+                                                    <button
+                                                        onClick={() => handleArchiveOrder(order.id, false)}
+                                                        className="p-2 rounded-lg bg-zinc-800 hover:bg-[#0df2a2]/20 text-zinc-400 hover:text-[#0df2a2] transition-all"
+                                                        title="Herstellen"
+                                                    >
+                                                        <ArchiveRestore className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => openOrderDetails(order)}
                                                     className="p-2 rounded-lg bg-zinc-800 hover:bg-white/10 text-zinc-400 hover:text-white transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
@@ -376,7 +432,7 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#111] z-10">
                             <div>
                                 <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                                    Bestelling <span className="text-[#0df2a2]">#{selectedOrder.id.slice(0, 8)}</span>
+                                    Bestelling <span className="text-[#0df2a2]">{selectedOrder.order_number || `FACT-${selectedOrder.id.slice(0, 8)}`}</span>
                                 </h3>
                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Gedetailleerd overzicht van makelaar bestelling</p>
                             </div>
@@ -664,6 +720,22 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                                 >
                                     Bestelling Annuleren
                                 </button>
+                                {!selectedOrder.is_archived && (selectedOrder.status === 'completed' || selectedOrder.status === 'delivered') && (
+                                    <button
+                                        onClick={() => handleArchiveOrder(selectedOrder.id, true)}
+                                        className="px-6 py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+                                    >
+                                        <Archive className="w-4 h-4" /> Archiveren
+                                    </button>
+                                )}
+                                {selectedOrder.is_archived && (
+                                    <button
+                                        onClick={() => handleArchiveOrder(selectedOrder.id, false)}
+                                        className="px-6 py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+                                    >
+                                        <ArchiveRestore className="w-4 h-4" /> Herstellen
+                                    </button>
+                                )}
                                 <div className="h-10 w-px bg-white/5 hidden md:block" />
                                 <div>
                                     <div className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Betaalstatus</div>

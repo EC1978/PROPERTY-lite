@@ -237,3 +237,21 @@ export async function updateOrderDesign(orderId: string, url: string) {
     revalidatePath('/admin/orders')
     return { success: true }
 }
+
+export async function archiveOrder(id: string, archive: boolean = true) {
+    if (!await verifyAdmin()) return { error: 'Geen toegang' }
+
+    const supabaseAdmin = await createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('shop_orders')
+        .update({ 
+            is_archived: archive,
+            updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/admin/orders')
+    return { success: true }
+}

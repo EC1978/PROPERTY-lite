@@ -72,7 +72,8 @@ export default function QuoteDetailPage() {
                 basePrice: Number(item.unit_price), // Use quoted price
                 options: item.selected_options || [],
                 quantity: item.quantity,
-                image: item.shop_products.images?.[0] || ''
+                image: item.shop_products.images?.[0] || '',
+                shippingCost: 0
             })
         })
 
@@ -144,7 +145,7 @@ export default function QuoteDetailPage() {
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
                 <Link href="/shop/account/quotes" className="hover:text-[#0df2a2]">Offertes</Link>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span className="text-white">{quote.quote_number}</span>
+                <span className="text-white">{quote.quote_number || `OFF-${quote.id.slice(0, 8)}`}</span>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -215,7 +216,7 @@ export default function QuoteDetailPage() {
                     <section className="bg-[#1A1D1C]/40 border border-white/5 rounded-[32px] p-8 space-y-6">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-1">Offertenummer</p>
-                            <h2 className="text-xl font-black text-white tracking-tight">{quote.quote_number}</h2>
+                            <h2 className="text-xl font-black text-white tracking-tight">{quote.quote_number || `OFF-${quote.id.slice(0, 8)}`}</h2>
                         </div>
 
                         <div className="pt-4 border-t border-white/5">

@@ -84,7 +84,8 @@ export default function OrderDetailPage() {
                 basePrice: Number(item.shop_products.base_price || 0),
                 options: Array.isArray(item.selected_options) ? item.selected_options : [],
                 quantity: item.quantity,
-                image: item.shop_products.images?.[0] || ''
+                image: item.shop_products.images?.[0] || '',
+                shippingCost: 0
             })
         })
 
@@ -275,7 +276,7 @@ export default function OrderDetailPage() {
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
                 <Link href="/shop/account/orders" className="hover:text-[#0df2a2]">Bestellingen</Link>
                 <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                <span className="text-white">{order.order_number || order.id.slice(0, 8)}</span>
+                <span className="text-white">{order.order_number || `FACT-${order.id.slice(0, 8)}`}</span>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -485,7 +486,7 @@ export default function OrderDetailPage() {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Factuurnummer</p>
-                                <h2 className="text-2xl font-black text-white tracking-tight leading-none uppercase">{order.order_number || `ORD-${order.id.slice(0, 8)}`}</h2>
+                                <h2 className="text-2xl font-black text-white tracking-tight leading-none uppercase">{order.order_number || `FACT-${order.id.slice(0, 8)}`}</h2>
                             </div>
                             <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${(order.status !== 'pending' && order.status !== 'unpaid' && order.status !== 'awaiting_payment') ? 'bg-[#0df2a2]/10 text-[#0df2a2]' : 'bg-yellow-500/10 text-yellow-500'}`}>
                                 {(order.status !== 'pending' && order.status !== 'unpaid' && order.status !== 'awaiting_payment') ? 'Betaald' : 'Openstaand'}
@@ -591,8 +592,8 @@ export default function OrderDetailPage() {
                                         <span className="text-2xl font-black text-[#0df2a2]">€ {Number(order.total_amount).toFixed(2)}</span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest block mb-1">Order</span>
-                                        <span className="text-sm font-bold text-white">#{order.order_number || order.id.slice(0, 8)}</span>
+                                        <span className="text-gray-500 text-[10px] font-black uppercase tracking-widest block mb-1">Factuur</span>
+                                        <span className="text-sm font-bold text-white">{order.order_number || `FACT-${order.id.slice(0, 8)}`}</span>
                                     </div>
                                 </div>
 

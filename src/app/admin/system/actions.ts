@@ -83,3 +83,37 @@ export async function updateSystemSettings(formData: FormData) {
 
     return { success: true, settings: updatedData }
 }
+
+export async function resetPlatformData() {
+    noStore();
+    const adminCheck = await isAdmin()
+    
+    if (!adminCheck) {
+        return { success: false, error: 'Unauthorized: Alleen superadmins kunnen deze actie uitvoeren.' }
+    }
+
+    const adminSupabase = await createAdminClient()
+    
+    const { error } = await adminSupabase.rpc('reset_platform_data')
+    
+    if (error) {
+        console.error('Error resetting platform data:', error)
+        return { success: false, error: 'Kan platform data niet resetten: ' + error.message }
+    }
+
+    // Log the massive action
+    const supabaseAuth = await createClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+    
+    if (user && user.email) {
+        await logAdminAction(
+            user.email,
+            'PLATFORM_RESET',
+            { action: 'Deleted all shop orders, quotes, items and reset sequences.' }
+        );
+    }
+
+    revalidatePath('/admin/orders')
+    revalidatePath('/admin/quotes')
+    return { success: true }
+}

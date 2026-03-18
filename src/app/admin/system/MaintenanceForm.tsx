@@ -68,12 +68,12 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
             <form onSubmit={handleSubmit} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/5 rounded-3xl p-6 md:p-8 shadow-sm space-y-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[50px] -translate-y-1/2 translate-x-1/2 rounded-full pointer-events-none" />
 
-                <div className="flex items-center justify-between z-10 relative">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between z-10 relative gap-4">
                     <div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Onderhoudsmodus activeren</h3>
                         <p className="text-sm text-slate-500 dark:text-gray-400">Plaats de volledige applicatie in tijdelijk onderhoud.</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer self-start sm:self-auto">
                         <input
                             type="checkbox"
                             name="maintenance_mode"
@@ -81,7 +81,7 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
                             onChange={(e) => setMaintenanceMode(e.target.checked)}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500 shadow-inner"></div>
+                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500 shadow-inner"></div>
                     </label>
                 </div>
 
@@ -101,7 +101,9 @@ export default function MaintenanceForm({ initialMaintenanceMode, initialStatusM
                 </div>
 
                 <div className="flex justify-end pt-4 z-10 relative">
-                    <SubmitButton text="Wijzigingen Opslaan" loadingText="Opslaan..." isLoading={isPending} />
+                    <div className="w-full sm:w-auto">
+                        <SubmitButton text="Wijzigingen Opslaan" loadingText="Opslaan..." isLoading={isPending} />
+                    </div>
                 </div>
             </form>
         </div>

@@ -32,7 +32,7 @@ export default async function AdminDashboardPage() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 px-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 px-4 sm:px-5">
                 <Link href="/admin/users" className="bg-[#1A1A1A]/80 backdrop-blur-md border border-white/5 p-6 rounded-3xl relative overflow-hidden group hover:border-[#0df2a2]/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
                     <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
                         <Users className="w-24 h-24 text-white" />
@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
                 </Link>
             </div>
 
-            <div className="px-5">
+            <div className="px-4 sm:px-5">
                 <div className="bg-[#1A1A1A]/80 backdrop-blur-md border border-white/5 p-6 rounded-3xl">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-2">
@@ -97,21 +97,21 @@ export default async function AdminDashboardPage() {
                     <div className="space-y-3">
                         {stats.recentActivity.length > 0 ? (
                             stats.recentActivity.map((log: any) => (
-                                <div key={log.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 rounded-lg bg-[#0df2a2]/10 text-[#0df2a2]">
+                                <div key={log.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                                        <div className="p-2 rounded-lg bg-[#0df2a2]/10 text-[#0df2a2] shrink-0">
                                             <Activity className="w-4 h-4" />
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-white">{log.action}</p>
-                                            <p className="text-xs text-zinc-500 italic">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-white truncate">{log.action}</p>
+                                            <p className="text-xs text-zinc-500 italic truncate">
                                                 {log.admin_email} 
                                                 {log.details?.orderId && ` • Order: ${log.details.orderId.substring(0, 8)}`}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-zinc-400 font-medium">
+                                    <div className="w-full text-left sm:text-right pl-[52px] sm:pl-0 sm:w-auto">
+                                        <p className="text-xs text-zinc-400 font-medium tracking-tight">
                                             {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: nl })}
                                         </p>
                                     </div>

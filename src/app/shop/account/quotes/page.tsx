@@ -115,7 +115,7 @@ export default function QuotesPage() {
                                 className="grid grid-cols-12 gap-4 px-8 py-6 items-center hover:bg-white/[0.03] transition-all group cursor-pointer"
                             >
                                 <div className="col-span-4 flex flex-col">
-                                    <span className="font-black text-base tracking-tight text-white group-hover:text-[#0df2a2] transition-colors">{quote.quote_number}</span>
+                                    <span className="font-black text-base tracking-tight text-white group-hover:text-[#0df2a2] transition-colors">{quote.quote_number || `OFF-${quote.id.slice(0, 8)}`}</span>
                                     <span className="text-[11px] text-gray-500 font-medium">{quote.title}</span>
                                 </div>
                                 <div className="col-span-3">

@@ -247,28 +247,32 @@ export default function AdminUserDetailPage() {
         <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             
             {/* Breadcrumb & Quick Actions */}
-            <div className="flex items-center justify-between px-4 lg:px-0">
-                <Link href="/admin/users" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group text-sm font-bold uppercase tracking-widest">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 lg:px-0 gap-4 sm:gap-3">
+                <Link href="/admin/users" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group text-sm font-bold uppercase tracking-widest shrink-0">
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    Terug naar overzicht
+                    <span className="hidden sm:inline">Terug naar overzicht</span>
+                    <span className="sm:hidden">Terug</span>
                 </Link>
-                <div className="hidden md:flex items-center gap-3">
-                    <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em]">Snelacties:</span>
-                    <button onClick={handleExtendTrial} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em] hidden sm:inline">Snelacties:</span>
+                    <button
+                        onClick={handleExtendTrial}
+                        className="flex-1 sm:flex-none px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all min-h-[44px]"
+                    >
                         +30 D Trial
                     </button>
                 </div>
             </div>
 
             {/* Profile Header Block */}
-            <div className="relative overflow-hidden bg-[#111] border border-white/5 rounded-[2.5rem] p-8 md:p-12">
+            <div className="relative overflow-hidden bg-[#111] border border-white/5 rounded-[2.5rem] p-6 md:p-12">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[#0df2a2]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
                 
-                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-                    <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+                <div className="relative z-10 flex flex-col items-center md:flex-row md:items-start justify-between gap-6">
+                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                         <div className="relative group">
                             <div className="absolute -inset-1 bg-gradient-to-br from-[#0df2a2] to-emerald-900 rounded-full blur opacity-25 group-hover:opacity-40 transition-opacity" />
-                            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-zinc-900 border-4 border-white/5 flex items-center justify-center text-[#0df2a2] font-black text-4xl md:text-5xl uppercase shadow-2xl">
+                            <div className="relative w-28 h-28 md:w-40 md:h-40 rounded-full bg-zinc-900 border-4 border-white/5 flex items-center justify-center text-[#0df2a2] font-black text-4xl md:text-5xl uppercase shadow-2xl">
                                 {user.full_name?.substring(0, 2) || <UserIcon />}
                             </div>
                             <div className="absolute bottom-2 right-2 w-8 h-8 bg-[#0df2a2] rounded-full border-4 border-[#111] flex items-center justify-center">
@@ -278,16 +282,15 @@ export default function AdminUserDetailPage() {
                         
                         <div className="space-y-3">
                             <div className="flex flex-col md:flex-row items-center gap-3">
-                                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white">
+                                <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white">
                                     {user.full_name || 'Naam Onbekend'}
                                 </h1>
                                 <span className="px-3 py-1 bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/20 rounded-full text-[10px] font-black uppercase tracking-[0.1em]">
                                     {user.role || 'makelaar'}
                                 </span>
                             </div>
-                            <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-zinc-500 font-medium">
-                                <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> {user.email}</span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
+                            <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 text-zinc-500 font-medium text-sm">
+                                <span className="flex items-center gap-2"><Mail className="w-4 h-4 shrink-0" /> <span className="truncate max-w-[200px]">{user.email}</span></span>
                                 <span className="flex items-center gap-2 tracking-tight">Klant sinds {new Date(user.created_at).toLocaleDateString('nl-NL')}</span>
                             </div>
                         </div>
@@ -295,7 +298,7 @@ export default function AdminUserDetailPage() {
 
                     <button
                         onClick={handleImpersonate}
-                        className="group relative px-8 py-5 bg-[#0df2a2] hover:bg-white text-black font-black rounded-2xl transition-all active:scale-95 shadow-[0_20px_40px_rgba(13,242,162,0.15)] flex items-center gap-3 overflow-hidden"
+                        className="group relative w-full md:w-auto px-8 py-4 md:py-5 bg-[#0df2a2] hover:bg-white text-black font-black rounded-2xl transition-all active:scale-95 shadow-[0_20px_40px_rgba(13,242,162,0.15)] flex items-center justify-center gap-3 overflow-hidden min-h-[56px]"
                     >
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                         <UserSearch className="w-5 h-5 relative z-10" />
@@ -305,7 +308,7 @@ export default function AdminUserDetailPage() {
             </div>
 
             {/* Main Dashboard Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 {/* Stats Card: Current Plan */}
                 <div className="bg-[#1A1A1A]/40 backdrop-blur-xl border border-white/5 rounded-3xl p-8 hover:border-[#0df2a2]/20 transition-all group">
@@ -468,55 +471,95 @@ export default function AdminUserDetailPage() {
                         <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Geen bestellingen gevonden</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-white/[0.02]">
-                                    <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Order ID</th>
-                                    <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Datum</th>
-                                    <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Status</th>
-                                    <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600 text-right">Betaald</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {orders.slice(0, 15).map(order => (
-                                    <tr key={order.id} className="group hover:bg-white/[0.01] transition-colors">
-                                        <td className="px-10 py-6">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-mono text-xs font-black text-[#0df2a2] py-1 px-2 bg-[#0df2a2]/10 rounded-lg">
-                                                    #{order.id.substring(0, 8)}
-                                                </span>
-                                                <Link 
-                                                    href={`/admin/orders?orderId=${order.id}`}
-                                                    className="p-1.5 opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-[#0df2a2] text-zinc-400 hover:text-black rounded-lg transition-all"
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-6 text-sm text-zinc-400 font-medium">
+                    <>
+                        {/* Mobile: Card layout */}
+                        <div className="sm:hidden divide-y divide-white/5">
+                            {orders.slice(0, 15).map(order => (
+                                <div key={order.id} className="p-5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-mono text-xs font-black text-[#0df2a2] py-1 px-2 bg-[#0df2a2]/10 rounded-lg">
+                                            #{order.id.substring(0, 8)}
+                                        </span>
+                                        <Link
+                                            href={`/admin/orders?orderId=${order.id}`}
+                                            className="p-2 bg-white/5 hover:bg-[#0df2a2] text-zinc-400 hover:text-black rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                        >
+                                            <ExternalLink className="w-4 h-4" />
+                                        </Link>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs text-zinc-400 font-medium">
                                             {new Date(order.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                        </td>
-                                        <td className="px-10 py-6">
-                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                                ['completed', 'shipped', 'paid'].includes(order.status) 
-                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                                                    : order.status === 'cancelled'
-                                                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                                    : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                                            }`}>
-                                                {ORDER_STATUS_MAP[order.status] || order.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-10 py-6 text-right">
-                                            <div className="text-lg font-black text-white">€{Number(order.total_amount).toFixed(2)}</div>
-                                            <div className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Excl. Korting</div>
-                                        </td>
+                                        </span>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                            ['completed', 'shipped', 'paid'].includes(order.status)
+                                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                : order.status === 'cancelled'
+                                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                                : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                        }`}>
+                                            {ORDER_STATUS_MAP[order.status] || order.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Betaald</span>
+                                        <span className="text-base font-black text-white">€{Number(order.total_amount).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop: Table layout */}
+                        <div className="hidden sm:block overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-white/[0.02]">
+                                        <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Order ID</th>
+                                        <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Datum</th>
+                                        <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600">Status</th>
+                                        <th className="px-10 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-600 text-right">Betaald</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {orders.slice(0, 15).map(order => (
+                                        <tr key={order.id} className="group hover:bg-white/[0.01] transition-colors">
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-mono text-xs font-black text-[#0df2a2] py-1 px-2 bg-[#0df2a2]/10 rounded-lg">
+                                                        #{order.id.substring(0, 8)}
+                                                    </span>
+                                                    <Link
+                                                        href={`/admin/orders?orderId=${order.id}`}
+                                                        className="p-1.5 opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-[#0df2a2] text-zinc-400 hover:text-black rounded-lg transition-all"
+                                                    >
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6 text-sm text-zinc-400 font-medium">
+                                                {new Date(order.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                                    ['completed', 'shipped', 'paid'].includes(order.status)
+                                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                        : order.status === 'cancelled'
+                                                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                                        : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                                }`}>
+                                                    {ORDER_STATUS_MAP[order.status] || order.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <div className="text-lg font-black text-white">€{Number(order.total_amount).toFixed(2)}</div>
+                                                <div className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Excl. Korting</div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -534,7 +577,7 @@ export default function AdminUserDetailPage() {
                     </div>
                     <button 
                         onClick={() => setIsDeleteModalOpen(true)}
-                        className="px-8 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-red-500/20 flex items-center gap-3"
+                        className="w-full md:w-auto px-8 py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-3 min-h-[52px]"
                     >
                         <Trash2 className="w-4 h-4" />
                         Account Verwijderen
