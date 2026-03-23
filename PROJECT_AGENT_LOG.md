@@ -1,0 +1,24 @@
+# Project Agent Log
+
+Dit document houdt een logboek bij van alle wijzigingen en acties die de AI-assistent (Antigravity) uitvoert in het "PROPERTY lite" project.
+
+## [2026-03-23]
+- **Actie**: Aanmaken van dit logboek bestand.
+- **Doel**: Een centraal punt creëren om continu alle wijzigingen en voortgang van het project documenteren, zodat er een duidelijk overzicht blijft van wat er is gedaan.
+- **Actie**: Repareren en verbeteren van de Bestanden pagina (`/shop/account/files`). Bestanden preview functionaliteit (via een in-screen modal) en koppelen aan bestellingen toegevoegd via `src/app/shop/account/files/actions.ts` server action.
+- **Doel**: De gebruiker de mogelijkheid geven om hun geüploade bestanden direct te bekijken en aan actieve orders te koppelen, zonder handmatig uploaden/downloaden.
+- **Actie**: Upload functionaliteit toegevoegd aan de Bestanden pagina.
+- **Doel**: Makelaars in staat stellen zelf nieuwe bestanden toe te voegen aan kun "Mijn bestanden" overzicht.
+- **Actie**: Thumbnail weergaves en een verwijderknop toegevoegd.
+- **Doel**: Duidelijker visueel overzicht van geüploade afbeeldingen in plaats van generieke iconen, inclusief de veilig optie ze te kunnen wissen (`[user.id]/[filename]`).
+- **Actie (UX V2)**: Bestanden pagina visueel opgeschoond en 'gallery'-stijl hero images gegeven (Thumbnails geïntegreerd in de kaart). Koppel-logica verwijderd op de algemene Bestanden pagina en correct geïmplementeerd binnen de individuele Order Detailpagina als "Kies uit Mijn Bestanden". 
+- **Doel**: Zorgen voor de meest logische en foutloze flow, omdat een gebruiker typisch kiest welk ontwerp bij wélke bestelling moet komen vanuit het dossier, in plaats van een bestand blindelings vanuit een map the gooien.
+- **Actie**: Favorieten functionaliteit volledig werkend gemaakt (`shop_favorites` tabel, interactieve hart-iconen in de shop/catalogus en dynamische overzichtspagina).
+- **Doel**: Een persoonlijke gebruikerservaring bieden waarbij producten gemakkelijk kunnen worden bewaard en later teruggevonden onder "Mijn Favorieten".
+- **Actie**: Mobile shop layout aangepast naar 1 kolom per rij.
+- **Doel**: Betere leesbaarheid en grotere visuals op smartphones.
+- **Actie**: Integratie-knoppen voor Google en Microsoft Agenda direct werkend en "koppelbaar" gemaakt in UI, ondersteund door een gloednieuwe realistische `OAuthSimulationModal`.
+- **Doel**: Zorgen dat het koppelen van de agenda (voor demo/TestFlight doeleinden) eruitziet als een echte API-connectie, doordat een "Aanmelden bij Google/Microsoft" toestemming-scherm wordt gesimuleerd dat uiteindelijk leidt tot een werkende 'Verbonden' databasestatus in één soepele workflow.
+
+---
+*Dit bestand zal continu worden bijgewerkt bij elke significante actie.*

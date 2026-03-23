@@ -333,9 +333,72 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                 </div>
             </div>
 
-            {/* Orders Table */}
             <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto">
+                {/* Mobile: Card layout */}
+                <div className="block md:hidden divide-y divide-white/5">
+                    {filteredOrders.length === 0 ? (
+                        <div className="p-8 text-center text-zinc-600 font-bold uppercase tracking-widest text-xs">
+                            Geen bestellingen gevonden
+                        </div>
+                    ) : (
+                        filteredOrders.map(order => {
+                            const status = STATUS_CONFIG[order.status] || STATUS_CONFIG['pending']
+                            return (
+                                <div key={order.id} className="p-5 space-y-4 hover:bg-white/[0.02] transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-white text-sm truncate max-w-[150px]">
+                                                {order.users?.full_name || order.users?.email}
+                                            </span>
+                                            <span className="text-[10px] text-zinc-500 font-mono mt-0.5 uppercase tracking-tighter">
+                                                {new Date(order.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="font-black text-white text-sm">€{order.total_amount.toFixed(2)}</div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center gap-2">
+                                        <div className={`px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit ${status.color}`}>
+                                            <status.icon className="w-3 h-3" />
+                                            {status.label}
+                                        </div>
+                                        {order.tracking_number ? (
+                                            <div className="text-[10px] text-[#0df2a2] font-mono font-bold truncate max-w-[100px]">
+                                                {order.tracking_number}
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-zinc-600 italic">Geen track code</span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-center bg-[#111] p-2.5 rounded-xl border border-white/5">
+                                        <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                                            Status: <span className="text-zinc-300 ml-1">{order.payment_status}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {!order.is_archived && order.status === 'completed' && (
+                                                <button onClick={() => handleArchiveOrder(order.id, true)} className="p-2 rounded-lg bg-zinc-800 hover:bg-[#0df2a2]/20 text-zinc-400 hover:text-[#0df2a2]" title="Archiveren">
+                                                    <Archive className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                            {order.is_archived && (
+                                                <button onClick={() => handleArchiveOrder(order.id, false)} className="p-2 rounded-lg bg-zinc-800 hover:bg-[#0df2a2]/20 text-zinc-400 hover:text-[#0df2a2]" title="Herstellen">
+                                                    <ArchiveRestore className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                            <button onClick={() => openOrderDetails(order)} className="p-2 px-3 rounded-lg bg-zinc-800 hover:bg-white/10 text-white flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest">
+                                                KIJKEN <ChevronRight className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )}
+                </div>
+
+                {/* Desktop: Table layout */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-white/5 bg-white/2">
@@ -429,23 +492,38 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-6xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
                         {/* Header */}
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#111] z-10">
-                            <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                        <div className="p-4 lg:p-6 border-b border-white/5 flex items-start gap-3 bg-[#111] z-10">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-base lg:text-xl font-black text-white uppercase tracking-tight flex flex-wrap items-center gap-2">
                                     Bestelling <span className="text-[#0df2a2]">{selectedOrder.order_number || `FACT-${selectedOrder.id.slice(0, 8)}`}</span>
                                 </h3>
                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Gedetailleerd overzicht van makelaar bestelling</p>
+                                {/* Status badge — shown on mobile below the title */}
+                                <div className="mt-2 lg:hidden">
+                                    {(() => {
+                                        const StatusIcon = STATUS_CONFIG[selectedOrder.status]?.icon
+                                        return (
+                                            <div className={`px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 ${STATUS_CONFIG[selectedOrder.status]?.color || 'bg-zinc-800 text-zinc-500 border-white/5'}`}>
+                                                {StatusIcon && <StatusIcon className="w-3 h-3" />}
+                                                {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
+                                            </div>
+                                        )
+                                    })()}
+                                </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                {(() => {
-                                    const StatusIcon = STATUS_CONFIG[selectedOrder.status]?.icon
-                                    return (
-                                        <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${STATUS_CONFIG[selectedOrder.status]?.color || 'bg-zinc-800 text-zinc-500 border-white/5'}`}>
-                                            {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
-                                            {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
-                                        </div>
-                                    )
-                                })()}
+                            <div className="flex items-center gap-2 shrink-0">
+                                {/* Status badge — hidden on mobile, shown on desktop */}
+                                <div className="hidden lg:flex">
+                                    {(() => {
+                                        const StatusIcon = STATUS_CONFIG[selectedOrder.status]?.icon
+                                        return (
+                                            <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${STATUS_CONFIG[selectedOrder.status]?.color || 'bg-zinc-800 text-zinc-500 border-white/5'}`}>
+                                                {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
+                                                {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
+                                            </div>
+                                        )
+                                    })()}
+                                </div>
                                 <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/5 rounded-xl text-zinc-500 hover:text-white transition-all">
                                     <X className="w-6 h-6" />
                                 </button>
@@ -712,31 +790,31 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                         </div>
 
                         {/* Sticky Footer */}
-                        <div className="p-6 border-t border-white/5 bg-[#141414] flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
+                        <div className="p-4 lg:p-6 border-t border-white/5 bg-[#141414] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     onClick={handleCancelOrder}
-                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
+                                    className="px-4 lg:px-6 py-2.5 lg:py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg"
                                 >
-                                    Bestelling Annuleren
+                                    Annuleren
                                 </button>
                                 {!selectedOrder.is_archived && (selectedOrder.status === 'completed' || selectedOrder.status === 'delivered') && (
                                     <button
                                         onClick={() => handleArchiveOrder(selectedOrder.id, true)}
-                                        className="px-6 py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+                                        className="px-4 lg:px-6 py-2.5 lg:py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
                                     >
-                                        <Archive className="w-4 h-4" /> Archiveren
+                                        <Archive className="w-3.5 h-3.5" /> Archiveren
                                     </button>
                                 )}
                                 {selectedOrder.is_archived && (
                                     <button
                                         onClick={() => handleArchiveOrder(selectedOrder.id, false)}
-                                        className="px-6 py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
+                                        className="px-4 lg:px-6 py-2.5 lg:py-3 bg-[#0df2a2]/10 hover:bg-[#0df2a2] text-[#0df2a2] hover:text-black border border-[#0df2a2]/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2"
                                     >
-                                        <ArchiveRestore className="w-4 h-4" /> Herstellen
+                                        <ArchiveRestore className="w-3.5 h-3.5" /> Herstellen
                                     </button>
                                 )}
-                                <div className="h-10 w-px bg-white/5 hidden md:block" />
+                                <div className="h-8 w-px bg-white/5 hidden md:block" />
                                 <div>
                                     <div className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Betaalstatus</div>
                                     <div className={`text-xs font-black uppercase mt-0.5 ${(selectedOrder.status !== 'pending' && selectedOrder.status !== 'unpaid' && selectedOrder.status !== 'awaiting_payment') ? 'text-[#0df2a2]' : 'text-orange-400'}`}>
@@ -744,9 +822,9 @@ export default function OrdersManagementClient({ initialOrders }: { initialOrder
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left md:text-right">
                                 <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-1">Totaalbedrag Bestelling</span>
-                                <div className="text-4xl font-black text-white leading-none">
+                                <div className="text-2xl lg:text-4xl font-black text-white leading-none">
                                     €{Number(selectedOrder.total_amount).toFixed(2)}
                                 </div>
                             </div>

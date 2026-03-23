@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Prevent horizontal scroll globally on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 @theme {
   --color-primary: #10b77f;
   --color-primary-dark: #0d9668;

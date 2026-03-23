@@ -7,37 +7,72 @@ import MobileNav from '@/components/layout/MobileNav';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { toggleFavorite, getFavorites } from './account/favorites/actions';
+import toast from 'react-hot-toast';
 
 export default function ShopCategoryPage() {
     const { items } = useCart();
     const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [userFavorites, setUserFavorites] = useState<string[]>([]);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchData = async () => {
+            setIsLoading(true);
             const supabase = createClient();
-            const { data, error } = await supabase
+            
+            // Fetch Products
+            const { data: productsData, error: productsError } = await supabase
                 .from('shop_products')
                 .select('*')
                 .eq('is_archived', false)
                 .order('name');
 
-            if (data) {
-                // Map the DB structure to the expected frontend structure
-                const formattedProducts = data.map(p => ({
+            if (productsData) {
+                const formattedProducts = productsData.map(p => ({
                     id: p.slug,
+                    dbId: p.id,
                     name: p.name,
                     price: p.base_price,
                     image: p.images && p.images.length > 0 ? p.images[0] : ''
                 }));
                 setProducts(formattedProducts);
             }
+
+            // Fetch User Favorites
+            const favResult = await getFavorites();
+            if (favResult.success && favResult.favorites) {
+                setUserFavorites(favResult.favorites.map((f: any) => f.product_id));
+            }
+            
             setIsLoading(false);
         };
 
-        fetchProducts();
+        fetchData();
     }, []);
+
+    const handleToggleFavorite = async (e: React.MouseEvent, productId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // We also need the DB ID to toggle if we're using slugs for URLs
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        const result = await toggleFavorite(product.dbId);
+        if (result.success) {
+            if (result.action === 'added') {
+                setUserFavorites(prev => [...prev, product.dbId]);
+                toast.success('Toegevoegd aan favorieten', { icon: '❤️' });
+            } else {
+                setUserFavorites(prev => prev.filter(id => id !== product.dbId));
+                toast.success('Verwijderd uit favorieten', { icon: '💔' });
+            }
+        } else {
+            toast.error(result.error || 'Fout bij bijwerken favorieten');
+        }
+    };
 
     return (
         <>
@@ -68,9 +103,17 @@ export default function ShopCategoryPage() {
                 </div>
             </header>
 
-            <section className="px-4 md:px-6 md:max-w-7xl md:mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6" data-purpose="product-listing">
+            <section className="px-4 md:px-6 md:max-w-7xl md:mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6" data-purpose="product-listing">
                 {products.map((product) => (
-                    <Link href={`/shop/product/${product.id}`} key={product.id} className="group">
+                    <Link href={`/shop/product/${product.id}`} key={product.id} className="group relative">
+                        <button
+                            onClick={(e) => handleToggleFavorite(e, product.id)}
+                            className="absolute top-4 right-4 z-20 size-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-zinc-400 hover:bg-[#10b77f] hover:text-[#0A0A0A] hover:border-[#10b77f] transition-all duration-300"
+                        >
+                            <span className={`material-symbols-outlined text-[20px] ${userFavorites.includes(product.dbId) ? 'fill-1 text-[#0df2a2]' : ''}`}>
+                                favorite
+                            </span>
+                        </button>
                         <article className="glass-panel hover:border-[#10b77f]/40 transition-all duration-700 rounded-[2.5rem] p-6 flex flex-col items-center text-center h-full active:scale-95 group-hover:shadow-[0_40px_80px_rgba(16,183,127,0.05)] border-white/5 bg-zinc-900/40 relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-[#10b77f]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 

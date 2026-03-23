@@ -453,7 +453,76 @@ export default function ProductManagementClient({ initialProducts }: { initialPr
 
             {/* Products Table */}
             <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto">
+                {/* Mobile: Card layout */}
+                <div className="block md:hidden divide-y divide-white/5">
+                    {filteredProducts.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-zinc-900 border border-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 text-zinc-700">
+                                <Package className="w-8 h-8" />
+                            </div>
+                            <div className="text-white font-black text-lg uppercase tracking-tight">Geen resultaten</div>
+                            <div className="text-zinc-600 text-[10px] mt-2 font-medium">Zoek op een andere term of voeg een product toe</div>
+                        </div>
+                    ) : (
+                        filteredProducts.map(product => (
+                            <div key={product.id} className="p-5 space-y-4 hover:bg-white/[0.02] transition-colors">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/5 overflow-hidden flex-shrink-0 relative">
+                                        {product.images?.[0] ? (
+                                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                                <ImageIcon className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-white text-sm truncate">{product.name}</div>
+                                        <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-tighter mt-0.5 truncate">{product.slug}</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center bg-[#111] p-2.5 rounded-xl border border-white/5">
+                                    <div>
+                                        <div className="font-black text-[#0df2a2] text-sm">€{product.base_price.toFixed(2)}</div>
+                                        <div className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest mt-0.5">Vanaf prijs</div>
+                                    </div>
+                                    <div className="px-2 py-1 rounded-full border border-white/5 bg-white/2 text-zinc-400 text-[8px] font-black uppercase tracking-widest">
+                                        {product.category || 'Geen'}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-1 border-t border-white/5">
+                                    <button
+                                        onClick={() => handleOpenDuplicate(product)}
+                                        className="p-2.5 rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-[#0df2a2]/30 text-zinc-400 hover:text-[#0df2a2] transition-all"
+                                        title="Dupliceer"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleOpenEdit(product)}
+                                        className="p-2.5 rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-[#0df2a2]/30 text-zinc-400 hover:text-[#0df2a2] transition-all flex items-center gap-1.5 flex-1 justify-center"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Bewerk</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsDeleting(product.id)}
+                                        className="p-2.5 rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-red-500/30 text-zinc-500 hover:text-red-500 transition-all flex items-center gap-1.5 flex-1 justify-center"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Wis</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Desktop: Table layout */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-white/5 bg-white/2">

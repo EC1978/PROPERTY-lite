@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import ImageUpload from '@/components/ImageUpload';
+import { toggleFavorite, isProductFavorite } from '../../account/favorites/actions';
+import toast from 'react-hot-toast';
 
 export default function ProductConfigurator({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -23,6 +25,7 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
     const [customImages, setCustomImages] = useState<string[]>([]);
     const [notes, setNotes] = useState('');
     const [activeImage, setActiveImage] = useState<string>('');
+    const [isFavorite, setIsFavorite] = useState(false);
     const configRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +113,10 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                     initialSelections[cat.id] = defaultIdx !== -1 ? defaultIdx : 0;
                 });
                 setSelections(initialSelections);
+
+                // Check if favorite
+                const favoriteStatus = await isProductFavorite(data.id);
+                setIsFavorite(favoriteStatus);
             } else {
                 console.error(`Product not found for ID/Slug: ${id}`, error);
             }
@@ -236,6 +243,22 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
         }
     };
 
+    const handleToggleFavorite = async () => {
+        if (!productDef?.dbId) return;
+
+        const result = await toggleFavorite(productDef.dbId);
+        if (result.success) {
+            setIsFavorite(result.action === 'added');
+            if (result.action === 'added') {
+                toast.success('Toegevoegd aan favorieten', { icon: '❤️' });
+            } else {
+                toast.success('Verwijderd uit favorieten', { icon: '💔' });
+            }
+        } else {
+            toast.error(result.error || 'Fout bij bijwerken favorieten');
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex min-h-screen bg-[#0A0A0A] items-center justify-center">
@@ -266,6 +289,12 @@ export default function ProductConfigurator({ params }: { params: Promise<{ id: 
                     </h1>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleToggleFavorite}
+                        className="size-11 rounded-full bg-black/20 border border-white/5 text-zinc-400 flex items-center justify-center hover:bg-white/5 transition-all group"
+                    >
+                        <span className={`material-symbols-outlined text-[22px] ${isFavorite ? 'fill-1 text-[#0df2a2]' : ''}`}>favorite</span>
+                    </button>
                     <Link href="/shop/cart" className="size-11 rounded-full bg-[#10b77f]/10 border border-[#10b77f]/20 text-[#10b77f] flex items-center justify-center hover:bg-[#10b77f]/20 transition-all shadow-[0_0_15px_rgba(16,183,127,0.1)] group relative">
                         <span className="material-symbols-outlined text-[22px]">shopping_cart</span>
                         <div className="absolute -top-1 -right-1 size-4 bg-[#10b77f] rounded-full border-2 border-[#0A0A0A] flex items-center justify-center text-[9px] font-black text-[#0A0A0A]">

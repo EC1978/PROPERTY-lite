@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { useCart } from '@/context/CartContext'
 import toast from 'react-hot-toast'
+import { linkFileToOrder } from '../../files/actions'
 
 export default function OrderDetailPage() {
     const { id } = useParams()
@@ -26,6 +27,12 @@ export default function OrderDetailPage() {
     const [paymentSuccess, setPaymentSuccess] = useState(false)
     const [selectedPayment, setSelectedPayment] = useState('ideal')
     const [isUploading, setIsUploading] = useState(false)
+
+    // Library Modal State
+    const [showLibraryModal, setShowLibraryModal] = useState(false)
+    const [libraryFiles, setLibraryFiles] = useState<any[]>([])
+    const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
+    const [isLinkingFromLibrary, setIsLinkingFromLibrary] = useState(false)
 
     const fetchOrder = async () => {
         const supabase = createClient()
@@ -71,6 +78,60 @@ export default function OrderDetailPage() {
                 ? prev.filter(i => i !== itemId)
                 : [...prev, itemId]
         )
+    }
+
+    const fetchLibraryFiles = async () => {
+        setIsLoadingLibrary(true)
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+            const { data } = await supabase.storage.from('design_uploads').list(user.id, {
+                limit: 100, sortBy: { column: 'created_at', order: 'desc' },
+            })
+            if (data) {
+                const formattedFiles = data.map(f => ({
+                    name: f.name,
+                    size: f.metadata?.size || 0,
+                    type: f.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMAGE',
+                    created_at: f.created_at,
+                    thumbnailUrl: ''
+                }))
+
+                const imageFiles = formattedFiles.filter(f => f.type === 'IMAGE')
+                if (imageFiles.length > 0) {
+                    const paths = imageFiles.map(f => `${user.id}/${f.name}`)
+                    const { data: signedUrlsData } = await supabase.storage.from('design_uploads').createSignedUrls(paths, 3600)
+                    if (signedUrlsData) {
+                        signedUrlsData.forEach((item, index) => {
+                            if (!item.error) imageFiles[index].thumbnailUrl = item.signedUrl
+                        })
+                    }
+                }
+                setLibraryFiles(formattedFiles)
+            }
+        }
+        setIsLoadingLibrary(false)
+    }
+
+    const openLibraryModal = () => {
+        setShowLibraryModal(true)
+        if (libraryFiles.length === 0) fetchLibraryFiles()
+    }
+
+    const handleLinkFromLibrary = async (fileName: string) => {
+        setIsLinkingFromLibrary(true)
+        const toastId = toast.loading('Bezig met koppelen...')
+        const result = await linkFileToOrder(order.id, fileName)
+        
+        if (result.success) {
+            toast.success('Bestand is succesvol gekoppeld!', { id: toastId })
+            setShowLibraryModal(false)
+            fetchOrder() // Ververs order details
+        } else {
+            toast.error(result.error || 'Fout bij koppelen.', { id: toastId })
+        }
+        setIsLinkingFromLibrary(false)
     }
 
     const handleReorder = () => {
@@ -348,7 +409,7 @@ export default function OrderDetailPage() {
                                         </div>
                                     )}
 
-                                    {(!order.design_url || order.design_status === 'waiting' || order.design_status === 'rejected') && order.design_status !== 'approved' && (
+                                    {order.design_status !== 'approved' && (
                                         <div className="pt-2">
                                             <label className={`block w-full ${isUploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}>
                                                 <div className="flex items-center justify-center gap-2 py-3 px-4 bg-[#0df2a2]/10 border border-[#0df2a2]/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#0df2a2] hover:bg-[#0df2a2]/20 transition-all">
@@ -359,6 +420,15 @@ export default function OrderDetailPage() {
                                                 </div>
                                                 <input type="file" className="hidden" onChange={handleBrokerFileUpload} disabled={isUploading} />
                                             </label>
+                                            
+                                            <button 
+                                                onClick={openLibraryModal}
+                                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">folder_open</span>
+                                                Kies uit Mijn Bestanden
+                                            </button>
+                                            
                                             {order.design_status === 'rejected' && (
                                                 <p className="text-[9px] text-red-400/80 font-bold uppercase tracking-widest mt-2 px-2 italic">
                                                     Uw vorige bestand is afgekeurd. Upload a.u.b. een gecorrigeerd bestand.
@@ -636,6 +706,69 @@ export default function OrderDetailPage() {
                                     </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Library Modal */}
+            {showLibraryModal && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-[#1A1D1C] border border-white/10 rounded-[40px] w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+                            <h3 className="text-2xl font-black text-white tracking-tight">Kies uit Mijn Bestanden</h3>
+                            <button onClick={() => setShowLibraryModal(false)} className="size-10 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
+                                <span className="material-symbols-outlined text-white">close</span>
+                            </button>
+                        </div>
+                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                            <p className="text-sm text-gray-400 mb-6">Selecteer een bestand uit je bibliotheek om aan deze bestelling te koppelen.</p>
+                            
+                            {isLoadingLibrary ? (
+                                <div className="py-20 text-center">
+                                    <div className="size-8 border-2 border-[#0df2a2]/20 border-t-[#0df2a2] rounded-full animate-spin mx-auto mb-4"></div>
+                                    <p className="text-xs font-black uppercase tracking-widest text-gray-500">Bestanden ophalen...</p>
+                                </div>
+                            ) : libraryFiles.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {libraryFiles.map((file, idx) => (
+                                        <div 
+                                            key={idx}
+                                            onClick={() => !isLinkingFromLibrary && handleLinkFromLibrary(file.name)}
+                                            className={`bg-white/5 border border-white/10 hover:border-[#0df2a2]/50 rounded-[24px] p-4 cursor-pointer transition-all group overflow-hidden ${isLinkingFromLibrary ? 'opacity-50 pointer-events-none' : ''}`}
+                                        >
+                                            <div className="h-32 w-full mb-4 bg-black/50 rounded-2xl overflow-hidden relative">
+                                                {file.type === 'IMAGE' && file.thumbnailUrl ? (
+                                                    <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center">
+                                                        <span className="material-symbols-outlined text-[#0df2a2] text-4xl mb-2 opacity-50">
+                                                            {file.type === 'PDF' ? 'picture_as_pdf' : 'image'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {/* Hover Overlay */}
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                                                    <span className="bg-[#0df2a2] text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">Bijvoegen</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h3 className="font-bold text-white text-xs truncate" title={file.name}>{file.name}</h3>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Ontwerp</span>
+                                                    <span className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{format(new Date(file.created_at), 'dd/MM/yyyy')}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 bg-white/5 rounded-[40px] border border-dashed border-white/10">
+                                    <span className="material-symbols-outlined text-6xl text-gray-800 mb-4 block">folder_open</span>
+                                    <p className="text-gray-500 font-bold mb-2">Je hebt nog geen bestanden geüpload.</p>
+                                    <Link href="/shop/account/files" className="text-[#0df2a2] text-xs font-black hover:underline uppercase tracking-widest">Ga naar Mijn Bestanden</Link>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

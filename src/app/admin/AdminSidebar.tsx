@@ -74,7 +74,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             {/* Mobile backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-[55] bg-black/70 backdrop-blur-sm lg:hidden"
                     onClick={onClose}
                     aria-hidden="true"
                 />
@@ -83,7 +83,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             {/* Sidebar panel */}
             <aside
                 className={`
-                    fixed top-0 left-0 z-50 h-full w-72 bg-[#0A0A0A] border-r border-[#222] flex flex-col
+                    fixed top-0 left-0 z-[60] h-full w-72 bg-[#0A0A0A] border-r border-[#222] flex flex-col
                     transition-transform duration-300 ease-in-out
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     lg:relative lg:translate-x-0 lg:w-64 lg:z-auto lg:flex-shrink-0

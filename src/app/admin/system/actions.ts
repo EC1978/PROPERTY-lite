@@ -117,3 +117,47 @@ export async function resetPlatformData() {
     revalidatePath('/admin/quotes')
     return { success: true }
 }
+
+export async function saveLetterheadUrl(url: string | null, enabled: boolean) {
+    const adminCheck = await isAdmin()
+    if (!adminCheck) return { error: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+            id: 1,
+            letterhead_url: url,
+            letterhead_enabled: enabled,
+            updated_at: new Date().toISOString()
+        })
+
+    if (error) {
+        console.error('Error saving letterhead:', error)
+        return { error: 'Kon briefpapier niet opslaan: ' + error.message }
+    }
+
+    const supabaseAuth = await createClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+    if (user?.email) {
+        await logAdminAction(user.email, 'LETTERHEAD_UPDATED', { url, enabled })
+    }
+
+    revalidatePath('/admin/system')
+    return { success: true }
+}
+
+export async function getLetterheadSettings() {
+    noStore()
+    const supabase = await createAdminClient()
+    const { data } = await supabase
+        .from('system_settings')
+        .select('letterhead_url, letterhead_enabled')
+        .eq('id', 1)
+        .single()
+
+    return {
+        letterhead_url: data?.letterhead_url ?? null,
+        letterhead_enabled: data?.letterhead_enabled ?? false
+    }
+}

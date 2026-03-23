@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
-            <header className="py-4 flex flex-col gap-4 sticky top-0 z-50 bg-[#0A0A0A]/90 backdrop-blur-lg rounded-xl border-b border-[#222]">
+            <header className="py-4 flex flex-col gap-4 sticky top-0 z-10 bg-[#0A0A0A]/90 backdrop-blur-lg rounded-xl border-b border-[#222]">
                 <div className="px-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="p-3 rounded-xl bg-gradient-to-br from-[#0df2a2] to-emerald-900 text-[#0A0A0A]">

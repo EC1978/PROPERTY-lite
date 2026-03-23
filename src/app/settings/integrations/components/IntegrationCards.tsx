@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Integration, toggleIntegrationConnection, saveRealworksToken } from '../actions'
 import RealworksModal from './RealworksModal'
+import OAuthSimulationModal from './OAuthSimulationModal'
+import toast from 'react-hot-toast'
 
 const INTEGRATION_INFOS = {
     google: {
@@ -29,14 +31,45 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
     const [integrations, setIntegrations] = useState<Integration[]>(initialIntegrations)
     const [loading, setLoading] = useState<Record<string, boolean>>({})
     const [isRealworksModalOpen, setIsRealworksModalOpen] = useState(false)
+    const [isOAuthModalOpen, setIsOAuthModalOpen] = useState(false)
+    const [oauthProvider, setOauthProvider] = useState<'google' | 'microsoft'>('google')
 
-    const handleConnect = (provider: string) => {
-        if (provider === 'google') {
-            window.location.href = '/api/auth/google'
-        } else if (provider === 'microsoft') {
-            window.location.href = '/api/auth/microsoft'
-        } else if (provider === 'realworks') {
+    const handleConnectClick = (provider: string) => {
+        if (provider === 'realworks') {
             setIsRealworksModalOpen(true)
+        } else {
+            setOauthProvider(provider as 'google' | 'microsoft')
+            setIsOAuthModalOpen(true)
+        }
+    }
+
+    const handleOAuthAuthorize = async (provider: string) => {
+        setLoading(prev => ({ ...prev, [provider]: true }))
+        // Simulate an API delay
+        await new Promise(resolve => setTimeout(resolve, 1200))
+
+        try {
+            const res = await toggleIntegrationConnection(provider, 'Niet gekoppeld')
+            if (res.success) {
+                setIntegrations(prev => prev.map(inv => {
+                    if (inv.provider === provider) {
+                        return {
+                            ...inv,
+                            status: 'Verbonden',
+                            connectedAt: new Date().toISOString()
+                        }
+                    }
+                    return inv
+                }))
+                setIsOAuthModalOpen(false)
+                toast.success(`${INTEGRATION_INFOS[provider as keyof typeof INTEGRATION_INFOS].title} succesvol gekoppeld!`)
+            } else {
+                toast.error(res.error || 'Er is iets misgegaan bij het koppelen')
+            }
+        } catch (e) {
+            toast.error('Er is een fout opgetreden bij het koppelen')
+        } finally {
+            setLoading(prev => ({ ...prev, [provider]: false }))
         }
     }
 
@@ -55,13 +88,15 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
                     }
                     return inv
                 }))
+                toast.success(`${INTEGRATION_INFOS[provider as keyof typeof INTEGRATION_INFOS].title} succesvol ontkoppeld.`)
             } else {
-                alert(res.error || 'Er is iets misgegaan bij het ontkoppelen')
+                toast.error(res.error || 'Er is iets misgegaan bij het ontkoppelen')
             }
         } catch (e) {
-            alert('Er is een fout opgetreden bij het ontkoppelen')
+            toast.error('Er is een fout opgetreden bij het ontkoppelen')
         } finally {
             setLoading(prev => ({ ...prev, [provider]: false }))
+
         }
     }
 
@@ -72,13 +107,15 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
             if (res.success) {
                 setIntegrations(prev => prev.map(inv => inv.provider === 'realworks' ? { ...inv, status: 'Verbonden', connectedAt: new Date().toISOString() } : inv))
                 setIsRealworksModalOpen(false)
+                toast.success('Realworks CRM succesvol gekoppeld!')
             } else {
-                alert(res.error || 'Fout bij opslaan token')
+                toast.error(res.error || 'Fout bij opslaan token')
             }
         } catch (e) {
-            alert('Fout bij opslaan Realworks token')
+            toast.error('Fout bij opslaan Realworks token')
         } finally {
             setLoading(prev => ({ ...prev, realworks: false }))
+
         }
     }
 
@@ -131,7 +168,7 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
                             <div className="w-full h-px bg-gray-100 dark:bg-white/10 my-1 z-10"></div>
 
                             <button
-                                onClick={() => isConnected ? handleDisconnect(integration.provider) : handleConnect(integration.provider)}
+                                onClick={() => isConnected ? handleDisconnect(integration.provider) : handleConnectClick(integration.provider)}
                                 disabled={isLoading}
                                 className={`z-10 w-full py-3 rounded-xl font-bold tracking-wide transition-all duration-300 active:scale-95 flex items-center justify-center gap-2
                     ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
@@ -165,6 +202,14 @@ export default function IntegrationCards({ initialIntegrations }: { initialInteg
                 onClose={() => setIsRealworksModalOpen(false)}
                 onSave={handleSaveRealworks}
                 isLoading={loading['realworks']}
+            />
+            
+            <OAuthSimulationModal
+                isOpen={isOAuthModalOpen}
+                provider={oauthProvider}
+                onClose={() => setIsOAuthModalOpen(false)}
+                onAuthorize={handleOAuthAuthorize}
+                isLoading={loading[oauthProvider]}
             />
         </>
     )

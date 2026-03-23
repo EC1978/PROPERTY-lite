@@ -14,13 +14,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0">
                 {/* Top Header */}
                 <header className="h-16 border-b border-[#222] bg-[#0A0A0A] flex items-center justify-between px-4 lg:px-8 shrink-0 relative z-40">
                     {/* Hamburger — visible only on mobile */}
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className={`lg:hidden p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${sidebarOpen ? 'invisible' : ''}`}
                         aria-label="Open menu"
                     >
                         <Menu className="w-5 h-5" />
