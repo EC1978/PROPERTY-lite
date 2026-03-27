@@ -29,7 +29,7 @@ export async function scrapeProperty(url: string) {
             throw new Error(`Kan pagina niet ophalen (HTTP ${response.status})`)
         }
 
-        const html = await response.text()
+        let html = await response.text()
 
         // 1.5 Detect Cloudflare / Datadome Anti-Bot Blocks (HTTP 200 but CAPTCHA payload)
         if (
@@ -42,8 +42,39 @@ export async function scrapeProperty(url: string) {
             html.includes('Je bent er bijna') ||
             html.includes('beveiliging van het platform')
         ) {
-            console.error('Anti-bot block detected by Funda (Datadome/Cloudflare/Custom HTML)')
-            throw new Error('Funda blokkeert de live website met een veiligheidscontrole. Upload de pagina als PDF, gebruik localhost, of neem contact op met beheer om een (Firecrawl) Scraping URL-Proxy in te stellen.')
+            console.warn('Anti-bot block detected by Funda. Switching to Firecrawl API fallback...')
+            
+            const FIRECRAWL_KEY = process.env.FIRECRAWL_API_KEY
+            if (!FIRECRAWL_KEY) {
+                throw new Error('Funda blokkeert Vercel. Voeg FIRECRAWL_API_KEY toe in je omgeving om dit te omzeilen.')
+            }
+
+            const fcController = new AbortController()
+            const fcTimeoutId = setTimeout(() => fcController.abort(), 20000) // 20s for Firecrawl
+
+            const fcResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${FIRECRAWL_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url, formats: ['html'] }),
+                signal: fcController.signal
+            })
+            clearTimeout(fcTimeoutId)
+
+            if (!fcResponse.ok) {
+                const err = await fcResponse.text()
+                throw new Error(`Firecrawl proxy gefaald (HTTP ${fcResponse.status}): ${err}`)
+            }
+
+            const fcData = await fcResponse.json()
+            if (!fcData.success || !fcData.data?.html) {
+                throw new Error('Firecrawl fallback kon de pagina-HTML niet extraheren.')
+            }
+
+            html = fcData.data.html 
+            console.log('Successfully extracted HTML via Firecrawl proxy.')
         }
 
         // 2. Extract Images via Regex
