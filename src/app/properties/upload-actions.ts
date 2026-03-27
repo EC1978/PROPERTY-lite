@@ -32,9 +32,8 @@ export async function extractPropertyFromPdf(formData: FormData) {
 
         // Dynamically import pdf-parse to prevent ReferenceError: DOMMatrix is not defined on Vercel Node runtime
         const pdfParseModule = await import('pdf-parse')
-        const PDFParse = (pdfParseModule as any).PDFParse || (pdfParseModule as any).default || pdfParseModule
-        const instance = new PDFParse(uint8Array)
-        const data = await instance.getText()
+        const pdfParse = (pdfParseModule as any).default || pdfParseModule
+        const data = await pdfParse(buffer)
         const text = data.text
 
         // Limit text length to avoid token limits (approx 15k chars should be enough for a brochure)
