@@ -31,6 +31,18 @@ export async function scrapeProperty(url: string) {
 
         const html = await response.text()
 
+        // 1.5 Detect Cloudflare / Datadome Anti-Bot Blocks (HTTP 200 but CAPTCHA payload)
+        if (
+            html.includes('datadome') || 
+            html.includes('Just a moment...') || 
+            html.includes('cf-browser-verification') ||
+            html.includes('Toegang geweigerd') ||
+            html.includes('captcha-delivery')
+        ) {
+            console.error('Anti-bot block detected by Funda (Datadome/Cloudflare)')
+            throw new Error('De server (Vercel) wordt momenteel geblokkeerd door de anti-bot beveiliging van Funda (Datadome). Gebruik localhost of configureer een residentiële proxy.')
+        }
+
         // 2. Extract Images via Regex
         const imageUrls = new Set<string>()
 
