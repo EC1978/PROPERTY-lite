@@ -75,6 +75,15 @@ export async function scrapeProperty(url: string) {
 
             html = fcData.data.html 
             console.log('Successfully extracted HTML via Firecrawl proxy.')
+
+            // 1.6 Failsafe: Check if Firecrawl ALSO got intercepted by Datadome CAPTCHA.
+            if (
+                html.includes('datadome') || 
+                html.includes('veiligheidscontrole plaatsvindt') ||
+                html.includes('Je bent er bijna')
+            ) {
+                throw new Error('Funda blokkeert (via Datadome) helaas ook de geverifieerde Firecrawl API. Automatische URL import is onmogelijk gemaakt door Funda op live servers. Gebruik a.u.b. de PDF Brochure Upload functie!')
+            }
         }
 
         // 2. Extract Images via Regex

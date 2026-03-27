@@ -25,6 +25,11 @@ export async function extractPropertyFromPdf(formData: FormData) {
     try {
         const buffer = Buffer.from(await file.arrayBuffer())
         const uint8Array = new Uint8Array(buffer)
+
+        if (typeof global !== 'undefined' && !(global as any).DOMMatrix) {
+            (global as any).DOMMatrix = class DOMMatrix {}
+        }
+
         // Dynamically import pdf-parse to prevent ReferenceError: DOMMatrix is not defined on Vercel Node runtime
         const pdfParseModule = await import('pdf-parse')
         const PDFParse = (pdfParseModule as any).PDFParse || (pdfParseModule as any).default || pdfParseModule
@@ -51,16 +56,23 @@ export async function extractPropertyFromPdf(formData: FormData) {
         })
 
         const result = JSON.parse(completion.choices[0].message.content || '{}')
-        return result
+        
+        // Strip out 'undefined' properties which cause Server Component serialization 500 errors
+        const safeData = JSON.parse(JSON.stringify(result))
+
+        return {
+            success: true,
+            data: safeData
+        }
 
     } catch (error: any) {
         console.error('Error processing PDF:', error)
-        // Check if it's an OpenAI API error
-        if (error.response) {
-            console.error('OpenAI API Error data:', error.response.data)
-            throw new Error(`OpenAI Error: ${error.response.data.error.message || error.message}`)
+        let errorMsg = error.message || 'Failed to process PDF'
+        if (error.response?.data?.error?.message) {
+            errorMsg = `OpenAI Error: ${error.response.data.error.message}`
         }
-        // Check if it's a PDF parse error definition (if possible), otherwise generic
-        throw new Error(error.message || 'Failed to process PDF')
+        
+        // Return structured error instead of throwing to prevent generic Next.js 500 boundary crashes
+        return { success: false, error: errorMsg }
     }
 }

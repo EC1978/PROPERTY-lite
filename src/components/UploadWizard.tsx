@@ -68,9 +68,13 @@ export default function UploadWizard() {
             formData.append('file', file)
 
             const { extractPropertyFromPdf } = await import('@/app/properties/upload-actions')
-            const extractedData = await extractPropertyFromPdf(formData)
+            const result = await extractPropertyFromPdf(formData)
 
-            await createPropertyAndRedirect(extractedData)
+            if (!result.success) {
+                throw new Error(result.error)
+            }
+
+            await createPropertyAndRedirect(result.data)
 
         } catch (error: any) {
             console.error('Error processing file:', error)
