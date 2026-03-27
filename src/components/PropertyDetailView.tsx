@@ -292,10 +292,8 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
 
     const extractEnergyLabel = (text: string | null): string => {
         if (!text) return '?'
-        const match = text.match(/(?:label|energielabel)?\s?([A-G](\+{1,3})?)/i)
+        const match = text.match(/\b([A-G](\+{1,3})?)\b/i)
         if (match) return match[1].toUpperCase()
-        const firstChar = text.trim().charAt(0).toUpperCase()
-        if (['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(firstChar)) return firstChar
         return '?'
     }
 
@@ -914,7 +912,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                             <span className="text-sm text-white font-semibold">
                                                                 {row.isEnergyLabel ? (
                                                                     <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-3 py-1 rounded-lg text-sm font-bold shadow-[0_0_10px_rgba(13,242,162,0.1)]">
-                                                                        {row.value || '?'}
+                                                                        {features.energy_label || extractEnergyLabel(features.energy)}
                                                                     </span>
                                                                 ) : row.value}
                                                             </span>
