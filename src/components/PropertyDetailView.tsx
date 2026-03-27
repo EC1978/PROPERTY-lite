@@ -230,7 +230,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
     useEffect(() => {
         const defaultOrder = [
             'address', 'city', 'price', 'surface_area', 'bedrooms', 'bathrooms',
-            'energy', 'constructionYear', 'type', 'layout', 'maintenance', 'surroundings'
+            'energy_label', 'energy', 'constructionYear', 'type', 'layout', 'maintenance', 'surroundings'
         ]
         const savedOrder = features.feature_order || []
 
@@ -284,7 +284,8 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
         constructionYear: 'Bouwjaar',
         type: 'Woningtype',
         layout: 'Indeling',
-        energy: 'Energielabel',
+        energy: 'Energie & Isolatie',
+        energy_label: 'Energielabel',
         maintenance: 'Onderhoud',
         surroundings: 'Omgeving',
     }
@@ -862,7 +863,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                             key,
                                             label: featureLabels[key] || key,
                                             value: features[key] as string,
-                                            isEnergy: key === 'energy',
+                                            isEnergyLabel: key === 'energy_label',
                                         }
                                     }
 
@@ -911,9 +912,9 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                         <span className="text-xs sm:text-sm text-gray-500 font-bold sm:font-medium uppercase sm:normal-case tracking-wider sm:tracking-normal">{row.label}</span>
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-sm text-white font-semibold">
-                                                                {row.isEnergy ? (
-                                                                    <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-2 py-0.5 rounded-lg text-xs font-bold">
-                                                                        {row.value}
+                                                                {row.isEnergyLabel ? (
+                                                                    <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-3 py-1 rounded-lg text-sm font-bold shadow-[0_0_10px_rgba(13,242,162,0.1)]">
+                                                                        {row.value || '?'}
                                                                     </span>
                                                                 ) : row.value}
                                                             </span>
