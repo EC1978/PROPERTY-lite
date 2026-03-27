@@ -51,11 +51,22 @@ export async function extractPropertyFromPdf(formData: FormData) {
                             text: `You are a real estate assistant. Extract the following details from the brochure text in JSON format.
 Return ONLY valid JSON.
 {
-  "address": "string or null",
-  "city": "string or null",
-  "price": number or null,
-  "surface_area": number or null,
-  "description": "summary of max 50 words or null"
+  "address": "Straat Huisnummer, Stad",
+  "city": "Stad",
+  "price": 0,
+  "surface_area": 0,
+  "bedrooms": 0,
+  "bathrooms": 0,
+  "description": "Uitgebreide wervende tekst (zoveel mogelijk details)",
+  "features": {
+      "constructionYear": "Bouwjaar of null",
+      "type": "Woningtype (bijv. Vrijstaande woning) of null",
+      "layout": "Indeling of null",
+      "energy": "Volledige energie details of null",
+      "energy_label": "Alleen de letter (bijv. A, B, C, A+++) of null",
+      "maintenance": "Onderhoudsstaat of null",
+      "surroundings": "Omgeving of null"
+  }
 }
 
 CONTENT:
