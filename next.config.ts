@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
   serverExternalPackages: ['pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
+  outputFileTracingIncludes: {
+    "/**/*": ["./node_modules/pdfjs-dist/**/*", "./node_modules/pdf-parse/**/*"],
+  },
   images: {
     remotePatterns: [
       {
