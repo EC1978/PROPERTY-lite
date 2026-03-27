@@ -120,7 +120,8 @@ export async function POST(request: Request) {
 
         console.log('[Ghost Login API] Session cookies set. Redirecting to dashboard.')
 
-        return NextResponse.json({ url: '/dashboard' })
+        const targetUrl = new URL('/dashboard', request.url).toString()
+        return NextResponse.json({ url: targetUrl })
 
     } catch (error: any) {
         console.error('[Ghost Login API Critical Error]:', error)

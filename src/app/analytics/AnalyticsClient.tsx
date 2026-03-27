@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { AnalyticsStats } from './actions'
 
@@ -30,14 +30,14 @@ export default function AnalyticsClient({ stats }: Props) {
     const [chartMode, setChartMode] = useState<'appointments' | 'properties'>('appointments')
 
     const chartData = chartMode === 'appointments' ? stats.monthlyAppointments : stats.monthlyProperties
-    const chartMax = Math.max(...chartData.map((d) => d.count), 1)
-    const chartBars = chartData.map((d) => ({
+    const chartMax = useMemo(() => Math.max(...chartData.map((d) => d.count), 1), [chartData])
+    const chartBars = useMemo(() => chartData.map((d) => ({
         ...d,
         percentage: Math.round((d.count / chartMax) * 100),
-    }))
+    })), [chartData, chartMax])
 
     // Scorecard definitions with real data
-    const scorecards = [
+    const scorecards = useMemo(() => [
         {
             label: 'Totaal Afspraken',
             value: String(stats.totalAppointments),
@@ -70,7 +70,14 @@ export default function AnalyticsClient({ stats }: Props) {
             icon: 'star',
             href: '/dashboard/reviews',
         },
-    ]
+    ], [
+        stats.totalAppointments,
+        stats.upcomingAppointments,
+        stats.activeProperties,
+        stats.totalProperties,
+        stats.teamMemberCount,
+        stats.reviewCount
+    ])
 
     return (
         <div className="space-y-8">
