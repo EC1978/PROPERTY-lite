@@ -6,9 +6,9 @@ export async function scrapeProperty(url: string) {
     }
 
     try {
-        // 1. Fetch raw HTML with a strict timeout to prevent Vercel 10s container kills
+        // 1. Fetch raw HTML with a timeout to prevent Vercel 504 Gateway Timeouts
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 3500) // 3.5 seconds max for fetch
+        const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 seconds max for fetch
 
         const response = await fetch(url, {
             headers: {
@@ -73,7 +73,7 @@ export async function scrapeProperty(url: string) {
             .replace(/\s+/g, ' ')
             .trim()
 
-        const truncatedText = textContent.slice(0, 10000)
+        const truncatedText = textContent.slice(0, 40000)
 
         // 3. AI Extraction via Google Gemini
         const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY
@@ -82,7 +82,7 @@ export async function scrapeProperty(url: string) {
         }
 
         const geminiController = new AbortController()
-        const geminiTimeoutId = setTimeout(() => geminiController.abort(), 6000) // 6 seconds max for Gemini
+        const geminiTimeoutId = setTimeout(() => geminiController.abort(), 20000) // 20 seconds max for Gemini
 
         const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
