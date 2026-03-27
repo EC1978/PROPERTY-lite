@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import OpenAI from 'openai'
 
-import { PDFParse } from 'pdf-parse'
+// Removing top-level pdf-parse import to prevent DOMMatrix Server Component crash on Vercel
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -25,6 +25,9 @@ export async function extractPropertyFromPdf(formData: FormData) {
     try {
         const buffer = Buffer.from(await file.arrayBuffer())
         const uint8Array = new Uint8Array(buffer)
+        // Dynamically import pdf-parse to prevent ReferenceError: DOMMatrix is not defined on Vercel Node runtime
+        const pdfParseModule = await import('pdf-parse')
+        const PDFParse = (pdfParseModule as any).PDFParse || (pdfParseModule as any).default || pdfParseModule
         const instance = new PDFParse(uint8Array)
         const data = await instance.getText()
         const text = data.text

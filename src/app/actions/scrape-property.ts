@@ -6,7 +6,10 @@ export async function scrapeProperty(url: string) {
     }
 
     try {
-        // 1. Fetch raw HTML
+        // 1. Fetch raw HTML with a strict timeout to prevent Vercel 10s container kills
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3500) // 3.5 seconds max for fetch
+
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -17,8 +20,10 @@ export async function scrapeProperty(url: string) {
                 'Sec-Fetch-Site': 'none',
                 'Upgrade-Insecure-Requests': '1'
             },
-            next: { revalidate: 0 }
+            next: { revalidate: 0 },
+            signal: controller.signal
         })
+        clearTimeout(timeoutId)
 
         if (!response.ok) {
             throw new Error(`Kan pagina niet ophalen (HTTP ${response.status})`)
@@ -60,21 +65,24 @@ export async function scrapeProperty(url: string) {
             tour360: html.match(/https?:\/\/(?:my\.)?matterport\.com\/show\/\?m=[a-zA-Z0-9]+/i)?.[0] || null
         }
 
-        // 4. Strip HTML for Gemini
+        // 4. Strip HTML for Gemini safely (preventing ReDoS catastrophic backtracking)
         const textContent = html
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim()
 
-        const truncatedText = textContent.slice(0, 40000)
+        const truncatedText = textContent.slice(0, 10000)
 
         // 3. AI Extraction via Google Gemini
         const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY
         if (!GEMINI_API_KEY) {
             throw new Error('Google AI API key niet geconfigureerd in GOOGLE_AI_API_KEY, NEXT_PUBLIC_GOOGLE_AI_API_KEY of NEXT_PUBLIC_GOOGLE_API_KEY')
         }
+
+        const geminiController = new AbortController()
+        const geminiTimeoutId = setTimeout(() => geminiController.abort(), 6000) // 6 seconds max for Gemini
 
         const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -115,9 +123,11 @@ CONTENT:
 ${truncatedText}`
                         }]
                     }]
-                })
+                }),
+                signal: geminiController.signal
             }
         )
+        clearTimeout(geminiTimeoutId)
 
         if (!geminiResponse.ok) {
             const errorBody = await geminiResponse.text()
@@ -141,14 +151,17 @@ ${truncatedText}`
             tour_360_url: mediaLinks.tour360 || aiResult.tour_360_url
         }
 
+        // Failsafe: Re-serialize explicitly to strip `undefined` properties which cause generic Server Component errors
+        const safeData = JSON.parse(JSON.stringify({
+            ...aiResult,
+            ...finalMedia,
+            scraped_images: validImages,
+            image_url: validImages[0] || null
+        }))
+
         return {
             success: true,
-            data: {
-                ...aiResult,
-                ...finalMedia,
-                scraped_images: validImages,
-                image_url: validImages[0] || null
-            }
+            data: safeData
         }
 
     } catch (error: any) {

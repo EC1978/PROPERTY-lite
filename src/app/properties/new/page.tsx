@@ -1,5 +1,6 @@
 
 import { createClient } from '@/utils/supabase/server'
+export const maxDuration = 60
 import { redirect } from 'next/navigation'
 import { checkPropertyLimit } from '@/utils/saas'
 import UploadWizard from '@/components/UploadWizard'
