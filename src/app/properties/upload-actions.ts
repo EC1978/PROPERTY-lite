@@ -1,14 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import OpenAI from 'openai'
-
-// Removing top-level pdf-parse import to prevent DOMMatrix Server Component crash on Vercel
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-})
-
+// Removed OpenAI - switched to Gemini 1.5 Flash for PDF extraction
 export async function extractPropertyFromPdf(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -36,25 +29,59 @@ export async function extractPropertyFromPdf(formData: FormData) {
         const data = await pdfParse(buffer)
         const text = data.text
 
-        // Limit text length to avoid token limits (approx 15k chars should be enough for a brochure)
-        const truncatedText = text.slice(0, 15000)
+        // Limit text length to avoid token limits (approx 35k chars should be enough for a brochure)
+        const truncatedText = text.slice(0, 35000)
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a real estate assistant. Extract the following details from the brochure text in JSON format: address, price (number only), surface_area (number only), description (summary of max 50 words), city. If a field is missing, use null."
-                },
-                {
-                    role: "user",
-                    content: truncatedText
-                }
-            ],
-            response_format: { type: "json_object" }
-        })
+        const GEMINI_API_KEY = process.env.GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY
+        if (!GEMINI_API_KEY) {
+            throw new Error('Google AI API key niet geconfigureerd in GOOGLE_AI_API_KEY')
+        }
 
-        const result = JSON.parse(completion.choices[0].message.content || '{}')
+        const geminiController = new AbortController()
+        const geminiTimeoutId = setTimeout(() => geminiController.abort(), 20000)
+
+        const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `You are a real estate assistant. Extract the following details from the brochure text in JSON format.
+Return ONLY valid JSON.
+{
+  "address": "string or null",
+  "city": "string or null",
+  "price": number or null,
+  "surface_area": number or null,
+  "description": "summary of max 50 words or null"
+}
+
+CONTENT:
+${truncatedText}`
+                        }]
+                    }]
+                }),
+                signal: geminiController.signal
+            }
+        )
+        clearTimeout(geminiTimeoutId)
+
+        if (!geminiResponse.ok) {
+            const errorBody = await geminiResponse.text()
+            throw new Error(`Gemini API error: ${geminiResponse.status} ${errorBody}`)
+        }
+
+        const geminiData = await geminiResponse.json()
+        let aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+
+        // Clean markdown backticks if Gemini adds them
+        if (aiText.includes('```')) {
+            aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim()
+        }
+
+        const result = JSON.parse(aiText)
         
         // Strip out 'undefined' properties which cause Server Component serialization 500 errors
         const safeData = JSON.parse(JSON.stringify(result))
