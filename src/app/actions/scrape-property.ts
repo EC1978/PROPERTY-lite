@@ -37,10 +37,13 @@ export async function scrapeProperty(url: string) {
             html.includes('Just a moment...') || 
             html.includes('cf-browser-verification') ||
             html.includes('Toegang geweigerd') ||
-            html.includes('captcha-delivery')
+            html.includes('captcha-delivery') ||
+            html.includes('veiligheidscontrole plaatsvindt') ||
+            html.includes('Je bent er bijna') ||
+            html.includes('beveiliging van het platform')
         ) {
-            console.error('Anti-bot block detected by Funda (Datadome/Cloudflare)')
-            throw new Error('De server (Vercel) wordt momenteel geblokkeerd door de anti-bot beveiliging van Funda (Datadome). Gebruik localhost of configureer een residentiële proxy.')
+            console.error('Anti-bot block detected by Funda (Datadome/Cloudflare/Custom HTML)')
+            throw new Error('Funda blokkeert de live website met een veiligheidscontrole. Upload de pagina als PDF, gebruik localhost, of neem contact op met beheer om een (Firecrawl) Scraping URL-Proxy in te stellen.')
         }
 
         // 2. Extract Images via Regex
