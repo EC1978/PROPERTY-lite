@@ -189,24 +189,45 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                 <input type="hidden" name="image_url" value={mainImageUrl || ''} />
                             </div>
 
+                            <div className="group/input">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1 text-left">Vraagprijs (€)</label>
+                                <input
+                                    type="number"
+                                    name="price"
+                                    defaultValue={property.price}
+                                    className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-[#0a0c0b]/60 border border-gray-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-[#10b77f]/50 focus:ring-1 focus:ring-[#10b77f]/20 transition-all"
+                                />
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="group/input">
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1">Vraagprijs (€)</label>
-                                    <input
-                                        type="number"
-                                        name="price"
-                                        defaultValue={property.price}
-                                        className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-[#0a0c0b]/60 border border-gray-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-[#10b77f]/50 focus:ring-1 focus:ring-[#10b77f]/20 transition-all"
-                                    />
-                                </div>
-                                <div className="group/input">
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1">Woonoppervlakte (m²)</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1 text-left">Woonoppervlakte (m²)</label>
                                     <input
                                         type="number"
                                         name="surface_area"
                                         defaultValue={property.surface_area}
                                         className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-[#0a0c0b]/60 border border-gray-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-[#10b77f]/50 focus:ring-1 focus:ring-[#10b77f]/20 transition-all"
                                     />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="group/input">
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1 text-left">Slaapkamers</label>
+                                        <input
+                                            type="number"
+                                            name="bedrooms"
+                                            defaultValue={property.bedrooms}
+                                            className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-[#0a0c0b]/60 border border-gray-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-[#10b77f]/50 focus:ring-1 focus:ring-[#10b77f]/20 transition-all"
+                                        />
+                                    </div>
+                                    <div className="group/input">
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1 text-left">Badkamers</label>
+                                        <input
+                                            type="number"
+                                            name="bathrooms"
+                                            defaultValue={property.bathrooms}
+                                            className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-[#0a0c0b]/60 border border-gray-200 dark:border-white/5 text-slate-900 dark:text-white focus:outline-none focus:border-[#10b77f]/50 focus:ring-1 focus:ring-[#10b77f]/20 transition-all"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

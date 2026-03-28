@@ -84,6 +84,8 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
             address,
             price: parseFloat(price),
             surface_area: parseInt(surface_area),
+            bedrooms: parseInt(formData.get('bedrooms') as string) || 0,
+            bathrooms: parseInt(formData.get('bathrooms') as string) || 0,
             description,
             image_url: image_url || null,
             video_url,

@@ -6,93 +6,63 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Helper: extract number from string, returns null if 0 or not found
-function safeInt(val: any): number | null {
-    if (val === null || val === undefined) return null
-    const n = parseInt(String(val).replace(/[^0-9]/g, ''))
-    return isNaN(n) || n === 0 ? null : n
+// Helper: safe integer conversion (returns null if 0 and allowZero=false, or NaN)
+function safeInt(val: any, allowZero = false): number | null {
+    if (val === null || val === undefined || val === '') return null
+    const n = parseInt(String(val).replace(/[^0-9-]/g, ''))
+    if (isNaN(n)) return null
+    if (!allowZero && n === 0) return null
+    return n
 }
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Validate extension token from Authorization header
         const authHeader = req.headers.get('Authorization')
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json({ error: 'Geen geldig token opgegeven.' }, { status: 401 })
         }
         const token = authHeader.replace('Bearer ', '').trim()
 
-        // 2. Look up profile by extension_token
         const { data: profile, error: profileError } = await supabaseAdmin
             .from('profiles')
-            .select('id, full_name')
+            .select('id')
             .eq('extension_token', token)
             .single()
 
         if (profileError || !profile) {
-            return NextResponse.json({ error: 'Ongeldig token. Controleer je instellingen.' }, { status: 401 })
+            return NextResponse.json({ error: 'Ongeldig token.' }, { status: 401 })
         }
 
-        const userId = profile.id
-
-        // 3. Parse incoming property data
         const body = await req.json()
         const {
-            address,
-            city,
-            price,
-            surface_area,
-            description,
-            image_url,
-            images,
-            features = {},
-            video_url,
-            floorplan_url,
-            tour_360_url,
-            source_url,
-            propertyType,
+            address, city, price, surface_area, description, 
+            image_url, images, features = {}, video_url, 
+            floorplan_url, tour_360_url, source_url, propertyType
         } = body
 
-        // Extract bedrooms/bathrooms from body (may be sent as top-level or 0)
+        // Extract bedrooms/bathrooms with fallback to features.layout
         let bedrooms = safeInt(body.bedrooms)
         let bathrooms = safeInt(body.bathrooms)
 
-        // Fallback: parse from features.layout if bedrooms/bathrooms are missing
-        // e.g. layout = "4 kamers (3 slaapkamers)"
         if (!bedrooms && features.layout) {
-            const slpkMatch = features.layout.match(/\((\d+)\s*slaapkamer/i) ||
-                features.layout.match(/(\d+)\s*slaapkamer/i)
-            if (slpkMatch) bedrooms = parseInt(slpkMatch[1]) || null
+            const m = features.layout.match(/(\d+)\s*slaapkamer/i)
+            if (m) bedrooms = parseInt(m[1])
         }
         if (!bathrooms && features.layout) {
-            const badkMatch = features.layout.match(/(\d+)\s*badkamer/i)
-            if (badkMatch) bathrooms = parseInt(badkMatch[1]) || null
+            const m = features.layout.match(/(\d+)\s*badkamer/i)
+            if (m) bathrooms = parseInt(m[1])
         }
 
-        // Clean up features object
-        const cleanFeatures: Record<string, any> = {}
-        if (features.constructionYear) cleanFeatures.constructionYear = features.constructionYear
-        // Prefer propertyType from body, or features.type
-        const typeVal = propertyType || features.type || ''
-        if (typeVal) cleanFeatures.type = typeVal
-        if (features.layout) cleanFeatures.layout = features.layout
-        if (features.energy || features.energy_label) {
-            cleanFeatures.energy = features.energy || `Energielabel ${features.energy_label}`
-            cleanFeatures.energy_label = features.energy_label || ''
-        }
-        if (features.maintenance) cleanFeatures.maintenance = features.maintenance
-        if (features.surroundings) cleanFeatures.surroundings = features.surroundings
+        // Clean features
+        const cleanFeatures: any = { ...features }
+        if (propertyType) cleanFeatures.type = propertyType
+        if (!cleanFeatures.type && features.type) cleanFeatures.type = features.type
 
-        if (!address) {
-            return NextResponse.json({ error: 'Adres is verplicht.' }, { status: 400 })
-        }
-
-        // 4. Insert property linked to the user
         const { data: property, error: insertError } = await supabaseAdmin
             .from('properties')
             .insert({
-                user_id: userId,
-                address: address || 'Onbekend adres',
+                user_id: profile.id,
+                address: address || 'Geen adres',
                 city: city || '',
                 price: price ? Number(String(price).replace(/[^0-9]/g, '')) : null,
                 surface_area: safeInt(surface_area),
@@ -111,26 +81,21 @@ export async function POST(req: NextRequest) {
             .select('id')
             .single()
 
-        if (insertError) {
-            console.error('Import error:', insertError)
-            return NextResponse.json({ error: `Database fout: ${insertError.message}` }, { status: 500 })
-        }
+        if (insertError) throw insertError
 
-        // 5. Redirect to the beautiful detail view (not the edit form)
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://property-lite-mocha.vercel.app'
         return NextResponse.json({
             success: true,
             propertyId: property.id,
-            editUrl: `${baseUrl}/properties/${property.id}`,
+            editUrl: `${baseUrl}/properties/${property.id}`, // Detail view as landing page
         })
 
     } catch (err: any) {
-        console.error('Import route crash:', err)
-        return NextResponse.json({ error: err.message || 'Onbekende fout.' }, { status: 500 })
+        console.error('Import error:', err)
+        return NextResponse.json({ error: err.message }, { status: 500 })
     }
 }
 
-// CORS preflight for browser extension
 export async function OPTIONS() {
     return new NextResponse(null, {
         status: 204,

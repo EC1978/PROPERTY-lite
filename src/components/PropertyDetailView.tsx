@@ -299,9 +299,9 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
 
     const statCards = [
         { key: 'surface_area', label: 'Woonoppervlak', value: property.surface_area ? `${property.surface_area} m²` : 'Onbekend' },
-        { key: 'bedrooms', label: 'Slaapkamers', value: property.bedrooms || 'Onbekend' },
-        { key: 'bathrooms', label: 'Badkamers', value: property.bathrooms || 'Onbekend' },
-        { key: 'energy_label', label: 'Energielabel', value: features.energy_label || extractEnergyLabel(features.energy) },
+        { key: 'bedrooms', label: 'Slaapkamers', value: (property.bedrooms && property.bedrooms > 0) ? property.bedrooms : 'Onbekend' },
+        { key: 'bathrooms', label: 'Badkamers', value: (property.bathrooms && property.bathrooms > 0) ? property.bathrooms : 'Onbekend' },
+        { key: 'energy_label', label: 'Energielabel', value: features.energy_label || extractEnergyLabel(features.energy) || 'Onbekend' },
         { key: 'constructionYear', label: 'Bouwjaar', value: features.constructionYear || 'Onbekend' },
         { key: 'type', label: 'Woningtype', value: features.type || 'Onbekend' },
     ]
