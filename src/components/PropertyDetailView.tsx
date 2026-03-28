@@ -481,6 +481,20 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
         })
     }
 
+    const deleteFeature = async (key: string) => {
+        const updatedFeatures = { ...property.features }
+        delete updatedFeatures[key]
+
+        // Also remove from display order if present
+        const newOrder = displayOrder.filter(k => k !== key)
+
+        await saveField({
+            ...updatedFeatures,
+            feature_order: newOrder
+        }, 'features')
+        setDisplayOrder(newOrder)
+    }
+
     const addFeature = async () => {
         if (!newFeature.label || !newFeature.value) return
 
@@ -949,7 +963,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                     </div>
                                                 ) : (
                                                     <div
-                                                        className={`flex flex-col sm:grid sm:grid-cols-2 px-6 py-5 gap-1 sm:gap-0 ${isEditMode ? 'cursor-pointer bg-[#0df2a2]/5' : ''}`}
+                                                        className={`flex flex-col sm:grid sm:grid-cols-2 px-6 py-5 gap-1 sm:gap-0 ${isEditMode ? 'cursor-pointer hover:bg-[#0df2a2]/5' : ''}`}
                                                         onClick={() => isEditMode && startEditing(row.key, row.type === 'number' ? property[row.key] : row.value)}
                                                     >
                                                         <span className="text-xs sm:text-sm text-gray-500 font-bold sm:font-medium uppercase sm:normal-case tracking-wider sm:tracking-normal">{row.label}</span>
@@ -959,11 +973,22 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                                                     <span className="inline-block bg-[#0df2a2]/10 text-[#0df2a2] border border-[#0df2a2]/30 px-3 py-1 rounded-lg text-sm font-bold shadow-[0_0_10px_rgba(13,242,162,0.1)]">
                                                                         {features.energy_label || extractEnergyLabel(features.energy)}
                                                                     </span>
-                                                                ) : row.value}
+                                                                ) : row.value || '-'}
                                                             </span>
-                                                            {isEditMode && (
-                                                                <span className="material-symbols-outlined text-[14px] text-[#0df2a2] opacity-0 group-hover:opacity-100 transition-opacity">edit</span>
-                                                            )}
+                                                            <div className="flex items-center gap-3">
+                                                                {isEditMode && (
+                                                                    <span className="material-symbols-outlined text-[14px] text-[#0df2a2] opacity-0 group-hover:opacity-100 transition-opacity">edit</span>
+                                                                )}
+                                                                {isEditMode && !isHardcoded && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); deleteFeature(row.key); }}
+                                                                        className="size-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                                                                        title="Verwijder kenmerk"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}
