@@ -44,6 +44,7 @@ export default function SettingsNav({ isSuperadmin = false, isAdmin = false }: S
             items: [
                 { name: 'Voice AI Config', href: '/settings/voice', icon: 'graphic_eq' },
                 { name: 'Integraties', href: '/settings/integrations', icon: 'extension' },
+                { name: 'Browser Extensie', href: '/settings/extension', icon: 'puzzle_piece' },
             ],
         },
     ]

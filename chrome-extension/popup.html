@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceRealty Importer</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <span class="material-icons-round">home_work</span>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">VoiceRealty</span>
+        <span class="logo-sub">Funda Importer</span>
+      </div>
+    </div>
+    <button id="btn-settings" class="icon-btn" title="Instellingen">
+      <span class="material-icons-round">settings</span>
+    </button>
+  </div>
+
+  <!-- Main Screen -->
+  <div id="screen-main" class="screen">
+    <div id="page-check" class="status-card status-checking">
+      <span class="material-icons-round spin">progress_activity</span>
+      <span>Pagina controleren...</span>
+    </div>
+
+    <div id="page-ready" class="hidden">
+      <div class="property-preview" id="preview-card">
+        <div class="preview-image" id="preview-image">
+          <span class="material-icons-round">home</span>
+        </div>
+        <div class="preview-info">
+          <p class="preview-address" id="preview-address">Adres laden...</p>
+          <p class="preview-price" id="preview-price">–</p>
+          <p class="preview-meta" id="preview-meta">–</p>
+        </div>
+      </div>
+
+      <button id="btn-import" class="btn-primary">
+        <span class="material-icons-round">add_home</span>
+        Importeer naar VoiceRealty
+      </button>
+    </div>
+
+    <div id="page-not-funda" class="hidden">
+      <div class="status-card status-info">
+        <span class="material-icons-round">info</span>
+        <div>
+          <p class="status-title">Geen Funda woning</p>
+          <p class="status-desc">Ga naar een woning detailpagina op funda.nl om te importeren.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-no-token" class="hidden">
+      <div class="status-card status-warning">
+        <span class="material-icons-round">key</span>
+        <div>
+          <p class="status-title">Niet gekoppeld</p>
+          <p class="status-desc">Voeg je API token in via de instellingen.</p>
+        </div>
+      </div>
+      <button id="btn-setup" class="btn-secondary">
+        <span class="material-icons-round">settings</span>
+        Instellingen openen
+      </button>
+    </div>
+
+    <div id="page-loading" class="hidden">
+      <div class="status-card status-loading">
+        <span class="material-icons-round spin">progress_activity</span>
+        <div>
+          <p class="status-title">Importeren...</p>
+          <p class="status-desc">Woning wordt aangemaakt in VoiceRealty.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-success" class="hidden">
+      <div class="status-card status-success">
+        <span class="material-icons-round">check_circle</span>
+        <div>
+          <p class="status-title">Woning geïmporteerd!</p>
+          <p class="status-desc">Je wordt doorgestuurd naar VoiceRealty...</p>
+        </div>
+      </div>
+      <a id="btn-open" href="#" target="_blank" class="btn-primary">
+        <span class="material-icons-round">open_in_new</span>
+        Open in VoiceRealty
+      </a>
+    </div>
+
+    <div id="page-error" class="hidden">
+      <div class="status-card status-error">
+        <span class="material-icons-round">error</span>
+        <div>
+          <p class="status-title">Fout</p>
+          <p class="status-desc" id="error-msg">Er is iets misgegaan.</p>
+        </div>
+      </div>
+      <button id="btn-retry" class="btn-secondary">
+        <span class="material-icons-round">refresh</span>
+        Opnieuw proberen
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Screen -->
+  <div id="screen-settings" class="screen hidden">
+    <div class="settings-header">
+      <button id="btn-back" class="icon-btn">
+        <span class="material-icons-round">arrow_back</span>
+      </button>
+      <h2>Instellingen</h2>
+    </div>
+
+    <div class="settings-body">
+      <div class="form-group">
+        <label for="input-token">API Token</label>
+        <p class="form-hint">Te vinden via <strong>VoiceRealty → Instellingen → Browser Extensie</strong></p>
+        <div class="input-row">
+          <input type="password" id="input-token" placeholder="vr_..." autocomplete="off" spellcheck="false">
+          <button id="btn-toggle-token" class="icon-btn icon-btn-sm">
+            <span class="material-icons-round" id="toggle-icon">visibility</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="input-url">Server URL</label>
+        <p class="form-hint">Standaard: de live VoiceRealty server</p>
+        <input type="url" id="input-url" placeholder="https://property-lite-mocha.vercel.app">
+      </div>
+
+      <button id="btn-save" class="btn-primary">
+        <span class="material-icons-round">save</span>
+        Opslaan
+      </button>
+
+      <div id="save-feedback" class="hidden save-feedback">
+        <span class="material-icons-round">check</span>
+        Instellingen opgeslagen!
+      </div>
+
+      <div class="divider"></div>
+
+      <a href="https://property-lite-mocha.vercel.app/settings/extension" target="_blank" class="link-row">
+        <span class="material-icons-round">open_in_new</span>
+        Token ophalen via VoiceRealty
+      </a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

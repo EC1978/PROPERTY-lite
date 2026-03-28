@@ -20,5 +20,16 @@ Dit document houdt een logboek bij van alle wijzigingen en acties die de AI-assi
 - **Actie**: Integratie-knoppen voor Google en Microsoft Agenda direct werkend en "koppelbaar" gemaakt in UI, ondersteund door een gloednieuwe realistische `OAuthSimulationModal`.
 - **Doel**: Zorgen dat het koppelen van de agenda (voor demo/TestFlight doeleinden) eruitziet als een echte API-connectie, doordat een "Aanmelden bij Google/Microsoft" toestemming-scherm wordt gesimuleerd dat uiteindelijk leidt tot een werkende 'Verbonden' databasestatus in één soepele workflow.
 
+## [2026-03-28]
+- **Actie**: Chrome Browser Extensie gebouwd — "VoiceRealty Funda Importer" (`chrome-extension/`)
+- **Doel**: Funda.nl blokkeert alle server-side scraping via Datadome anti-bot beveiliging. De extensie draait in de eigen browser van de makelaar (als echte gebruiker) en importeert woningdata met één klik.
+- **Bestanden**: `chrome-extension/manifest.json`, `content.js`, `popup.html`, `popup.css`, `popup.js`, `icons/`
+- **Actie**: Beveiligde API route `POST /api/import-property` toegevoegd met token-gebaseerde authenticatie via `extension_token`.
+- **Actie**: Supabase migratie — `extension_token` kolom + `generate_extension_token()` DB functie toegevoegd aan `profiles` tabel.
+- **Actie**: Supabase migratie — `source_url` kolom toegevoegd aan `properties` tabel.
+- **Actie**: Settings pagina `/settings/extension` gebouwd met token-beheer UI (genereren, kopiëren, regenereren) en stap-voor-stap installatie instructies.
+- **Actie**: "Browser Extensie" link toegevoegd aan de Settings navigatie onder "Koppelingen & AI".
+- **Actie**: Extensie ZIP (`voicerealty-funda-extension.zip`) in `public/` gezet voor directe download vanuit de app.
+
 ---
 *Dit bestand zal continu worden bijgewerkt bij elke significante actie.*
