@@ -58,7 +58,7 @@ export default function ExtensionSettingsClient({ initialToken }: Props) {
                             download
                             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[#10b77f] text-[#050505] font-bold text-xs uppercase tracking-widest hover:bg-[#0df2a2] hover:shadow-[0_0_20px_rgba(16,183,127,0.3)] transition-all active:scale-95"
                         >
-                            <span className="material-symbols-outlined text-[18px]">zip_box</span>
+                            <span className="material-symbols-outlined text-[18px]">download</span>
                             Extensie .ZIP
                         </a>
                     </div>
