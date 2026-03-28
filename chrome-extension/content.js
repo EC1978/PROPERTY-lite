@@ -114,11 +114,22 @@
 
     // Fallback voor Stad
     if (!data.city) {
-      const cityEl = document.querySelector('[class*="object-header__subtitle"], [data-test-id="postal-code-city"]');
+      // Probeer "postal-code-city" of object-header__subtitle
+      const cityEl = document.querySelector('[class*="object-header__subtitle"], [data-test-id="postal-code-city"], .object-header__subtitle');
       if (cityEl) {
         const t = cityEl.textContent.trim();
-        const m = t.match(/\d{4}\s*[A-Z]{2}\s+(.+)/);
+        // Zoek naar "1234 AB STAD" of gewoon "STAD"
+        const m = t.match(/\d{4}\s*[A-Z]{2}\s+(.+)/i);
         data.city = toTitleCase(m ? m[1].trim() : t.replace(/\d{4}\s*[A-Z]{2}/, '').trim());
+      }
+      
+      // Nog een poging via breadcrumbs of andere bekende velden
+      if (!data.city) {
+        const breadcrumbs = Array.from(document.querySelectorAll('.route-nav-list li, [class*="breadcrumb"]')).map(el => el.textContent.trim());
+        if (breadcrumbs.length >= 3) {
+            // Meestal: Home > Koop > AMSTERDAM > ...
+            data.city = toTitleCase(breadcrumbs[2]);
+        }
       }
     }
 

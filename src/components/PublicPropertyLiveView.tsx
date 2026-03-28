@@ -185,7 +185,7 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                             </h1>
                             <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-3 font-bold uppercase tracking-widest">
                                 <span className="material-symbols-outlined text-[#0df2a2] text-[16px]">location_on</span>
-                                {property.address}{property.city ? `, ${property.city}` : ''}
+                                {property.address}{property.city ? `, ${property.city}` : (property.address?.includes(',') ? `, ${property.address.split(',')[1]?.trim()}` : '')}
                             </div>
 
                             {property.price > 0 && (
@@ -298,16 +298,18 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                         <div className="divide-y divide-white/5">
                             {[
                                 { label: 'Adres', value: property.address },
-                                { label: 'Stad', value: property.city },
+                                { label: 'Stad', value: property.city || (property.address?.includes(',') ? property.address.split(',')[1]?.trim() : null) },
                                 { label: 'Vraagprijs', value: property.price ? `€ ${property.price.toLocaleString()}` : null },
                                 { label: 'Oppervlakte', value: property.surface_area ? `${property.surface_area} m²` : null },
                                 { label: 'Slaapkamers', value: property.bedrooms },
                                 { label: 'Badkamers', value: property.bathrooms },
-                                ...Object.entries(features).map(([key, value]) => ({
-                                    label: featureLabels[key] || key,
-                                    value: value as string,
-                                    isEnergy: key === 'energy',
-                                })),
+                                ...Object.entries(features)
+                                    .filter(([key]) => key !== 'feature_order')
+                                    .map(([key, value]) => ({
+                                        label: featureLabels[key] || key,
+                                        value: value as string,
+                                        isEnergy: key === 'energy',
+                                    })),
                             ].filter(r => r.value).map((row, i) => (
                                 <div key={i} className="flex flex-col sm:grid sm:grid-cols-2 px-6 py-5 gap-1 sm:gap-0 hover:bg-white/[0.02] transition-colors">
                                     <span className="text-xs sm:text-sm text-gray-500 font-bold sm:font-medium uppercase sm:normal-case tracking-wider sm:tracking-normal">{row.label}</span>
