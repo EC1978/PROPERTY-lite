@@ -522,10 +522,22 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                         <span className="hidden sm:inline">Alle Woningen</span>
                     </Link>
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 bg-[#0df2a2]/10 border border-[#0df2a2]/30 px-3 py-1.5 rounded-full">
-                            <span className="material-symbols-outlined text-[#0df2a2] text-[10px] animate-pulse">fiber_manual_record</span>
-                            <span className="text-xs font-bold text-[#0df2a2] uppercase tracking-wider">Actief</span>
-                        </div>
+                        {property.status === 'active' ? (
+                            <div className="flex items-center gap-1.5 bg-[#0df2a2]/10 border border-[#0df2a2]/30 px-3 py-1.5 rounded-full">
+                                <span className="material-symbols-outlined text-[#0df2a2] text-[10px] animate-pulse">fiber_manual_record</span>
+                                <span className="text-xs font-bold text-[#0df2a2] uppercase tracking-wider">Actief</span>
+                            </div>
+                        ) : property.status === 'draft' ? (
+                            <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded-full">
+                                <span className="material-symbols-outlined text-yellow-400 text-[10px]">circle</span>
+                                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Concept</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                                <span className="material-symbols-outlined text-gray-500 text-[10px]">circle</span>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Gearchiveerd</span>
+                            </div>
+                        )}
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             className={`flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl shadow-[0_0_20px_rgba(13,242,162,0.2)] transition-all ${isEditMode ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#0df2a2] hover:bg-emerald-400 text-black'}`}
@@ -757,6 +769,39 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                     <span className="material-symbols-outlined text-[20px]">{isEditMode ? 'check' : 'edit'}</span>
                                     {isEditMode ? 'Klaar met bewerken' : 'Alles Direct Bewerken'}
                                 </button>
+
+                                {/* Status toggle */}
+                                {property.status !== 'active' && (
+                                    <button
+                                        onClick={async () => {
+                                            setIsSaving(true)
+                                            await supabase.from('properties').update({ status: 'active' }).eq('id', property.id)
+                                            setProperty({ ...property, status: 'active' })
+                                            setIsSaving(false)
+                                        }}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold px-5 py-3.5 rounded-2xl transition-all disabled:opacity-50"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                        Zet op Actief
+                                    </button>
+                                )}
+                                {property.status === 'active' && (
+                                    <button
+                                        onClick={async () => {
+                                            setIsSaving(true)
+                                            await supabase.from('properties').update({ status: 'draft' }).eq('id', property.id)
+                                            setProperty({ ...property, status: 'draft' })
+                                            setIsSaving(false)
+                                        }}
+                                        disabled={isSaving}
+                                        className="flex items-center gap-3 bg-white/5 hover:bg-white/8 border border-white/10 text-gray-400 font-semibold px-5 py-3.5 rounded-2xl transition-all disabled:opacity-50"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">unpublished</span>
+                                        Terug naar Concept
+                                    </button>
+                                )}
+
                                 <Link href={`/woning/${property.id}`} target="_blank" className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold px-5 py-3.5 rounded-2xl transition-all">
                                     <span className="material-symbols-outlined text-[20px] text-[#0df2a2]">open_in_new</span>
                                     Publieke Pagina Bekijken

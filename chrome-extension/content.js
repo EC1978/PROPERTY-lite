@@ -1,8 +1,8 @@
 /**
- * VoiceRealty Funda Content Script v2
- * Betere selectors voor Funda's React-rendered HTML.
- * Primaire bron: JSON-LD structured data (meest betrouwbaar)
- * Fallback: DOM selectors + tekst-herkenning
+ * VoiceRealty Funda Content Script v3
+ * Gebaseerd op geïnspecteerde Funda HTML structuur.
+ * Primaire strategie: innerText regex op bekende Funda patronen
+ * Fallback: DL/DT/DD kenmerken + __NEXT_DATA__ JSON
  */
 
 (function () {
@@ -26,238 +26,106 @@
 
   function isFundaPropertyPage() {
     const url = window.location.href;
-    // Funda detail pages: /detail/ of /koop|huur/stad/adres/id/
     return (
       url.includes('funda.nl/detail/') ||
       (url.includes('funda.nl') && /\/(koop|huur)\/[^/]+\/[^/]+-\d+\/?/.test(url))
     );
   }
 
-  // ─── JSON-LD Structured Data (meest betrouwbaar) ───────────────────
-  function getJsonLd() {
-    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-    let merged = {};
-    for (const s of scripts) {
-      try {
-        const obj = JSON.parse(s.textContent);
-        if (obj['@type'] === 'Residence' || obj['@type'] === 'House' ||
-          obj['@type'] === 'Apartment' || obj.address || obj.name) {
-          merged = { ...merged, ...obj };
-        }
-      } catch (e) {}
+  // ─── Haal de volledige paginatekst op (innerText geeft zichtbare tekst) ──────
+  function getBodyText() {
+    return document.body.innerText || document.body.textContent || '';
+  }
+
+  // ─── Zoek waarde via "Label: Waarde" patroon in de tekst ──────────────────
+  function findInText(text, ...patterns) {
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern + '[:\\s]+([^\\n\\r]{1,80})', 'i');
+      const m = text.match(regex);
+      if (m && m[1].trim()) return m[1].trim();
     }
-    return merged;
+    return null;
   }
 
-  // ─── Kenmerken tabel uitlezen (dt/dd pairs) ────────────────────────
-  function getKenmerken() {
-    const result = {};
-    // Funda gebruikt <dl> met <dt> keys en <dd> values
-    const dls = document.querySelectorAll('dl');
-    dls.forEach(dl => {
-      const dts = dl.querySelectorAll('dt');
-      const dds = dl.querySelectorAll('dd');
-      dts.forEach((dt, i) => {
-        const key = dt.textContent.trim().toLowerCase()
-          .replace(/\s+/g, ' ')
-          .replace(/:$/, '');
-        const val = dds[i] ? dds[i].textContent.trim() : '';
-        if (key && val) result[key] = val;
-      });
-    });
-
-    // Fallback: zoek ook spans/divs met kenmerk-achtige structuur
-    // Funda 2024 gebruikt soms data-test-id op specifieke elementen
-    const possible = [
-      '[data-test-id="object-kenmerken-list"]',
-      '.object-kenmerken',
-      '[class*="kenmerken"]',
-      '[class*="ObjectDetails"]',
-      '[class*="object-details"]',
-    ];
-    for (const sel of possible) {
-      const el = document.querySelector(sel);
-      if (!el) continue;
-      const items = el.querySelectorAll('li, div[class*="item"], div[class*="row"]');
-      items.forEach(item => {
-        const parts = item.textContent.trim().split(/\n|\t|:{2,}/).map(s => s.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          result[parts[0].toLowerCase()] = parts[1];
-        }
-      });
-    }
-    return result;
-  }
-
-  // ─── Specifieke header-statistieken (kamers, slaapkamers, opp) ────
-  function getHeaderStats() {
-    const result = {};
-    // Funda toont stats als: "4 kamers" "3 slpk." "112 m²" in de header
-    const stats = document.querySelectorAll(
-      '[data-test-id*="stat"], [class*="object-header__stats"] li, ' +
-      '[class*="header-stats"] li, [class*="listing-stats"] li, ' +
-      '.object-header__item, [class*="ObjectHeaderStats"] li'
-    );
-    stats.forEach(el => {
-      const text = el.textContent.trim().toLowerCase();
-      if (/\d+\s*(slpk|slaapkamer)/.test(text)) {
-        const m = text.match(/(\d+)/);
-        if (m) result.bedrooms = parseInt(m[1]);
-      }
-      if (/\d+\s*(badkamer|badk)/.test(text)) {
-        const m = text.match(/(\d+)/);
-        if (m) result.bathrooms = parseInt(m[1]);
-      }
-      if (/\d+\s*m[²2]/.test(text)) {
-        const m = text.match(/(\d+)/);
-        if (m) result.surface_area = parseInt(m[1]);
-      }
-      if (/\d+\s*kamer/.test(text) && !result.rooms) {
-        const m = text.match(/(\d+)/);
-        if (m) result.rooms = parseInt(m[1]);
-      }
-    });
-    return result;
-  }
-
-  // ─── Structured data Funda soms in __NEXT_DATA__ ──────────────────
-  function getNextData() {
+  // ─── Haal __NEXT_DATA__ op (meest betrouwbare bron) ──────────────────────
+  function getNextListing() {
     try {
       const el = document.getElementById('__NEXT_DATA__');
       if (!el) return null;
       const json = JSON.parse(el.textContent);
-      // Zoek de property data diep in de Next.js page props
-      const props = json?.props?.pageProps;
-      if (!props) return null;
-      // Kan op verschillende plekken zitten
-      return props.listing || props.property || props.object || props.data || null;
+      // Funda slaat listing data op in pageProps.listing
+      const pp = json?.props?.pageProps;
+      return pp?.listing || pp?.property || pp?.object || null;
     } catch (e) {
       return null;
     }
   }
 
-  // ─── Prijs extractor ───────────────────────────────────────────────
-  function extractPrice(html) {
-    // Probeer meerdere selectors voor prijs
-    const priceSelectors = [
-      '[class*="price-sale"]',
-      '[class*="Price"]',
-      '[data-test-id*="price"]',
-      '.object-header__price',
-      '[class*="asking-price"]',
-      'span[class*="price"]',
-    ];
-    for (const sel of priceSelectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        const text = el.textContent.trim();
-        // Match: € 399.000 of 399000 of 399,000
-        const m = text.match(/[\d.,]{3,}/);
-        if (m) {
-          const clean = m[0].replace(/\./g, '').replace(',', '.');
-          const num = Math.round(parseFloat(clean));
-          if (num > 10000) return num;
-        }
-      }
-    }
-    return null;
+  // ─── DL/DT/DD kenmerken uitlezen ────────────────────────────────────────
+  function getKenmerken() {
+    const result = {};
+    document.querySelectorAll('dl').forEach(dl => {
+      const dts = dl.querySelectorAll('dt');
+      const dds = dl.querySelectorAll('dd');
+      dts.forEach((dt, i) => {
+        const key = dt.textContent.trim().toLowerCase().replace(/\s+/g, ' ');
+        const val = dds[i] ? dds[i].textContent.trim() : '';
+        if (key && val) result[key] = val;
+      });
+    });
+    return result;
   }
 
-  // ─── Adres extractor ──────────────────────────────────────────────
-  function extractAddress() {
-    const selectors = [
-      '[data-test-id="street-name-house-number"]',
-      '[class*="object-header__title"]',
-      '[class*="AddressTitle"]',
-      'h1[class*="address"]',
-      '.object-header h1',
-    ];
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el) return el.textContent.trim();
-    }
-    // Fallback: h1
-    const h1 = document.querySelector('h1');
-    return h1 ? h1.textContent.trim() : document.title.split('|')[0].trim();
-  }
-
-  function extractCity() {
-    const selectors = [
-      '[data-test-id="postal-code-city"]',
-      '[class*="object-header__subtitle"]',
-      '[class*="AddressSubtitle"]',
-    ];
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        const text = el.textContent.trim();
-        const m = text.match(/\d{4}\s*[A-Z]{2}\s+(.+)/);
-        return m ? m[1].trim() : text.replace(/\d{4}\s*[A-Z]{2}/, '').trim();
-      }
-    }
-    // Probeer URL: funda.nl/detail/koop/den-haag/...
-    const urlMatch = window.location.pathname.match(/\/(?:koop|huur)\/([^/]+)\//);
-    if (urlMatch) return urlMatch[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    return '';
-  }
-
-  // ─── Foto's extractor ─────────────────────────────────────────────
+  // ─── Afbeeldingen extraheren ─────────────────────────────────────────────
   function extractImages() {
     const images = new Set();
-
-    // og:image altijd eerst
     const ogImg = document.querySelector('meta[property="og:image"]');
     if (ogImg?.content) images.add(ogImg.content);
 
-    // Funda CDN foto's
-    const patterns = [
-      'img[src*="cloud.funda.nl"]',
-      'img[src*="images.funda.nl"]',
-      'img[data-src*="cloud.funda.nl"]',
-      'img[data-lazy*="cloud.funda.nl"]',
-      'source[srcset*="cloud.funda.nl"]',
-    ];
-    for (const pat of patterns) {
-      document.querySelectorAll(pat).forEach(el => {
-        const src = el.src || el.getAttribute('data-src') || el.getAttribute('data-lazy');
-        if (src && src.startsWith('http')) images.add(src);
-        // srcset: neem de grootste
-        const srcset = el.srcset || el.getAttribute('srcset') || '';
-        if (srcset) {
-          const parts = srcset.split(',').map(p => p.trim().split(' ')[0]);
-          parts.forEach(p => { if (p.startsWith('http')) images.add(p); });
-        }
+    // Funda CDN
+    ['img[src*="cloud.funda.nl"]', 'img[src*="images.funda.nl"]',
+      'img[data-src*="cloud.funda.nl"]'].forEach(sel => {
+      document.querySelectorAll(sel).forEach(img => {
+        const src = img.src || img.getAttribute('data-src') || '';
+        if (src.startsWith('http')) images.add(src);
       });
-    }
-
-    // Alle jpg/png/webp afbeeldingen filteren
-    document.querySelectorAll('img[src]').forEach(img => {
-      const src = img.src;
-      if (!src || !src.startsWith('http')) return;
-      if (src.includes('.gif') || src.includes('logo') || src.includes('icon') ||
-        src.includes('avatar') || src.includes('placeholder') || src.includes('sprite')) return;
-      if (img.naturalWidth > 200 || img.width > 200) images.add(src);
     });
 
-    return Array.from(images).filter(Boolean).slice(0, 30);
+    // Grote afbeeldingen via srcset
+    document.querySelectorAll('img[srcset]').forEach(img => {
+      const srcset = img.getAttribute('srcset') || '';
+      srcset.split(',').forEach(part => {
+        const url = part.trim().split(' ')[0];
+        if (url.startsWith('http') && (url.includes('funda') || url.includes('cloud'))) {
+          images.add(url);
+        }
+      });
+    });
+
+    // Fallback: bekijk alle grote plaatjes
+    document.querySelectorAll('img[src]').forEach(img => {
+      const src = img.src || '';
+      if (!src.startsWith('http')) return;
+      if (/logo|icon|avatar|placeholder|sprite|\.gif|\.svg/i.test(src)) return;
+      if ((img.naturalWidth || img.width || 0) > 300) images.add(src);
+    });
+
+    return Array.from(images).filter(Boolean).slice(0, 20);
   }
 
-  // ─── Omschrijving ─────────────────────────────────────────────────
+  // ─── Omschrijving extraheren ──────────────────────────────────────────────
   function extractDescription() {
     const selectors = [
       '[data-test-id="description-text"]',
       '[class*="object-description__body"]',
-      '[class*="Description-body"]',
-      '[class*="listing-description"]',
-      'div[class*="description"] p',
+      '[class*="Description"]',
+      '.listing-description',
     ];
     for (const sel of selectors) {
       const el = document.querySelector(sel);
-      if (el && el.textContent.trim().length > 50) {
-        return el.textContent.trim().slice(0, 2000);
-      }
+      if (el?.textContent?.trim().length > 80) return el.textContent.trim().slice(0, 2000);
     }
-    // Fallback: zoek de langste <p>
+    // Zoek langste alinea
     let longest = '';
     document.querySelectorAll('p').forEach(p => {
       const t = p.textContent.trim();
@@ -266,158 +134,164 @@
     return longest.slice(0, 2000);
   }
 
-  // ─── Hoofd extractie functie ──────────────────────────────────────
+  // ─── Hoofd extractie ─────────────────────────────────────────────────────
   function extractPropertyData() {
     const data = {};
-
-    // 1. Probeer __NEXT_DATA__ (meest compleet als aanwezig)
-    const nextData = getNextData();
-
-    // 2. JSON-LD
-    const jsonLd = getJsonLd();
-
-    // 3. Kenmerken tabel
+    const bodyText = getBodyText();
     const kenmerken = getKenmerken();
+    const listing = getNextListing(); // __NEXT_DATA__.props.pageProps.listing
 
-    // 4. Header stats
-    const headerStats = getHeaderStats();
+    // ── Adres ──
+    const adresSelectors = [
+      '[data-test-id="street-name-house-number"]',
+      '[data-testid="address"]',
+      '[class*="object-header__title"]',
+      '[class*="AddressTitle"]',
+      'h1',
+    ];
+    for (const sel of adresSelectors) {
+      const el = document.querySelector(sel);
+      if (el?.textContent?.trim()) { data.address = el.textContent.trim(); break; }
+    }
+    if (!data.address) data.address = listing?.address?.streetAddress || document.title.split('|')[0].trim();
 
-    // ── Adres & Stad ──
-    data.address = extractAddress();
-    const city = extractCity();
-    data.city = city;
-    if (city && !data.address.toLowerCase().includes(city.toLowerCase())) {
-      data.address = data.address + ', ' + city;
-    }
-
-    // JSON-LD adres als fallback
-    if (jsonLd.address && !data.address) {
-      const a = jsonLd.address;
-      data.address = [a.streetAddress, a.addressLocality].filter(Boolean).join(', ');
-      data.city = a.addressLocality || city;
-    }
-
-    // ── Prijs ──
-    data.price = extractPrice() ||
-      (nextData?.price || nextData?.askingPrice || nextData?.koopprijs) ||
-      (jsonLd.offers?.price) ||
-      null;
-    if (data.price) data.price = parseInt(String(data.price).replace(/[^0-9]/g, ''));
-
-    // ── Oppervlakte ──
-    const oppKeys = ['woonoppervlakte', 'gebruiksoppervlakte wonen', 'wonen', 'oppervlakte', 'living area', 'woonoppervlak'];
-    for (const k of oppKeys) {
-      if (kenmerken[k]) {
-        const m = kenmerken[k].match(/(\d+)/);
-        if (m) { data.surface_area = parseInt(m[1]); break; }
-      }
-    }
-    if (!data.surface_area && headerStats.surface_area) data.surface_area = headerStats.surface_area;
-    if (!data.surface_area && jsonLd.floorSize) data.surface_area = parseInt(jsonLd.floorSize.value || jsonLd.floorSize);
-    if (!data.surface_area && nextData?.surfaceArea) data.surface_area = parseInt(nextData.surfaceArea);
-
-    // ── Slaapkamers ──
-    const slpkKeys = ['slaapkamers', 'aantal slaapkamers', 'bedrooms', 'number of bedrooms', 'slaapkamer'];
-    for (const k of slpkKeys) {
-      if (kenmerken[k]) {
-        const m = kenmerken[k].match(/(\d+)/);
-        if (m) { data.bedrooms = parseInt(m[1]); break; }
-      }
-    }
-    if (!data.bedrooms && headerStats.bedrooms) data.bedrooms = headerStats.bedrooms;
-    if (!data.bedrooms && jsonLd.numberOfRooms) {
-      // Soms geeft JSON-LD het totaal aantal kamers, niet slaapkamers
-    }
-    if (!data.bedrooms && nextData?.numberOfBedrooms) data.bedrooms = parseInt(nextData.numberOfBedrooms);
-    // Extra: zoek in paginatekst naar patroon "X slaapkamers"
-    if (!data.bedrooms) {
-      const bodyText = document.body.innerText;
-      const m = bodyText.match(/(\d+)\s*slaapkamer/i);
-      if (m) data.bedrooms = parseInt(m[1]);
-    }
-
-    // ── Badkamers ──
-    const badkKeys = ['badkamers', 'aantal badkamers', 'bathrooms', 'badkamer'];
-    for (const k of badkKeys) {
-      if (kenmerken[k]) {
-        const m = kenmerken[k].match(/(\d+)/);
-        if (m) { data.bathrooms = parseInt(m[1]); break; }
-      }
-    }
-    if (!data.bathrooms && headerStats.bathrooms) data.bathrooms = headerStats.bathrooms;
-    if (!data.bathrooms && nextData?.numberOfBathrooms) data.bathrooms = parseInt(nextData.numberOfBathrooms);
-    if (!data.bathrooms) {
-      const bodyText = document.body.innerText;
-      const m = bodyText.match(/(\d+)\s*badkamer/i);
-      if (m) data.bathrooms = parseInt(m[1]);
-    }
-
-    // ── Woningtype ──
-    const typeKeys = ['soort woonobject', 'soort object', 'type woning', 'woningtype', 'type', 'soort', 'object type'];
-    for (const k of typeKeys) {
-      if (kenmerken[k]) { data.propertyType = kenmerken[k]; break; }
-    }
-    if (!data.propertyType && nextData?.type) data.propertyType = nextData.type;
-    if (!data.propertyType && jsonLd['@type']) {
-      const typeMap = { 'Residence': 'Woning', 'House': 'Huis', 'Apartment': 'Appartement' };
-      data.propertyType = typeMap[jsonLd['@type']] || jsonLd['@type'];
-    }
-
-    // ── Bouwjaar ──
-    const bouwjaarKeys = ['bouwjaar', 'jaar van bouw', 'construction year', 'built'];
-    let bouwjaar = '';
-    for (const k of bouwjaarKeys) {
-      if (kenmerken[k]) { bouwjaar = kenmerken[k].match(/(\d{4})/)?.[0] || ''; break; }
-    }
-    if (!bouwjaar && nextData?.buildYear) bouwjaar = String(nextData.buildYear);
-
-    // ── Energielabel ──
-    const energyKeys = ['energielabel', 'energy label', 'energie'];
-    let energyLabel = '';
-    let energyFull = '';
-    for (const k of energyKeys) {
-      if (kenmerken[k]) {
-        energyFull = kenmerken[k];
-        const m = kenmerken[k].match(/^([A-G]\+*)/);
-        if (m) energyLabel = m[1];
+    // ── Stad ──
+    const stadSelectors = [
+      '[data-test-id="postal-code-city"]',
+      '[data-testid="postcode-city"]',
+      '[class*="object-header__subtitle"]',
+    ];
+    for (const sel of stadSelectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const t = el.textContent.trim();
+        const m = t.match(/\d{4}\s*[A-Z]{2}\s+(.+)/);
+        data.city = m ? m[1].trim() : t.replace(/\d{4}\s*[A-Z]{2}/, '').trim();
         break;
       }
     }
-    // Fallback: DOM element
-    if (!energyLabel) {
-      const energyEl = document.querySelector('[class*="energy-label"], [data-test-id*="energy"]');
-      if (energyEl) {
-        const m = energyEl.textContent.match(/[A-G]\+*/);
-        if (m) energyLabel = m[0];
+    if (!data.city && listing?.address?.addressLocality) data.city = listing.address.addressLocality;
+    if (data.city && data.address && !data.address.toLowerCase().includes(data.city.toLowerCase())) {
+      data.address = data.address + ', ' + data.city;
+    }
+
+    // ── Prijs ──
+    // Funda patroon: "€ 399.000 kosten koper" of "€ 399.000 k.k."
+    const priceMatch = bodyText.match(/€\s*([\d.]+)\s*(?:kosten koper|k\.k\.|vrij op naam|v\.o\.n)/i);
+    if (priceMatch) {
+      data.price = parseInt(priceMatch[1].replace(/\./g, ''));
+    }
+    if (!data.price) {
+      // Probeer data-testid price
+      const priceEl = document.querySelector('[data-testid="price"], [data-test-id="price"]');
+      if (priceEl) {
+        const m = priceEl.textContent.match(/[\d.]+/);
+        if (m) data.price = parseInt(m[0].replace(/\./g, ''));
       }
     }
-    if (!energyLabel && nextData?.energyLabel) energyLabel = nextData.energyLabel;
+    if (!data.price && listing?.price?.purchasePrice) data.price = listing.price.purchasePrice;
 
-    // ── Ligging / Omgeving ──
-    const liggingKeys = ['ligging', 'locatie', 'omgeving', 'location'];
-    let ligging = '';
-    for (const k of liggingKeys) {
-      if (kenmerken[k]) { ligging = kenmerken[k]; break; }
+    // ── Oppervlakte ──
+    // Funda kenmerken: "Woonoppervlakte: 86 m²"
+    const oppRaw = kenmerken['woonoppervlakte'] || kenmerken['gebruiksoppervlakte wonen'] || kenmerken['oppervlakte'];
+    if (oppRaw) { const m = oppRaw.match(/(\d+)/); if (m) data.surface_area = parseInt(m[1]); }
+    if (!data.surface_area) {
+      const m = bodyText.match(/Woonoppervlakte[:\s]+(\d+)\s*m/i);
+      if (m) data.surface_area = parseInt(m[1]);
     }
+    if (!data.surface_area && listing?.livingArea) data.surface_area = parseInt(listing.livingArea);
 
-    // ── Onderhoud ──
-    let onderhoud = kenmerken['onderhoud'] || kenmerken['maintenance'] || '';
+    // ── Slaapkamers ──
+    // Funda patroon: "Aantal kamers: 4 kamers (3 slaapkamers)"
+    const kamersRaw = kenmerken['aantal kamers'] || findInText(bodyText, 'Aantal kamers');
+    if (kamersRaw) {
+      // Extract getal tussen haakjes: "(3 slaapkamers)"
+      const slpkInHaakjes = kamersRaw.match(/\((\d+)\s*slaapkamer/i);
+      if (slpkInHaakjes) data.bedrooms = parseInt(slpkInHaakjes[1]);
+      // Of direct: "3 slaapkamers"
+      if (!data.bedrooms) {
+        const directMatch = kamersRaw.match(/(\d+)\s*slaapkamer/i);
+        if (directMatch) data.bedrooms = parseInt(directMatch[1]);
+      }
+    }
+    // Fallback: zoek "Aantal slaapkamers: X" apart
+    if (!data.bedrooms) {
+      const slpkRaw = kenmerken['aantal slaapkamers'] || kenmerken['slaapkamers'];
+      if (slpkRaw) { const m = slpkRaw.match(/(\d+)/); if (m) data.bedrooms = parseInt(m[1]); }
+    }
+    if (!data.bedrooms) {
+      const m = bodyText.match(/(\d+)\s*slaapkamer/i);
+      if (m) data.bedrooms = parseInt(m[1]);
+    }
+    if (!data.bedrooms && listing?.bedroomCount) data.bedrooms = parseInt(listing.bedroomCount);
 
-    // ── Indeling ──
-    let indeling = kenmerken['indeling'] || kenmerken['layout'] || '';
-    if (!indeling && data.bedrooms) {
+    // ── Badkamers ──
+    // Funda patroon: "Aantal badkamers: 1 badkamer en 1 apart toilet"
+    const badkRaw = kenmerken['aantal badkamers'] || kenmerken['badkamers'] || findInText(bodyText, 'Aantal badkamers');
+    if (badkRaw) {
+      const m = badkRaw.match(/(\d+)\s*badkamer/i);
+      if (m) data.bathrooms = parseInt(m[1]);
+    }
+    if (!data.bathrooms) {
+      const m = bodyText.match(/(\d+)\s*badkamer/i);
+      if (m) data.bathrooms = parseInt(m[1]);
+    }
+    if (!data.bathrooms && listing?.bathroomCount) data.bathrooms = parseInt(listing.bathroomCount);
+
+    // ── Woningtype ──
+    // Funda velden: "Soort appartement", "Soort woonobject", etc.
+    const typeKeys = ['soort appartement', 'soort woonobject', 'soort object', 'type woning', 'woningtype'];
+    for (const k of typeKeys) {
+      if (kenmerken[k]) { data.propertyType = kenmerken[k].split('\n')[0].trim(); break; }
+    }
+    if (!data.propertyType) {
+      // Zoek in tekst: "Soort appartement: Benedenwoning"
+      const typeMatch = bodyText.match(/Soort\s+(?:appartement|woonobject|object|woning)[:\s]+([^\n\r]+)/i);
+      if (typeMatch) data.propertyType = typeMatch[1].trim().split(/\n/)[0];
+    }
+    if (!data.propertyType && listing?.propertyType) data.propertyType = listing.propertyType;
+
+    // ── Energielabel ──
+    const energyKeys = ['energielabel', 'energie'];
+    let energyLabel = '';
+    for (const k of energyKeys) {
+      if (kenmerken[k]) {
+        const m = kenmerken[k].match(/^([A-G]\+*)/);
+        if (m) { energyLabel = m[1]; break; }
+      }
+    }
+    if (!energyLabel) {
+      const energyEl = document.querySelector('[class*="energy-label"], [data-test-id*="energy"]');
+      if (energyEl) { const m = energyEl.textContent.match(/[A-G]\+*/); if (m) energyLabel = m[0]; }
+    }
+    if (!energyLabel) {
+      const m = bodyText.match(/Energielabel[:\s]+([A-G]\+*)/i);
+      if (m) energyLabel = m[1];
+    }
+    if (!energyLabel && listing?.energyLabel) energyLabel = listing.energyLabel;
+
+    // ── Bouwjaar ──
+    let bouwjaar = kenmerken['bouwjaar'] || findInText(bodyText, 'Bouwjaar') || '';
+    if (bouwjaar) { const m = bouwjaar.match(/(\d{4})/); bouwjaar = m ? m[1] : ''; }
+    if (!bouwjaar && listing?.buildYear) bouwjaar = String(listing.buildYear);
+
+    // ── Overige features ──
+    const ligging = kenmerken['ligging'] || findInText(bodyText, 'Ligging') || '';
+    const onderhoud = kenmerken['onderhoud'] || '';
+    let indeling = kenmerken['indeling'] || '';
+    if (!indeling && (data.bedrooms || data.bathrooms)) {
       const parts = [];
       if (data.bedrooms) parts.push(`${data.bedrooms} slaapkamers`);
       if (data.bathrooms) parts.push(`${data.bathrooms} badkamers`);
       indeling = parts.join(', ');
     }
 
-    // Features object samenstellen
+    // Features object
     data.features = {};
     if (bouwjaar) data.features.constructionYear = bouwjaar;
     if (data.propertyType) data.features.type = data.propertyType;
     if (indeling) data.features.layout = indeling;
-    if (energyFull || energyLabel) data.features.energy = energyFull || `Energielabel ${energyLabel}`;
+    if (energyLabel) data.features.energy = `Energielabel ${energyLabel}`;
     if (energyLabel) data.features.energy_label = energyLabel;
     if (onderhoud) data.features.maintenance = onderhoud;
     if (ligging) data.features.surroundings = ligging;
@@ -431,12 +305,12 @@
     data.description = extractDescription();
 
     // ── Media Links ──
-    const youtubeLink = document.querySelector('a[href*="youtube.com"], a[href*="youtu.be"], iframe[src*="youtube"]');
-    data.video_url = youtubeLink ? (youtubeLink.href || youtubeLink.src) : null;
-    const matterLink = document.querySelector('a[href*="matterport"], iframe[src*="matterport"]');
-    data.tour_360_url = matterLink ? (matterLink.href || matterLink.src) : null;
+    const ytEl = document.querySelector('a[href*="youtube.com"], a[href*="youtu.be"], iframe[src*="youtube"]');
+    data.video_url = ytEl ? (ytEl.href || ytEl.src) : null;
+    const mtEl = document.querySelector('a[href*="matterport"], iframe[src*="matterport"]');
+    data.tour_360_url = mtEl ? (mtEl.href || mtEl.src) : null;
 
-    // ── Bron URL ──
+    // ── Bron ──
     data.source_url = window.location.href;
 
     return data;

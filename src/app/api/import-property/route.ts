@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
                 floorplan_url: floorplan_url || null,
                 tour_360_url: tour_360_url || null,
                 source_url: source_url || null,
-                status: 'draft',
+                status: 'active',
             })
             .select('id')
             .single()
