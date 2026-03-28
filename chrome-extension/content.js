@@ -1,7 +1,7 @@
 /**
- * VoiceRealty Funda Content Script v4
+ * VoiceRealty Funda Content Script v5
  * Gebaseerd op geïnspecteerde Funda HTML structuur.
- * Fixes: Verfijnde regex voor Type, Slaapkamers, Badkamers
+ * Fixes: Verfijnde adres-extractie (alleen straat+nummer), Title Case conversie.
  */
 
 (function () {
@@ -42,6 +42,11 @@
       if (m && m[1].trim()) return m[1].trim();
     }
     return null;
+  }
+
+  function toTitleCase(str) {
+    if (!str) return '';
+    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   }
 
   function getNextListing() {
@@ -87,19 +92,27 @@
     const kenmerken = getKenmerken();
     const listing = getNextListing();
 
-    // Adres
-    data.address = document.querySelector('h1')?.textContent?.trim() || 
-                   listing?.address?.streetAddress || 
-                   document.title.split('|')[0].trim();
+    // Adres-extractie verfijnen (alleen straatnaam en huisnummer)
+    const h1 = document.querySelector('h1');
+    if (h1) {
+        // Op Funda staat de straatnaam vaak in de eerste span of direct in h1
+        const mainSpan = h1.querySelector('span:first-child');
+        let rawAddr = mainSpan ? mainSpan.textContent : h1.textContent;
+        // Als er een postcode/stad in de h1 zit, splitsen we die af
+        rawAddr = rawAddr.split(/\d{4}\s*[A-Z]{2}/)[0];
+        data.address = toTitleCase(rawAddr.trim());
+    } else {
+        data.address = toTitleCase(listing?.address?.streetAddress || document.title.split('|')[0].trim());
+    }
 
     // Stad
     const cityEl = document.querySelector('[class*="object-header__subtitle"], [data-test-id="postal-code-city"]');
     if (cityEl) {
       const t = cityEl.textContent.trim();
       const m = t.match(/\d{4}\s*[A-Z]{2}\s+(.+)/);
-      data.city = m ? m[1].trim() : t.replace(/\d{4}\s*[A-Z]{2}/, '').trim();
+      data.city = toTitleCase(m ? m[1].trim() : t.replace(/\d{4}\s*[A-Z]{2}/, '').trim());
     }
-    if (!data.city) data.city = listing?.address?.addressLocality || '';
+    if (!data.city) data.city = toTitleCase(listing?.address?.addressLocality || '');
 
     // Prijs
     const priceMatch = bodyText.match(/€\s*([\d.]+)\s*(?:kosten koper|k\.k\.|vrij op naam|v\.o\.n)/i);
@@ -109,7 +122,7 @@
     const oppRaw = kenmerken['woonoppervlakte'] || kenmerken['gebruiksoppervlakte wonen'] || findInText(bodyText, 'Woonoppervlakte');
     if (oppRaw) data.surface_area = parseInt(oppRaw.match(/(\d+)/)?.[1] || 0);
 
-    // Slaapkamers (Cruciaal voor User)
+    // Slaapkamers
     const kamersRaw = kenmerken['aantal kamers'] || findInText(bodyText, 'Aantal kamers');
     if (kamersRaw) {
       const slpkMatch = kamersRaw.match(/\((\d+)\s*slaapkamer/i) || kamersRaw.match(/(\d+)\s*slaapkamer/i);
@@ -132,8 +145,8 @@
     }
 
     // Type
-    data.propertyType = kenmerken['soort woonhuis'] || kenmerken['soort appartement'] || kenmerken['type woning'] || 
-                        findInText(bodyText, 'Soort woonhuis', 'Soort appartement');
+    data.propertyType = toTitleCase(kenmerken['soort woonhuis'] || kenmerken['soort appartement'] || kenmerken['type woning'] || 
+                        findInText(bodyText, 'Soort woonhuis', 'Soort appartement') || '');
 
     // Features object
     data.features = {
@@ -153,10 +166,11 @@
     // Source
     data.source_url = window.location.href;
 
-    // Add top-level fields for API
+    // Fallbacks
     data.bedrooms = data.bedrooms || 0;
     data.bathrooms = data.bathrooms || 0;
 
     return data;
   }
 })();
+

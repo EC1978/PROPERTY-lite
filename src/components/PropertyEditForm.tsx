@@ -250,9 +250,10 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                             <button
                                                 type="button"
                                                 onClick={() => setBasicFeatures(prev => prev.filter((_, i) => i !== index))}
-                                                className="size-8 rounded-full hover:bg-red-500/10 flex items-center justify-center text-red-500/40 hover:text-red-500 transition-all shrink-0"
+                                                className="h-8 px-3 rounded-xl bg-red-500/5 hover:bg-red-500/10 flex items-center gap-2 text-red-500/60 hover:text-red-600 transition-all shrink-0 group/del"
                                                 title="Verwijder kenmerk"
                                             >
+                                                <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">Verwijderen</span>
                                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                                             </button>
                                         </div>
@@ -354,7 +355,19 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                             { name: 'feature_surroundings', label: 'Ligging', key: 'surroundings', placeholder: 'Bijv. Woonwijk...', full: true }
                         ].map((field) => (
                             <div key={field.name} className={`group/input ${field.full ? 'md:col-span-2' : ''}`}>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 px-1">{field.label}</label>
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-none">{field.label}</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={(e) => {
+                                            const input = (e.currentTarget.parentElement?.nextElementSibling as HTMLInputElement);
+                                            if (input) input.value = '';
+                                        }}
+                                        className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider transition-colors"
+                                    >
+                                        Wissen
+                                    </button>
+                                </div>
                                 <input
                                     type="text"
                                     name={field.name}
@@ -383,9 +396,10 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                     <button
                                         type="button"
                                         onClick={() => setCustomFeatures(prev => prev.filter((_, i) => i !== index))}
-                                        className="size-8 rounded-full hover:bg-red-500/10 flex items-center justify-center text-red-500/40 hover:text-red-500 transition-all shrink-0"
+                                        className="h-8 px-3 rounded-xl bg-red-500/5 hover:bg-red-500/10 flex items-center gap-2 text-red-500/60 hover:text-red-600 transition-all shrink-0 group/del"
                                         title="Verwijder kenmerk"
                                     >
+                                        <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">Verwijderen</span>
                                         <span className="material-symbols-outlined text-[18px]">delete</span>
                                     </button>
                                 </div>
