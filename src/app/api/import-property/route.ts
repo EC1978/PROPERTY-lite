@@ -58,12 +58,18 @@ export async function POST(req: NextRequest) {
         if (propertyType) cleanFeatures.type = propertyType
         if (!cleanFeatures.type && features.type) cleanFeatures.type = features.type
 
+        // Fail-safe city extraction if missing
+        let finalCity = city || ''
+        if (!finalCity && address && address.includes(',')) {
+            finalCity = address.split(',')[1]?.trim()
+        }
+
         const { data: property, error: insertError } = await supabaseAdmin
             .from('properties')
             .insert({
                 user_id: profile.id,
                 address: address || 'Geen adres',
-                city: city || '',
+                city: finalCity,
                 price: price ? Number(String(price).replace(/[^0-9]/g, '')) : null,
                 surface_area: safeInt(surface_area),
                 bedrooms: bedrooms,

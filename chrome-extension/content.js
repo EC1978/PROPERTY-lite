@@ -131,6 +131,14 @@
             data.city = toTitleCase(breadcrumbs[2]);
         }
       }
+
+      // Laatste strohalm: split de titel of h1 op de komma
+      if (!data.city) {
+        const fullTitle = document.querySelector('h1')?.textContent || document.title;
+        if (fullTitle.includes(',')) {
+          data.city = toTitleCase(fullTitle.split(',')[1].split('|')[0].trim());
+        }
+      }
     }
 
     // 2. Woonoppervlakte (Prioriteit voor JSON)
