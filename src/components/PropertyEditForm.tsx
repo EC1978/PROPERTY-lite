@@ -250,11 +250,11 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                             <button
                                                 type="button"
                                                 onClick={() => setBasicFeatures(prev => prev.filter((_, i) => i !== index))}
-                                                className="h-8 px-3 rounded-xl bg-red-500/5 hover:bg-red-500/10 flex items-center gap-2 text-red-500/60 hover:text-red-600 transition-all shrink-0 group/del"
+                                                className="h-8 pr-3 pl-10 rounded-xl bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 flex items-center justify-end gap-2 text-red-500/60 hover:text-red-500 transition-all shrink-0 group/del relative overflow-hidden group-hover/input:opacity-100 opacity-0 sm:opacity-40"
                                                 title="Verwijder kenmerk"
                                             >
-                                                <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">Verwijderen</span>
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                <span className="material-symbols-outlined text-[16px] absolute left-3">delete</span>
+                                                <span className="text-[9px] font-black uppercase tracking-widest">Verwijder</span>
                                             </button>
                                         </div>
                                         <input
