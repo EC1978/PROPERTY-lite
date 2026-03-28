@@ -911,7 +911,7 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                         const labelMap: any = { address: 'Adres', city: 'Stad', price: 'Vraagprijs', surface_area: 'Oppervlakte', bedrooms: 'Slaapkamers', bathrooms: 'Badkamers' }
                                         const valueMap: any = {
                                             address: property.address,
-                                            city: property.city || (property.address?.includes(',') ? property.address.split(',')[1]?.trim() : null),
+                                            city: property.city || (property.address?.includes(',') ? property.address.split(',')[1]?.trim() : (features.city || null)),
                                             price: property.price ? `€ ${property.price.toLocaleString()}` : null,
                                             surface_area: property.surface_area ? `${property.surface_area} m²` : null,
                                             bedrooms: property.bedrooms,

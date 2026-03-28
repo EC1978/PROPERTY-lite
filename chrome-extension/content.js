@@ -190,7 +190,8 @@
       energy_label: listing?.energyLabel || kenmerken['energielabel'] || findInText(bodyText, 'Energielabel'),
       layout: listing?.numberOfRooms ? `${listing.numberOfRooms} kamers` : (kenmerken['aantal kamers'] || ''),
       maintenance: kenmerken['onderhoud'] || '',
-      surroundings: kenmerken['ligging'] || findInText(bodyText, 'Ligging') || ''
+      surroundings: kenmerken['ligging'] || findInText(bodyText, 'Ligging') || '',
+      city: data.city || ''
     };
 
     data.images = extractImages();

@@ -184,8 +184,7 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                                 {streetName || 'Woning'}
                             </h1>
                             <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-3 font-bold uppercase tracking-widest">
-                                <span className="material-symbols-outlined text-[#0df2a2] text-[16px]">location_on</span>
-                                {property.address}{property.city ? `, ${property.city}` : (property.address?.includes(',') ? `, ${property.address.split(',')[1]?.trim()}` : '')}
+                                {property.address}{property.city ? `, ${property.city}` : (property.address?.includes(',') ? `, ${property.address.split(',')[1]?.trim()}` : (features.city ? `, ${features.city}` : ''))}
                             </div>
 
                             {property.price > 0 && (
@@ -298,7 +297,7 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                         <div className="divide-y divide-white/5">
                             {[
                                 { label: 'Adres', value: property.address },
-                                { label: 'Stad', value: property.city || (property.address?.includes(',') ? property.address.split(',')[1]?.trim() : null) },
+                                { label: 'Stad', value: property.city || (property.address?.includes(',') ? property.address.split(',')[1]?.trim() : (features.city || null)) },
                                 { label: 'Vraagprijs', value: property.price ? `€ ${property.price.toLocaleString()}` : null },
                                 { label: 'Oppervlakte', value: property.surface_area ? `${property.surface_area} m²` : null },
                                 { label: 'Slaapkamers', value: property.bedrooms },
