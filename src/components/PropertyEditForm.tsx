@@ -245,14 +245,15 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                                     newFeats[index].label = e.target.value;
                                                     setBasicFeatures(newFeats);
                                                 }}
-                                                className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                                className="bg-transparent border-none text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] focus:outline-none focus:text-[#10b77f] w-full"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setBasicFeatures(prev => prev.filter((_, i) => i !== index))}
-                                                className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                                className="size-8 rounded-full hover:bg-red-500/10 flex items-center justify-center text-red-500/40 hover:text-red-500 transition-all shrink-0"
+                                                title="Verwijder kenmerk"
                                             >
-                                                Verwijderen
+                                                <span className="material-symbols-outlined text-[18px]">delete</span>
                                             </button>
                                         </div>
                                         <input
@@ -377,14 +378,15 @@ export default function PropertyEditForm({ property, voices, myVoices = [], upda
                                             newFeats[index].label = e.target.value;
                                             setCustomFeatures(newFeats);
                                         }}
-                                        className="bg-transparent border-none text-xs font-bold text-gray-500 uppercase tracking-widest focus:outline-none focus:text-primary w-1/2"
+                                        className="bg-transparent border-none text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] focus:outline-none focus:text-[#10b77f] w-full"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setCustomFeatures(prev => prev.filter((_, i) => i !== index))}
-                                        className="text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+                                        className="size-8 rounded-full hover:bg-red-500/10 flex items-center justify-center text-red-500/40 hover:text-red-500 transition-all shrink-0"
+                                        title="Verwijder kenmerk"
                                     >
-                                        Verwijderen
+                                        <span className="material-symbols-outlined text-[18px]">delete</span>
                                     </button>
                                 </div>
                                 <input
