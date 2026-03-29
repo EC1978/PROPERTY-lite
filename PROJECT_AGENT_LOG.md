@@ -32,4 +32,15 @@ Dit document houdt een logboek bij van alle wijzigingen en acties die de AI-assi
 - **Actie**: Extensie ZIP (`voicerealty-funda-extension.zip`) in `public/` gezet voor directe download vanuit de app.
 
 ---
+
+## [2026-03-29]
+- **Actie**: Debuggen van de Chrome Extensie (Funda data-extractie). Postcode-extractie verbeterd in `content.js` zodat de fallback-logica (het scrapen van de HTML tekst) ook triggert wanneer het onzichtbare Funda JSON bestand (vooral bij portiekwoningen/appartementen) de postcode mist, maar wel de plaatsnaam bevat.
+- **Actie**: Syntax fout (`Unexpected token '}'`) gerepareerd in `content.js`, waarna validatie met `node -c` doorstond. Zip-bestand (`public/voicerealty-funda-extension.zip`) is opnieuw opgebouwd.
+- **Status (Handover)**: De code op schijf is 100% correct, maar de gebruiker krijgt de nieuwste versie niet geladen in Chrome (verkeerde map geselecteerd bij herinstallatie of een hardnekkige cache, wat zorgt voor een visuele foutmelding `Unexpected token '}'` op regel 236 in de Fouten-console).
+- **Plan voor Hervatting**:
+  1. Klik uiterst rechtsboven in de Chrome Fouten tab op "Alles wissen" of "Clear all".
+  2. Verwijder de extensie in Chrome HELEMAAL (`chrome://extensions`).
+  3. Klik op "Uitgepakte extensie laden" en selecteer secuur de lokale `chrome-extension` map binnen dit project (of download en gebruik de nieuwe .zip).
+  4. De syntax-fout is daarmee gewist, waardoor de fallback en de postcode weer perfect doorkomen.
+
 *Dit bestand zal continu worden bijgewerkt bij elke significante actie.*

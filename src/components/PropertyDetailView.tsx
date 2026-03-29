@@ -717,11 +717,11 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                                     onSave={saveField}
                                 >
                                     <h1 className="text-2xl sm:text-3xl md:text-5xl font-black leading-[1.1] tracking-tighter text-[#0df2a2] uppercase italic drop-shadow-[0_0_20px_rgba(13,242,162,0.15)] break-words">
-                                        {streetName || 'Woning'}
+                                        {streetName || 'Woning'}{(features.postal_code || features.postalCode) ? `, ${features.postal_code || features.postalCode}` : ''}{property.city ? ` ${property.city}` : ''}
                                     </h1>
-                                    <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-2 font-bold uppercase tracking-widest">
+                                    <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-2 font-bold uppercase tracking-widest break-words">
                                         <span className="material-symbols-outlined text-[#0df2a2] text-[16px]">location_on</span>
-                                        {property.address}{property.city ? `, ${property.city}` : ''}
+                                        {property.address}{(features.postal_code || features.postalCode) ? `, ${features.postal_code || features.postalCode}` : ''}{property.city ? ` ${property.city}` : ''}
                                     </div>
                                 </EditableField>
 

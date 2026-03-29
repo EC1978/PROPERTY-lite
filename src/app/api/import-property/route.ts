@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json()
         const {
-            address, city, price, surface_area, description, 
+            address, city, postalCode, price, surface_area, description, 
             image_url, images, features = {}, video_url, 
             floorplan_url, tour_360_url, source_url, propertyType
         } = body
@@ -57,11 +57,18 @@ export async function POST(req: NextRequest) {
         const cleanFeatures: any = { ...features }
         if (propertyType) cleanFeatures.type = propertyType
         if (!cleanFeatures.type && features.type) cleanFeatures.type = features.type
+        if (postalCode) cleanFeatures.postal_code = postalCode
 
         // Fail-safe city extraction if missing
         let finalCity = city || ''
-        if (!finalCity && address && address.includes(',')) {
-            finalCity = address.split(',')[1]?.trim()
+        if (!finalCity && address) {
+            if (address.includes(',')) {
+                finalCity = address.split(',')[1]?.trim()
+            } else {
+                // Check if address ends with a common Dutch postcode + city format: "1234 AB City"
+                const m = address.match(/\d{4}\s*[A-Z]{2}\s+(.+)$/i)
+                if (m) finalCity = m[1].trim()
+            }
         }
 
         const { data: property, error: insertError } = await supabaseAdmin
@@ -89,7 +96,7 @@ export async function POST(req: NextRequest) {
 
         if (insertError) throw insertError
 
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://property-lite-mocha.vercel.app'
+        const baseUrl = req.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://property-lite-mocha.vercel.app'
         return NextResponse.json({
             success: true,
             propertyId: property.id,

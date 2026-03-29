@@ -94,9 +94,9 @@
 
     // 1. Adres, Stad, Postcode (Prioriteit voor JSON)
     if (listing) {
-        data.address = toTitleCase(listing.address?.streetAddress || '');
-        data.city = toTitleCase(listing.address?.addressLocality || '');
-        data.postalCode = listing.address?.postalCode || '';
+        data.address = toTitleCase(listing.address?.streetAddress || listing.title || '');
+        data.city = toTitleCase(listing.address?.city || listing.address?.addressLocality || '');
+        data.postalCode = listing.address?.postCode || listing.address?.postalCode || '';
     }
     
     // Fallback voor Adres als JSON faalt
@@ -112,34 +112,55 @@
         }
     }
 
-    // Fallback voor Stad
-    if (!data.city) {
+    // Fallback voor Stad en Postcode
+    if (!data.city || !data.postalCode) {
       // Probeer "postal-code-city" of object-header__subtitle
       const cityEl = document.querySelector('[class*="object-header__subtitle"], [data-test-id="postal-code-city"], .object-header__subtitle');
       if (cityEl) {
         const t = cityEl.textContent.trim();
-        // Zoek naar "1234 AB STAD" of gewoon "STAD"
-        const m = t.match(/\d{4}\s*[A-Z]{2}\s+(.+)/i);
-        data.city = toTitleCase(m ? m[1].trim() : t.replace(/\d{4}\s*[A-Z]{2}/, '').trim());
-      }
-      
-      // Nog een poging via breadcrumbs of andere bekende velden
-      if (!data.city) {
-        const breadcrumbs = Array.from(document.querySelectorAll('.route-nav-list li, [class*="breadcrumb"]')).map(el => el.textContent.trim());
-        if (breadcrumbs.length >= 3) {
-            // Meestal: Home > Koop > AMSTERDAM > ...
-            data.city = toTitleCase(breadcrumbs[2]);
+        // Zoek naar "1234 AB STAD" of "8212 AN Lelystad"
+        const m = t.match(/(\d{4}\s*[A-Z]{2})\s+(.+)/i);
+        if (m) {
+            data.postalCode = data.postalCode || m[1].trim();
+            // Verwijder buurtnaam als die achter de stad staat (vaak gescheiden door spatie of teken)
+            data.city = data.city || toTitleCase(m[2].split('·')[0].split(',')[0].trim());
         }
       }
-
-      // Laatste strohalm: split de titel of h1 op de komma
+      
+      // Nog een poging via breadcrumbs if missing
       if (!data.city) {
-        const fullTitle = document.querySelector('h1')?.textContent || document.title;
-        if (fullTitle.includes(',')) {
-          data.city = toTitleCase(fullTitle.split(',')[1].split('|')[0].trim());
+        const breadcrumbs = Array.from(document.querySelectorAll('.route-nav-list li, [class*="breadcrumb"]')).map(el => el.textContent.trim());
+        const homeIdx = breadcrumbs.findIndex(b => b.toLowerCase() === 'home');
+        if (homeIdx !== -1 && breadcrumbs.length > homeIdx + 1) {
+            // Meestal: Home > Koop > AMSTERDAM > ...
+            // We pakken degene na Koop/Huur als die er zijn, anders na Home
+            const searchIdx = breadcrumbs.findIndex(b => b.toLowerCase() === 'koop' || b.toLowerCase() === 'huur');
+            const cityIdx = searchIdx !== -1 ? searchIdx + 1 : homeIdx + 1;
+            if (breadcrumbs[cityIdx]) {
+                data.city = toTitleCase(breadcrumbs[cityIdx]);
+            }
+        }
+      }
+      
+      // Nog een poging uit de URL if missing
+      if (!data.city) {
+        const urlMatch = window.location.href.match(/funda\.nl\/(?:koop|huur)\/([^\/]+)\//i);
+        if (urlMatch) {
+            data.city = toTitleCase(urlMatch[1].replace(/-/g, ' '));
         }
       }
     }
+
+      // Laatste strohalm: split de titel of h1 op de komma of haal uit URL
+      if (!data.city) {
+        if (window.location.href.includes('/detail/')) {
+            const parts = window.location.pathname.split('/');
+            // /detail/koop/lelystad/... -> index 3
+            if (parts[3] && !['koop', 'huur'].includes(parts[3])) {
+                data.city = toTitleCase(parts[3]);
+            }
+        }
+      }
 
     // 2. Woonoppervlakte (Prioriteit voor JSON)
     data.surface_area = listing?.livingArea || listing?.livingSurface || listing?.surfaceArea || 0;
