@@ -55,7 +55,7 @@
       if (!el) return null;
       const json = JSON.parse(el.textContent);
       const pp = json?.props?.pageProps;
-      return pp?.listing || pp?.property || pp?.object || null;
+      return pp?.listing || pp?.property || pp?.object || pp?.listingDetails || null;
     } catch (e) { return null; }
   }
 

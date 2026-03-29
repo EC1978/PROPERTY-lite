@@ -139,7 +139,8 @@ async function init() {
 }
 
 function renderPreview(data) {
-  $('preview-address').textContent = data.address || 'Onbekend adres';
+  const displayAddress = data.city ? `${data.address}, ${data.city}` : (data.address || 'Onbekend adres');
+  $('preview-address').textContent = displayAddress;
   $('preview-price').textContent = data.price ? formatPrice(data.price) : 'Prijs onbekend';
 
   const metaParts = [];

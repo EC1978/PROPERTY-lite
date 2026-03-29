@@ -184,7 +184,7 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                                 {streetName || 'Woning'}
                             </h1>
                             <div className="flex items-center gap-2 text-zinc-600 text-[10px] md:text-xs mt-3 font-bold uppercase tracking-widest">
-                                {property.address}{property.city ? `, ${property.city}` : (property.address?.includes(',') ? `, ${property.address.split(',')[1]?.trim()}` : (features.city ? `, ${features.city}` : ''))}
+                                {property.address}{(!property.address?.toLowerCase().includes(property.city?.toLowerCase() || '')) ? (property.city ? `, ${property.city}` : (property.address?.includes(',') ? `, ${property.address.split(',')[1]?.trim()}` : (features.city ? `, ${features.city}` : ''))) : ''}
                             </div>
 
                             {property.price > 0 && (
@@ -582,6 +582,9 @@ export default function PublicPropertyLiveView({ property, isAdmin = false, revi
                     </div>
                 )
             }
+            <div className="fixed bottom-4 right-4 z-50 pointer-events-none opacity-20 text-[10px] font-mono text-white/50 bg-black/50 px-2 py-1 rounded-full border border-white/10 uppercase tracking-tighter">
+                VoiceRealty Engine v6.1.2
+            </div>
         </div >
     )
 }

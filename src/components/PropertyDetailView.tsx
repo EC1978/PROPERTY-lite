@@ -1184,6 +1184,9 @@ export default function PropertyDetailView({ property: initialProperty, userEmai
                 confirmLabel={modalConfig.confirmLabel}
                 defaultValue={modalConfig.defaultValue}
             />
+            <div className="fixed bottom-4 left-4 z-50 pointer-events-none opacity-20 text-[10px] font-mono text-gray-500 bg-black/5 px-2 py-1 rounded-full border border-black/5 uppercase tracking-tighter">
+                VoiceRealty Engine v6.1.2
+            </div>
         </div>
     )
 }
